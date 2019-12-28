@@ -10,6 +10,7 @@ namespace UI24RController
 
         protected WebsocketClient _client;
         protected Action<string> _sendMessageAction;
+        protected IMIDIController _midiController;
 
         public UI24RBridge(string address, IMIDIController midiController):this(address, midiController, null)
         {
@@ -24,10 +25,17 @@ namespace UI24RController
         public UI24RBridge(string address, IMIDIController midiController, Action<string> sendMessageAction)
         {
             _sendMessageAction = sendMessageAction;
+            _midiController = midiController;
+            _midiController.FaderEvent += MidiController_FaderEvent;
             _client = new WebsocketClient(new Uri(address));
             _client.MessageReceived.Subscribe(msg => UI24RMessageReceived(msg));
             SendMessage("Connecting to UI24R....");
             _client.Start();
+        }
+
+        private void MidiController_FaderEvent(object sender, MIDIController.FaderEventArgs e)
+        {
+            _client.Send($"3:::SETD^i.{e.ChannelNumber}.mix^{e.FaderValue.ToString().Replace(',', '.')}");
         }
 
         protected void UI24RMessageReceived(ResponseMessage msg)
@@ -35,11 +43,28 @@ namespace UI24RController
             if (msg.Text.Length > 3)
             {
                 SendMessage(msg.Text);
+                ProcessUI24Message(msg.Text);
             }
             else
             {
                 _client.Send(msg.Text);
                 _client.Send("3:::ALIVE");
+            }
+        }
+
+        private void ProcessUI24Message(string text)
+        {
+            var messageparts = text.Split('\n');
+            foreach (var m in messageparts)
+            {
+                if (m.Contains("SETD^i.") && m.Contains(".mix"))
+                {
+                    var ui24Message = new UI24Message(m);
+                    if (ui24Message.IsValid && ui24Message.ChannelNumber < 8)
+                    {
+                        _midiController.SetFader(ui24Message.ChannelNumber, ui24Message.FaderValue);
+                    }
+                }
             }
         }
 

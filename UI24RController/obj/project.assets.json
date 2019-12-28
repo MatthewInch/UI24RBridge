@@ -2,6 +2,17 @@
   "version": 3,
   "targets": {
     ".NETCoreApp,Version=v3.1": {
+      "managed-midi/1.9.13": {
+        "type": "package",
+        "compile": {
+          "lib/netcoreapp2.1/Commons.Music.Midi.dll": {},
+          "lib/netcoreapp2.1/alsa-sharp.dll": {}
+        },
+        "runtime": {
+          "lib/netcoreapp2.1/Commons.Music.Midi.dll": {},
+          "lib/netcoreapp2.1/alsa-sharp.dll": {}
+        }
+      },
       "Microsoft.Extensions.Configuration/3.1.0": {
         "type": "package",
         "dependencies": {
@@ -172,6 +183,39 @@
     }
   },
   "libraries": {
+    "managed-midi/1.9.13": {
+      "sha512": "D7+X5wKSPhwE6YT2dJ1h6ObOeriG65zBrX7SX2o9NgW7NmWs4826Kk+UWoC5Bpo1lVmDn3zu3LD+IBblCSVTuw==",
+      "type": "package",
+      "path": "managed-midi/1.9.13",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE",
+        "README.md",
+        "lib/MonoAndroid/Commons.Music.Midi.dll",
+        "lib/MonoAndroid/Commons.Music.Midi.pdb",
+        "lib/XamarinMac/Commons.Music.Midi.dll",
+        "lib/XamarinMac/Commons.Music.Midi.pdb",
+        "lib/XamariniOS/Commons.Music.Midi.dll",
+        "lib/XamariniOS/Commons.Music.Midi.pdb",
+        "lib/net45/Commons.Music.Midi.dll",
+        "lib/net45/Commons.Music.Midi.pdb",
+        "lib/net45/alsa-sharp.dll",
+        "lib/net45/alsa-sharp.pdb",
+        "lib/netcoreapp2.1/Commons.Music.Midi.dll",
+        "lib/netcoreapp2.1/Commons.Music.Midi.pdb",
+        "lib/netcoreapp2.1/alsa-sharp.dll",
+        "lib/netcoreapp2.1/alsa-sharp.pdb",
+        "lib/netstandard2.0/Commons.Music.Midi.deps.json",
+        "lib/netstandard2.0/Commons.Music.Midi.dll",
+        "lib/netstandard2.0/Commons.Music.Midi.pdb",
+        "lib/uap10.0/Commons.Music.Midi.dll",
+        "lib/uap10.0/Commons.Music.Midi.pdb",
+        "lib/uap10.0/Commons.Music.Midi.pri",
+        "managed-midi.1.9.13.nupkg.sha512",
+        "managed-midi.nuspec"
+      ]
+    },
     "Microsoft.Extensions.Configuration/3.1.0": {
       "sha512": "Lu41BWNmwhKr6LgyQvcYBOge0pPvmiaK8R5UHXX4//wBhonJyWcT2OK1mqYfEM5G7pTf31fPrpIHOT6sN7EGOA==",
       "type": "package",
@@ -542,7 +586,8 @@
       "Microsoft.Extensions.Configuration >= 3.1.0",
       "Microsoft.Extensions.Configuration.FileExtensions >= 3.1.0",
       "Microsoft.Extensions.Configuration.Json >= 3.1.0",
-      "Websocket.Client >= 4.1.76"
+      "Websocket.Client >= 4.1.76",
+      "managed-midi >= 1.9.13"
     ]
   },
   "packageFolders": {
@@ -602,6 +647,10 @@
           "Websocket.Client": {
             "target": "Package",
             "version": "[4.1.76, )"
+          },
+          "managed-midi": {
+            "target": "Package",
+            "version": "[1.9.13, )"
           }
         },
         "imports": [

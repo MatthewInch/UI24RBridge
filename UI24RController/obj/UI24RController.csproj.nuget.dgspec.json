@@ -57,6 +57,10 @@
             "Websocket.Client": {
               "target": "Package",
               "version": "[4.1.76, )"
+            },
+            "managed-midi": {
+              "target": "Package",
+              "version": "[1.9.13, )"
             }
           },
           "imports": [

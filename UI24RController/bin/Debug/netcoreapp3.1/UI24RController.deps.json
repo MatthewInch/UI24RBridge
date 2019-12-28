@@ -11,10 +11,23 @@
           "Microsoft.Extensions.Configuration": "3.1.0",
           "Microsoft.Extensions.Configuration.FileExtensions": "3.1.0",
           "Microsoft.Extensions.Configuration.Json": "3.1.0",
-          "Websocket.Client": "4.1.76"
+          "Websocket.Client": "4.1.76",
+          "managed-midi": "1.9.13"
         },
         "runtime": {
           "UI24RController.dll": {}
+        }
+      },
+      "managed-midi/1.9.13": {
+        "runtime": {
+          "lib/netcoreapp2.1/Commons.Music.Midi.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          },
+          "lib/netcoreapp2.1/alsa-sharp.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
         }
       },
       "Microsoft.Extensions.Configuration/3.1.0": {
@@ -146,6 +159,13 @@
       "type": "project",
       "serviceable": false,
       "sha512": ""
+    },
+    "managed-midi/1.9.13": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-D7+X5wKSPhwE6YT2dJ1h6ObOeriG65zBrX7SX2o9NgW7NmWs4826Kk+UWoC5Bpo1lVmDn3zu3LD+IBblCSVTuw==",
+      "path": "managed-midi/1.9.13",
+      "hashPath": "managed-midi.1.9.13.nupkg.sha512"
     },
     "Microsoft.Extensions.Configuration/3.1.0": {
       "type": "package",
