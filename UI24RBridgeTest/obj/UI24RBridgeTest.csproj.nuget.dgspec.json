@@ -1,0 +1,86 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\inch\\source\\repos\\MatthewInch\\UI24RBridge\\UI24RBridgeTest\\UI24RBridgeTest.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\inch\\source\\repos\\MatthewInch\\UI24RBridge\\UI24RBridgeTest\\UI24RBridgeTest.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\inch\\source\\repos\\MatthewInch\\UI24RBridge\\UI24RBridgeTest\\UI24RBridgeTest.csproj",
+        "projectName": "UI24RBridgeTest",
+        "projectPath": "C:\\Users\\inch\\source\\repos\\MatthewInch\\UI24RBridge\\UI24RBridgeTest\\UI24RBridgeTest.csproj",
+        "packagesPath": "C:\\Users\\inch\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\inch\\source\\repos\\MatthewInch\\UI24RBridge\\UI24RBridgeTest\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Microsoft\\Xamarin\\NuGet\\"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\inch\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Xamarin.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "netcoreapp3.1"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "netcoreapp3.1": {
+            "projectReferences": {
+              "C:\\Users\\inch\\source\\repos\\MatthewInch\\UI24RBridge\\UI24RBridge\\UI24RController\\UI24RController.csproj": {
+                "projectPath": "C:\\Users\\inch\\source\\repos\\MatthewInch\\UI24RBridge\\UI24RBridge\\UI24RController\\UI24RController.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "netcoreapp3.1": {
+          "dependencies": {
+            "Microsoft.Extensions.Configuration": {
+              "target": "Package",
+              "version": "[3.1.0, )"
+            },
+            "Microsoft.Extensions.Configuration.FileExtensions": {
+              "target": "Package",
+              "version": "[3.1.0, )"
+            },
+            "Microsoft.Extensions.Configuration.Json": {
+              "target": "Package",
+              "version": "[3.1.0, )"
+            },
+            "managed-midi": {
+              "target": "Package",
+              "version": "[1.9.13, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.100\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
