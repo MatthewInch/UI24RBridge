@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\UI24RBridge\UI24RController\UI24RController.csproj" />
+    <ProjectReference Include="..\UI24RController\UI24RController.csproj" />
   </ItemGroup>
 
   <ItemGroup>

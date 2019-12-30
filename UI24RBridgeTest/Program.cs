@@ -18,8 +18,9 @@ namespace UI24RBridgeTest
             var address = configuration["UI24R-Url"];
             var midiInputDevice = configuration["MIDI-Input-Name"];
             var midiOutputDevice = configuration["MIDI-Output-Name"];
+            var protocol = configuration["Protocol"];
             //var controller = new BehringerUniversalMIDI();
-            var controller = new MackieHUI();
+            var controller = MIDIControllerBase.GetMidiController(protocol);
             if (midiInputDevice == null || midiOutputDevice == null)
             {
                 if (midiInputDevice == null)
@@ -35,12 +36,12 @@ namespace UI24RBridgeTest
 
             }
 
-            controller._messageReceived += (obj, e) => {
+            controller.MessageReceived += (obj, e) => {
                 Console.WriteLine(e.Message);
             };
             Action<string> messageWriter = (string message) =>
             {
-                //Console.WriteLine(message);
+                Console.WriteLine(message);
             };
             using (UI24RBridge bridge = new UI24RBridge(address, controller, messageWriter))
             {
