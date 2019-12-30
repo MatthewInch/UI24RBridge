@@ -1,0 +1,14 @@
+﻿
+Select channel:
+press cahnnel 1:
+b0 - 0f - 00
+b0 - 2f - 47
+release cahnnel 1
+b0 - 0f - 00
+b0 - 2f - 07
+press cahnnel 8:
+b0 - 0f - 07
+b0 - 2f - 47
+release cahnnel 8:
+b0 - 0f - 07
+b0 - 2f - 07
