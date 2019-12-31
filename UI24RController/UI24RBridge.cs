@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using Websocket.Client;
@@ -11,6 +12,7 @@ namespace UI24RController
         protected WebsocketClient _client;
         protected Action<string> _sendMessageAction;
         protected IMIDIController _midiController;
+        protected string[] _viewChannel = new string[] { "0", "1", "2", "3", "4", "5", "6", "7" };
 
         public UI24RBridge(string address, IMIDIController midiController):this(address, midiController, null)
         {
@@ -35,7 +37,7 @@ namespace UI24RController
 
         private void MidiController_FaderEvent(object sender, MIDIController.FaderEventArgs e)
         {
-            _client.Send($"3:::SETD^i.{e.ChannelNumber}.mix^{e.FaderValue.ToString().Replace(',', '.')}");
+            _client.Send($"3:::SETD^i.{_viewChannel[e.ChannelNumber]}.mix^{e.FaderValue.ToString().Replace(',', '.')}");
         }
 
         protected void UI24RMessageReceived(ResponseMessage msg)
@@ -60,9 +62,20 @@ namespace UI24RController
                 if (m.Contains("SETD^i.") && m.Contains(".mix"))
                 {
                     var ui24Message = new UI24Message(m);
-                    if (ui24Message.IsValid && ui24Message.ChannelNumber < 8)
+                    var channelNumber = _viewChannel.Select((item, i)=> new { Item = item, viewChNumber = i } )
+                        .Where(c => c.Item == ui24Message.ChannelNumber.ToString()).FirstOrDefault();
+                    if (ui24Message.IsValid && channelNumber != null && channelNumber.viewChNumber < 8)
                     {
-                        _midiController.SetFader(ui24Message.ChannelNumber, ui24Message.FaderValue);
+                        _midiController.SetFader(channelNumber.viewChNumber, ui24Message.FaderValue);
+                    }
+                }
+                else if (m.StartsWith("SETS^vg.0^")) //first global view group (e.g:"SETS^vg.0^[0,1,2,3,4,5,6,17,18,19,20,22,23,38,39,40,41,42,43,44,45,48,49,21]")
+                {
+                    var newViewChannel = m.Split('^').Last().Trim('[',']').Split(',');
+
+                    if (newViewChannel.Length > 7)
+                    {
+                        _viewChannel = newViewChannel;
                     }
                 }
             }
