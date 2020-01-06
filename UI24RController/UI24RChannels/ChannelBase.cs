@@ -10,19 +10,19 @@ namespace UI24RController.UI24RChannels
         /// <summary>
         /// Between 0 and 1.0
         /// </summary>
-        public double MainFaderValue { get; set; }
+        public double ChannelFaderValue { get; set; }
         public string Name { get; set; }
         public int ChannelNumber { get; internal set; }
 
         public ChannelBase(int channelNumber)
         {
-            MainFaderValue = 0;
+            ChannelFaderValue = 0;
             ChannelNumber = channelNumber;
         }
 
         public virtual string MixFaderMessage()
         {
-            return $"3:::SETD^i.{this.ChannelNumber}.mix^{this.MainFaderValue.ToString().Replace(',', '.')}";
+            return $"3:::SETD^i.{this.ChannelNumber}.mix^{this.ChannelFaderValue.ToString().Replace(',', '.')}";
         }
 
     }

@@ -39,11 +39,17 @@ namespace UI24RBridgeTest
             controller.MessageReceived += (obj, e) => {
                 Console.WriteLine(e.Message);
             };
-            Action<string> messageWriter = (string message) =>
+            Action<string> messageWriter = (string messages) =>
             {
-                if (!message.StartsWith("3:::RTA^"))
+                var m = messages.Split('\n');
+                foreach (var message in m)
                 {
-                    Console.WriteLine(message);
+                    if (!message.StartsWith("3:::RTA^") && !message.StartsWith("RTA^") &&
+                        !message.StartsWith("3:::VU2^") && !message.StartsWith("VU2^")
+                    )
+                    {
+                        Console.WriteLine(message);
+                    }
                 }
             };
             using (UI24RBridge bridge = new UI24RBridge(address, controller, messageWriter))

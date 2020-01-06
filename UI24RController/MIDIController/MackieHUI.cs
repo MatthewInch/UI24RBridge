@@ -134,7 +134,7 @@ namespace UI24RController.MIDIController
                     {
                         OnPresetUp();
                     }
-                    else if (secondMessage.MIDIEqual(0xb0, 0x2f, 0x43)) //preset down
+                    else if (secondMessage.MIDIEqual(0xb0, 0x2f, 0x41)) //preset down
                     {
                         OnPresetDown();
                     }
