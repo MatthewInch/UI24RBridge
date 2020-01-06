@@ -7,34 +7,25 @@ using System.Threading.Tasks;
 
 namespace UI24RController.MIDIController
 {
-    public class MackieHUI : IMIDIController,IDisposable
+    public class MackieHUI : IMIDIController, IDisposable
     {
         protected Queue<byte[]> _messageQueue = new Queue<byte[]>();
             
         IMidiInput _input = null;
         IMidiOutput _output = null;
-        public event EventHandler<MessageEventArgs> _messageReceived;
-        public event EventHandler<FaderEventArgs> FaderEvent;
-        event EventHandler<MessageEventArgs> IMIDIController.MessageReceived
-        {
-            add
-            {
-                _messageReceived += value;
-            }
 
-            remove
-            {
-                _messageReceived -= value;
-            }
-        }
+        public event EventHandler<MessageEventArgs> MessageReceived;
+        public event EventHandler<FaderEventArgs> FaderEvent;
+        public event EventHandler<EventArgs> PresetUp;
+        public event EventHandler<EventArgs> PresetDown;
 
         protected void OnMessageReceived(string message)
         {
-            if (_messageReceived != null)
+            if (MessageReceived != null)
             {
                 var messageEventArgs = new MessageEventArgs();
                 messageEventArgs.Message = message;
-                _messageReceived(this, messageEventArgs);
+                MessageReceived(this, messageEventArgs);
             }
         }
 
@@ -44,6 +35,21 @@ namespace UI24RController.MIDIController
             {
                 var faderEventArgs = new FaderEventArgs(channelNumber, faderValue);
                 FaderEvent(this, faderEventArgs);
+            }
+        }
+
+        protected void OnPresetUp()
+        {
+            if (PresetUp != null)
+            {
+                PresetUp(this, new EventArgs());
+            }
+        }
+        protected void OnPresetDown()
+        {
+            if (PresetDown != null)
+            {
+                PresetDown(this, new EventArgs());
             }
         }
 
@@ -61,7 +67,7 @@ namespace UI24RController.MIDIController
             }
         }
 
-        public bool ConnectInputDevice(string deviceName)
+        public  bool ConnectInputDevice(string deviceName)
         {
             var access = MidiAccessManager.Default;
             var deviceNumber = access.Inputs.Where(i => i.Name == deviceName).FirstOrDefault();
@@ -120,11 +126,24 @@ namespace UI24RController.MIDIController
                         var faderValue = (upper + lower) / 1023.0;
                         OnFaderEvent(channelNumber, faderValue);
                     }
-                }                
+                }   
+                else if (firstMessage.MIDIEqual(0xb0, 0x0f, 0x0a)) //preset up, preset down
+                {
+                    var secondMessage = _messageQueue.Dequeue();
+                    if (secondMessage.MIDIEqual(0xb0, 0x2f, 0x43)) //preset up
+                    {
+                        OnPresetUp();
+                    }
+                    else if (secondMessage.MIDIEqual(0xb0, 0x2f, 0x43)) //preset down
+                    {
+                        OnPresetDown();
+                    }
+
+                }
             }
         }
 
-        public bool ConnectOutputDevice(string deviceName)
+        public  bool ConnectOutputDevice(string deviceName)
         {
             var access = MidiAccessManager.Default;
             var deviceNumber = access.Outputs.Where(i => i.Name == deviceName).FirstOrDefault();
@@ -138,19 +157,19 @@ namespace UI24RController.MIDIController
 
 
 
-        public string[] GetInputDeviceNames()
+        public  string[] GetInputDeviceNames()
         {
             var access = MidiAccessManager.Default;
             return access.Inputs.Select(port => port.Name).ToArray();
         }
 
-        public string[] GetOutputDeviceNames()
+        public  string[] GetOutputDeviceNames()
         {
             var access = MidiAccessManager.Default;
             return access.Outputs.Select(port => port.Name).ToArray();
         }
 
-        public bool SetFader(int channelNumber, double faderValue)
+        public  bool SetFader(int channelNumber, double faderValue)
         {
             if (_output != null && channelNumber<8)
             {
