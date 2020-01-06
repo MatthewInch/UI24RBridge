@@ -13,6 +13,9 @@ namespace UI24RController.MIDIController
         IMidiOutput _output = null;
         public event EventHandler<MessageEventArgs> _messageReceived;
         public event EventHandler<FaderEventArgs> FaderEvent;
+        public event EventHandler<EventArgs> PresetUp;
+        public event EventHandler<EventArgs> PresetDown;
+
         event EventHandler<MessageEventArgs> IMIDIController.MessageReceived
         {
             add

@@ -12,6 +12,9 @@ public interface IMIDIController
 
     event EventHandler<MessageEventArgs> MessageReceived;
     event EventHandler<FaderEventArgs> FaderEvent;
+    event EventHandler<EventArgs> PresetUp;
+    event EventHandler<EventArgs> PresetDown;
+
     bool SetFader(int channelNumber, double faderValue);
 
 }

@@ -20,7 +20,7 @@ namespace UI24RBridgeTest
             var midiOutputDevice = configuration["MIDI-Output-Name"];
             var protocol = configuration["Protocol"];
             //var controller = new BehringerUniversalMIDI();
-            var controller = MIDIControllerBase.GetMidiController(protocol);
+            var controller = MIDIControllerFactory.GetMidiController(protocol);
             if (midiInputDevice == null || midiOutputDevice == null)
             {
                 if (midiInputDevice == null)
@@ -41,7 +41,10 @@ namespace UI24RBridgeTest
             };
             Action<string> messageWriter = (string message) =>
             {
-                Console.WriteLine(message);
+                if (!message.StartsWith("3:::RTA^"))
+                {
+                    Console.WriteLine(message);
+                }
             };
             using (UI24RBridge bridge = new UI24RBridge(address, controller, messageWriter))
             {
