@@ -3,3 +3,5 @@ Bridge between the UI24R and a MIDI controller
 
 This is a beta project.
 It tested only in windows and a Behringer BCF2000 midi controller
+
+You can download the first pre-release: https://github.com/MatthewInch/UI24RBridge/releases/tag/0.1
