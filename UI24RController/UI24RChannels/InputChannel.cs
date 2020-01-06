@@ -13,7 +13,7 @@ namespace UI24RController.UI24RChannels
 
         public override string MixFaderMessage()
         {
-            return $"3:::SETD^i.{this.ChannelNumber}.mix^{this.MainFaderValue.ToString().Replace(',', '.')}";
+            return $"3:::SETD^i.{this.ChannelNumber}.mix^{this.ChannelFaderValue.ToString().Replace(',', '.')}";
         }
     }
 }
