@@ -10,6 +10,10 @@ namespace UI24RController.MIDIController
     public class MackieHUI : IMIDIController, IDisposable
     {
         protected Queue<byte[]> _messageQueue = new Queue<byte[]>();
+        /// <summary>
+        /// Store every fader setted value of the faders, key is the channel number (z in the message)
+        /// </summary>
+        protected Dictionary<byte, double> faderValues = new Dictionary<byte, double>();
             
         IMidiInput _input = null;
         IMidiOutput _output = null;
@@ -100,17 +104,17 @@ namespace UI24RController.MIDIController
                 if (firstMessage.MIDIEqual(0x90, 0x00, 0x7f)) //ping answer -> do nothing
                 {
                 }
-                else if(firstMessage.MIDIEqual(0xb0, 0x0b)) //first message of: touch fader, release fader 
+                else if(firstMessage.MIDIEqual(0xb0, 0x0f)&& (firstMessage[2] < 8)) //first message of:  release fader 
                 {
                     var channelNumber = firstMessage[2];
                     var secondMessage = _messageQueue.Dequeue();
-                    if (secondMessage.MIDIEqual(0xb0, 0x2f, 0x40)) //touch fader
+                    if (secondMessage.MIDIEqual(0xb0, 0x2f, 0x00)) //release fader
                     {
-                        //TODO 
-                    }
-                    else if (secondMessage.MIDIEqual(0xb0, 0x2f, 0x00)) //release fader
-                    {
-                        //TODO
+                        //TODO: Send back the last fader value to the controller 
+                        if (faderValues.ContainsKey(channelNumber))
+                        {
+                            SetFader(channelNumber, faderValues[channelNumber]);
+                        }
                     }
                 }
                 else if(firstMessage[0] == 0xb0 && (firstMessage[1] & 0xf8) == 0x00) //move fader, second byte is between x00 and x07
@@ -124,6 +128,7 @@ namespace UI24RController.MIDIController
                         int lower = secondMessage[2] >> 4; // lower 3 bit
 
                         var faderValue = (upper + lower) / 1023.0;
+                        faderValues.AddOrSet(channelNumber, faderValue);
                         OnFaderEvent(channelNumber, faderValue);
                     }
                 }   
@@ -190,15 +195,15 @@ namespace UI24RController.MIDIController
                 byte lower = (byte)((data2 << 4) & 0x70); // lower 3 bit
 
                 //touch fader on channel
-                _output.Send(new byte[] {data0, 0x0f, z }, 0, 3, 0);
-                _output.Send(new byte[] { data0, 0x2f, 0x40 }, 0, 3, 0);
+                //_output.Send(new byte[] {data0, 0x0f, z }, 0, 3, 0);
+                //_output.Send(new byte[] { data0, 0x2f, 0x40 }, 0, 3, 0);
                 //move fader 
                 _output.Send(new byte[] { data0, (byte)(0x00 + z), upper }, 0, 3, 0);
                 _output.Send(new byte[] { data0, (byte)(0x20 + z), lower }, 0, 3, 0);
-
+                faderValues.AddOrSet(z, faderValue);
                 //release fader
-                _output.Send(new byte[] { data0, 0x0f, z }, 0, 3, 0);
-                _output.Send(new byte[] { data0, 0x2f, 0x00 }, 0, 3, 0);
+                //_output.Send(new byte[] { data0, 0x0f, z }, 0, 3, 0);
+                //_output.Send(new byte[] { data0, 0x2f, 0x00 }, 0, 3, 0);
 
                 return true;
             }
