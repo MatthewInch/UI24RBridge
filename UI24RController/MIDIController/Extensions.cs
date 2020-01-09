@@ -14,5 +14,17 @@ namespace UI24RController.MIDIController
         {
             return (data.Length > 2 && data[0] == data0 && data[1] == data1);
         }
+
+        public static void AddOrSet<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value)
+        {
+            if (dictionary.ContainsKey(key))
+            {
+                dictionary[key] = value;
+            }
+            else
+            {
+                dictionary.Add(key, value);
+            }
+        }
     }
 }
