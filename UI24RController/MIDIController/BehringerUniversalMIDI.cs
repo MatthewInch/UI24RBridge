@@ -149,5 +149,10 @@ namespace UI24RController.MIDIController
         {
             //throw new NotImplementedException();
         }
+
+        public void WriteTextToChannelLCD(int channelNumber, string text)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -6,9 +6,10 @@ namespace UI24RController.UI24RChannels
 {
     public class AuxChannel: ChannelBase
     {
+
         public AuxChannel(int channelNumber): base(channelNumber)
         {
-
+            this.Name = $"AUX {this.ChannelNumber:D2}";
         }
 
         public override int ChannelNumberInMixer => this.ChannelNumber + 38;

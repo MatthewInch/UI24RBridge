@@ -8,7 +8,7 @@ namespace UI24RController.UI24RChannels
     {
         public MainChannel(): base(0)
         {
-
+            this.Name = "Main";
         }
         public override int ChannelNumberInMixer => 54;
 

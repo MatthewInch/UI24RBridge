@@ -16,6 +16,8 @@ namespace UI24RController.UI24RChannels
         public bool IsSelected { get; set; }
         public virtual int ChannelNumberInMixer => ChannelNumber;
 
+        public double Gain { get; set; }
+
         public ChannelBase(int channelNumber)
         {
             ChannelFaderValue = 0;

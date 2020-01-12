@@ -6,9 +6,10 @@ namespace UI24RController.UI24RChannels
 {
     public class PlayerChannel: ChannelBase
     {
+       
         public PlayerChannel(int channelNumber): base(channelNumber)
         {
-
+            this.Name = this.ChannelNumber == 0 ? "Play L" : "Play R";
         }
         public override int ChannelNumberInMixer => this.ChannelNumber + 26;
 

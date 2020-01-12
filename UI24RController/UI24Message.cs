@@ -9,7 +9,7 @@ namespace UI24RController
     public enum ChannelTypeEnum
     {
         Input, LineIn, Player, Fx, Subgroup, AUX, VCA,
-        Main
+        Main, Uknown
     }
 
     public class UI24Message
@@ -46,6 +46,7 @@ namespace UI24RController
                 }
             } 
         }
+        public string ChannelName { get; set; }
         public int ChannelTypeNumber { get; internal set; }
         public double FaderValue { get; set; }
         public double Gain { get; set; }
@@ -90,6 +91,14 @@ namespace UI24RController
                         IsValid = true;
                     }
                 }
+                else if (messageTypes.Count() >= 3 && messageTypes[2] == "name" &&
+                    int.TryParse(messageTypes[1], out channelNumber))
+                {
+                    this.ChannelType = GetChannelType(messageTypes[0]);
+                    this.ChannelTypeNumber = channelNumber;
+                    this.ChannelName = messageParts[2];
+                    IsValid = true;
+                }
             }
         }
 
@@ -113,8 +122,10 @@ namespace UI24RController
                     return ChannelTypeEnum.Main;
                 case "hw":
                     return ChannelTypeEnum.Input;
-                default: // "i":
+                case "i":
                     return ChannelTypeEnum.Input;
+                default: // "i":
+                    return ChannelTypeEnum.Uknown;
             }
         }
 

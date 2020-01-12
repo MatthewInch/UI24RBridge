@@ -22,4 +22,5 @@ public interface IMIDIController
 
     void SetSelectLed(int channelNumber, bool turnOn);
 
+    public void WriteTextToChannelLCD(int channelNumber, string text);
 }
