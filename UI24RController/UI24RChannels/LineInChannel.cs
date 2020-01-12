@@ -6,9 +6,10 @@ namespace UI24RController.UI24RChannels
 {
     public class LineInChannel: ChannelBase
     {
+
         public LineInChannel(int channelNumber): base(channelNumber)
         {
-
+            this.Name = this.ChannelNumber == 0 ? "L-IN L" : "L-IN R";
         }
         public override int ChannelNumberInMixer => this.ChannelNumber + 24;
 

@@ -4,6 +4,7 @@ using System.Text;
 using Commons.Music.Midi;
 using System.Linq;
 using System.Threading.Tasks;
+using Commons.Music.Midi.RtMidi;
 
 namespace UI24RController.MIDIController
 {
@@ -15,7 +16,9 @@ namespace UI24RController.MIDIController
         protected Dictionary<byte, double> faderValues = new Dictionary<byte, double>();
             
         IMidiInput _input = null;
+        protected string _inputDeviceNumber;
         IMidiOutput _output = null;
+        protected int _outputDeviceNumber;
 
         public event EventHandler<MessageEventArgs> MessageReceived;
         public event EventHandler<FaderEventArgs> FaderEvent;
@@ -97,6 +100,7 @@ namespace UI24RController.MIDIController
             if (deviceNumber != null)
             {
                 _input = access.OpenInputAsync(deviceNumber.Id).Result;
+                _inputDeviceNumber = deviceNumber.Id;
                 _input.MessageReceived += (obj, e) =>
                 {
                     if (e.Data.Length>2)
@@ -169,6 +173,7 @@ namespace UI24RController.MIDIController
             if (deviceNumber != null)
             {
                 _output = access.OpenOutputAsync(deviceNumber.Id).Result;
+                _outputDeviceNumber = Convert.ToInt32( deviceNumber.Id);
                 return true;
             }
             return false;
@@ -234,6 +239,17 @@ namespace UI24RController.MIDIController
             if (turnOn)
             {
                 _output.Send(new byte[] { 0x90, (byte)(0x18 + channelNumber), 0x7f }, 0, 3, 0);
+            }
+        }
+
+        public void WriteTextToChannelLCD(int channelNumber, string text)
+        {
+            if (channelNumber < 8)
+            {
+                var position = channelNumber * 7;
+                var message = ASCIIEncoding.ASCII.GetBytes((text + "       ").Substring(0, 7));
+                byte[] sysex = (new byte[] { 0xf0, 0, 0, 0x66, 0x14, 0x12, (byte)position }).Concat(message).Concat(new byte[] { 0xf7 }).ToArray();
+                _output.Send(sysex, 0, sysex.Length, 0);
             }
         }
     }

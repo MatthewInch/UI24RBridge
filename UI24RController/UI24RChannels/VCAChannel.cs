@@ -8,7 +8,7 @@ namespace UI24RController.UI24RChannels
     {
         public VCAChannel(int channelNumber): base(channelNumber)
         {
-
+            this.Name = $"VCA {this.ChannelNumber:D2}";
         }
         public override int ChannelNumberInMixer => this.ChannelNumber + 48;
 

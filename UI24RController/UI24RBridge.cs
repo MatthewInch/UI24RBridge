@@ -175,6 +175,9 @@ namespace UI24RController
                 {
                     _midiController.SetSelectLed(ch.controllerChannelNumber, true);
                 }
+
+                _midiController.SetGainLed(ch.controllerChannelNumber, _mixerChannels[channelNumber].Gain);
+                _midiController.WriteTextToChannelLCD(ch.controllerChannelNumber, _mixerChannels[channelNumber].Name);
             }
         }
 
@@ -183,25 +186,37 @@ namespace UI24RController
             var messageparts = text.Replace("3:::","").Split('\n');
             foreach (var m in messageparts)
             {
-                if (m.Contains("SETD^i.") ||
-                    m.Contains("SETD^l.") ||
-                    m.Contains("SETD^p.") ||
-                    m.Contains("SETD^f.") ||
-                    m.Contains("SETD^s.") ||
-                    m.Contains("SETD^a.") ||
-                    m.Contains("SETD^v.") ||
-                    m.Contains("SETD^m.")
+                if (m.Contains("SETD^i.") || m.Contains("SETS^i.") ||
+                    m.Contains("SETD^l.") || m.Contains("SETS^l.") ||
+                    m.Contains("SETD^p.") || m.Contains("SETS^p.") ||
+                    m.Contains("SETD^f.") || m.Contains("SETS^f.") ||
+                    m.Contains("SETD^s.") || m.Contains("SETS^s.") ||
+                    m.Contains("SETD^a.") || m.Contains("SETS^a.") ||
+                    m.Contains("SETD^v.") || m.Contains("SETS^v.") ||
+                    m.Contains("SETD^m.") || m.Contains("SETS^m.")
                     )
                 {
-                    if (m.Contains(".mix"))
+                    if (m.Contains(".mix") || m.Contains(".name^"))
                     {
                         var ui24Message = new UI24Message(m);
                         var channelNumber = _viewViewGroups[_selectedViewGroup].Select((item, i) => new { Channel = item, controllerChannelNumber = i })
                             .Where(c => c.Channel == ui24Message.ChannelNumber.ToString()).FirstOrDefault();
-                        _mixerChannels[ui24Message.ChannelNumber].ChannelFaderValue = ui24Message.FaderValue;
-                        if (ui24Message.IsValid && channelNumber != null && channelNumber.controllerChannelNumber <= 8)
+
+                        if (m.Contains(".mix"))
                         {
-                            _midiController.SetFader(channelNumber.controllerChannelNumber, ui24Message.FaderValue);
+                            _mixerChannels[ui24Message.ChannelNumber].ChannelFaderValue = ui24Message.FaderValue;
+                            if (ui24Message.IsValid && channelNumber != null && channelNumber.controllerChannelNumber <= 8)
+                            {
+                                _midiController.SetFader(channelNumber.controllerChannelNumber, ui24Message.FaderValue);
+                            }
+                        }
+                        else if (ui24Message.ChannelType != ChannelTypeEnum.Uknown && ui24Message.ChannelName != "")
+                        {
+                            _mixerChannels[ui24Message.ChannelNumber].Name = ui24Message.ChannelName;
+                            if (ui24Message.IsValid && channelNumber != null && channelNumber.controllerChannelNumber < 8)
+                            {
+                                _midiController.WriteTextToChannelLCD(channelNumber.controllerChannelNumber, ui24Message.ChannelName);
+                            }
                         }
                     }
                 }
