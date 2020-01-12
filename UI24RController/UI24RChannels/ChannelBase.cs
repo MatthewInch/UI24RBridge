@@ -13,11 +13,15 @@ namespace UI24RController.UI24RChannels
         public double ChannelFaderValue { get; set; }
         public string Name { get; set; }
         public int ChannelNumber { get; internal set; }
+        public bool IsSelected { get; set; }
+        public virtual int ChannelNumberInMixer => ChannelNumber;
 
         public ChannelBase(int channelNumber)
         {
             ChannelFaderValue = 0;
             ChannelNumber = channelNumber;
+            IsSelected = false;
+            
         }
 
         public virtual string MixFaderMessage()
@@ -25,5 +29,9 @@ namespace UI24RController.UI24RChannels
             return $"3:::SETD^i.{this.ChannelNumber}.mix^{this.ChannelFaderValue.ToString().Replace(',', '.')}";
         }
 
+        public virtual string SelectChannelMessage(string syncID)
+        {
+            return $"3:::BMSG^SYNC^{syncID}^{this.ChannelNumberInMixer}";
+        }
     }
 }

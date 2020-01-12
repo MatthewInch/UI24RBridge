@@ -6,6 +6,9 @@ namespace UI24RController.UI24RChannels
 {
     public class InputChannel: ChannelBase
     {
+
+        public double Gain { get; set; }
+
         public InputChannel(int channelNumber): base(channelNumber)
         {
 
@@ -14,6 +17,10 @@ namespace UI24RController.UI24RChannels
         public override string MixFaderMessage()
         {
             return $"3:::SETD^i.{this.ChannelNumber}.mix^{this.ChannelFaderValue.ToString().Replace(',', '.')}";
+        }
+        public string GainMessage()
+        {
+            return $"3:::SETD^hw.{this.ChannelNumber}.gain^{this.Gain.ToString().Replace(',', '.')}";
         }
     }
 }

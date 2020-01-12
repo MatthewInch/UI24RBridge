@@ -12,6 +12,8 @@ namespace UI24RController.MIDIController
             {
                 case "HUI":
                     return new MackieHUI();
+                case "MC":
+                    return new MC();
                 default:
                     return new BehringerUniversalMIDI();
             }

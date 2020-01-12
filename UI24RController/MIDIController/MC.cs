@@ -7,9 +7,8 @@ using System.Threading.Tasks;
 
 namespace UI24RController.MIDIController
 {
-    public class MackieHUI : IMIDIController, IDisposable
+    public class MC : IMIDIController, IDisposable
     {
-        protected Queue<byte[]> _messageQueue = new Queue<byte[]>();
         /// <summary>
         /// Store every fader setted value of the faders, key is the channel number (z in the message)
         /// </summary>
@@ -41,6 +40,24 @@ namespace UI24RController.MIDIController
             {
                 var faderEventArgs = new FaderEventArgs(channelNumber, faderValue);
                 FaderEvent(this, faderEventArgs);
+            }
+        }
+
+        protected void OnGainEvent(int channelNumber, int gainDirection)
+        {
+            if (GainEvent != null)
+            {
+                var gainEventArgs = new GainEventArgs(channelNumber, gainDirection);
+                GainEvent(this, gainEventArgs);
+            }
+        }
+
+        protected void OnSelectEvent(int channelNumber)
+        {
+            if (SelectChannelEvent != null)
+            {
+                var channelArgs = new ChannelEventArgs(channelNumber);
+                SelectChannelEvent(this, channelArgs);
             }
         }
 
@@ -84,9 +101,8 @@ namespace UI24RController.MIDIController
                 {
                     if (e.Data.Length>2)
                     {
-                        _messageQueue.Enqueue(e.Data.Clone() as byte[]);
                         OnMessageReceived( $"{e.Data[0].ToString("x2")} - {e.Data[1].ToString("x2")} - {e.Data[2].ToString("x2")}");
-                        ProcessMidiMessage();
+                        ProcessMidiMessage(e);
                     }
                 };
                 return true;
@@ -95,58 +111,54 @@ namespace UI24RController.MIDIController
                 return false;            
         }
 
-        private void ProcessMidiMessage()
+        private void ProcessMidiMessage(MidiReceivedEventArgs e)
         {
-            //Every HUI event consist of two midi message except the answer of ping
-            //ping: 90 00 00 -> 90 00 7f
-            if (_messageQueue.Count > 1)
+            var message = e.Data;
+
+            if (message[0] == 0x90) //button pressed, released, fader released 
             {
-                var firstMessage = _messageQueue.Dequeue();
-
-                if (firstMessage.MIDIEqual(0x90, 0x00, 0x7f)) //ping answer -> do nothing
+                if (message.MIDIEqual(0x90, 0x00, 0x00, 0xff, 0x00, 0xff) && (message[1] >= 0x68) && (message[1] <= 0x70)) //release fader (0x90 [0x68-0x70] 0x00)
                 {
-                }
-                else if(firstMessage.MIDIEqual(0xb0, 0x0f)&& (firstMessage[2] < 8)) //first message of:  release fader 
-                {
-                    var channelNumber = firstMessage[2];
-                    var secondMessage = _messageQueue.Dequeue();
-                    if (secondMessage.MIDIEqual(0xb0, 0x2f, 0x00)) //release fader
+                    byte channelNumber = (byte)(message[1] - 0x68);
+                    if (faderValues.ContainsKey(channelNumber))
                     {
-                        //TODO: Send back the last fader value to the controller 
-                        if (faderValues.ContainsKey(channelNumber))
-                        {
-                            SetFader(channelNumber, faderValues[channelNumber]);
-                        }
+                        SetFader(channelNumber, faderValues[channelNumber]);
                     }
                 }
-                else if(firstMessage[0] == 0xb0 && (firstMessage[1] & 0xf8) == 0x00) //move fader, second byte is between x00 and x07
+                else if (message.MIDIEqual(0x90, 0x2f, 0x7f)) //fader bank right press
                 {
-                    var channelNumber = firstMessage[1];
-                    var secondMessage = _messageQueue.Dequeue();
-                    if (secondMessage.Length > 2 && secondMessage[0] == 0xb0 && (secondMessage[1] & 0xf8) == 0x20)
-                    {
-                        //int data2 = (int)Math.Round(faderValue * 1023); //10 bit
-                        int upper = firstMessage[2] << 3; //upper 7 bit
-                        int lower = secondMessage[2] >> 4; // lower 3 bit
-
-                        var faderValue = (upper + lower) / 1023.0;
-                        faderValues.AddOrSet(channelNumber, faderValue);
-                        OnFaderEvent(channelNumber, faderValue);
-                    }
-                }   
-                else if (firstMessage.MIDIEqual(0xb0, 0x0f, 0x0a)) //preset up, preset down
-                {
-                    var secondMessage = _messageQueue.Dequeue();
-                    if (secondMessage.MIDIEqual(0xb0, 0x2f, 0x43)) //preset up
-                    {
-                        OnPresetUp();
-                    }
-                    else if (secondMessage.MIDIEqual(0xb0, 0x2f, 0x41)) //preset down
-                    {
-                        OnPresetDown();
-                    }
-
+                    OnPresetUp();
                 }
+                else if (message.MIDIEqual(0x90, 0x2e, 0x7f)) //fader bank left press
+                {
+                    OnPresetDown();
+                }
+                else if  (message[1] >= 0x18 && message[1] <= 0x1f && message[2] == 0x7f) //select button
+                {
+                    byte channelNumber = (byte)(message[1] - 0x18);
+                    OnSelectEvent(channelNumber);
+                }
+
+            }
+            else if (message[0] >= 0xe0 && (message[0] <= 0xe8)) //move fader
+            {
+                byte channelNumber = (byte)(message[0] - 0xe0);
+                //int data2 = (int)Math.Round(faderValue * 1023); //10 bit
+                int upper = message[2] << 7; //upper 7 bit
+                int lower = message[1]; // lower 7 bit
+
+                var faderValue = (upper + lower) / 16383.0;
+                faderValues.AddOrSet(channelNumber, faderValue);
+                OnFaderEvent(channelNumber, faderValue);
+
+            } 
+            else if(message[0] == 0xb0 && (message[1] >= 0x10 && message[1] <= 0x17)) //channel knobb turning
+            {
+                byte channelNumber = (byte)(message[1] - 0x10);
+                if (message[2] >= 0x01 && message[2] <= 0x03)
+                    OnGainEvent(channelNumber, message[2]);
+                if (message[2] >= 0x41 && message[2] <= 0x43)
+                    OnGainEvent(channelNumber, -1*(message[2]&0x03));
             }
         }
 
@@ -178,34 +190,19 @@ namespace UI24RController.MIDIController
 
         public  bool SetFader(int channelNumber, double faderValue)
         {
-            if (_output != null && channelNumber<8)
+            if (_output != null && channelNumber < 9)
             {
-                //'touch fader': b0 0f 0z 
-                //               b0 2f 40
-                //'release fader': b0 0f 0z 
-                //                 b0 2f 00 
-                //'move fader': b0 0z hi 
-                //              b0 2z lo
-                //where z is the channel number 1-8
-                //hi is between 0x00-0x7f
-                //lo is [0x00, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70]
 
                 byte data0 = 0xb0;
                 byte z = Convert.ToByte(channelNumber);
-                int data2 = (int)Math.Round(faderValue * 1023); //10 bit
-                byte upper = (byte)(data2 >> 3); //upper 7 bit
-                byte lower = (byte)((data2 << 4) & 0x70); // lower 3 bit
+                int data2 = (int)Math.Round(faderValue * 16383); //14 bit
+                byte upper = (byte)(data2 >> 7); //upper 7 bit
+                byte lower = (byte)((data2) & 0x7f); // lower 7 bit
 
-                //touch fader on channel
-                //_output.Send(new byte[] {data0, 0x0f, z }, 0, 3, 0);
-                //_output.Send(new byte[] { data0, 0x2f, 0x40 }, 0, 3, 0);
-                //move fader 
-                _output.Send(new byte[] { data0, (byte)(0x00 + z), upper }, 0, 3, 0);
-                _output.Send(new byte[] { data0, (byte)(0x20 + z), lower }, 0, 3, 0);
+                _output.Send(new byte[] { (byte)(0xe0 + channelNumber), lower, upper }, 0, 3, 0);
+
+
                 faderValues.AddOrSet(z, faderValue);
-                //release fader
-                //_output.Send(new byte[] { data0, 0x0f, z }, 0, 3, 0);
-                //_output.Send(new byte[] { data0, 0x2f, 0x00 }, 0, 3, 0);
 
                 return true;
             }
@@ -214,12 +211,30 @@ namespace UI24RController.MIDIController
 
         public bool SetGainLed(int channelNumber, double gainValue)
         {
+            if (_output != null && channelNumber < 9)
+            {
+                var segment = Convert.ToByte( Math.Round(gainValue * 12));
+                if (segment == 0)
+                    segment = 1;
+                if (segment == 0x0c)
+                    segment = 0x0b;
+                _output.Send(new byte[] {0xb0, (byte)(0x30 + channelNumber), segment }, 0, 3, 0);
+                return true;
+            }
             return false;
         }
 
         public void SetSelectLed(int channelNumber, bool turnOn)
         {
-            //throw new NotImplementedException();
+            //turn off all select led
+            for (byte i = 0; i < 8; i++)
+            {
+                _output.Send(new byte[] { 0x90, (byte)(0x18 + i), 0x00 }, 0, 3, 0);
+            }
+            if (turnOn)
+            {
+                _output.Send(new byte[] { 0x90, (byte)(0x18 + channelNumber), 0x7f }, 0, 3, 0);
+            }
         }
     }
 }
