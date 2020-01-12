@@ -19,6 +19,7 @@ namespace UI24RBridgeTest
             var midiInputDevice = configuration["MIDI-Input-Name"];
             var midiOutputDevice = configuration["MIDI-Output-Name"];
             var protocol = configuration["Protocol"];
+            var syncID = configuration["SyncID"];
             //var controller = new BehringerUniversalMIDI();
             var controller = MIDIControllerFactory.GetMidiController(protocol);
             if (midiInputDevice == null || midiOutputDevice == null)
@@ -52,7 +53,7 @@ namespace UI24RBridgeTest
                     }
                 }
             };
-            using (UI24RBridge bridge = new UI24RBridge(address, controller, messageWriter))
+            using (UI24RBridge bridge = new UI24RBridge(address, controller, messageWriter, syncID))
             {
                 while (!Console.KeyAvailable)
                 {

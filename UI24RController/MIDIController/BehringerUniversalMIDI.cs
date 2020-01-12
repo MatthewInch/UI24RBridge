@@ -15,6 +15,8 @@ namespace UI24RController.MIDIController
         public event EventHandler<FaderEventArgs> FaderEvent;
         public event EventHandler<EventArgs> PresetUp;
         public event EventHandler<EventArgs> PresetDown;
+        public event EventHandler<GainEventArgs> GainEvent;
+        public event EventHandler<ChannelEventArgs> SelectChannelEvent;
 
         event EventHandler<MessageEventArgs> IMIDIController.MessageReceived
         {
@@ -137,5 +139,15 @@ namespace UI24RController.MIDIController
             return false;
         }
 
+        public bool SetGainLed(int channelNumber, double gainValue)
+        {
+            //throw new NotImplementedException();
+            return false;
+        }
+
+        public void SetSelectLed(int channelNumber, bool turnOn)
+        {
+            //throw new NotImplementedException();
+        }
     }
 }

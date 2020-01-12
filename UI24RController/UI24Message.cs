@@ -8,7 +8,8 @@ namespace UI24RController
 {
     public enum ChannelTypeEnum
     {
-        Input, LineIn, Player, Fx, Subgroup, AUX, VCA
+        Input, LineIn, Player, Fx, Subgroup, AUX, VCA,
+        Main
     }
 
     public class UI24Message
@@ -38,6 +39,8 @@ namespace UI24RController
                         return this.ChannelTypeNumber + 38;
                     case ChannelTypeEnum.VCA:
                         return this.ChannelTypeNumber + 48;
+                    case ChannelTypeEnum.Main:
+                        return 54;
                     default: //ChannelTypeEnum.Input
                         return this.ChannelTypeNumber;
                 }
@@ -45,6 +48,7 @@ namespace UI24RController
         }
         public int ChannelTypeNumber { get; internal set; }
         public double FaderValue { get; set; }
+        public double Gain { get; set; }
         public bool IsValid { get; internal set; }
         public ChannelTypeEnum ChannelType { get; internal set; }
 
@@ -62,8 +66,8 @@ namespace UI24RController
                 var messageTypes = messageParts[1].Split('.');
                 var channelNumber = 0;
                 if ((messageTypes.Count() >= 3) && 
-                    messageTypes[2] == "mix" &&
-                    int.TryParse(messageTypes[1], out channelNumber))
+                    (messageTypes[2] == "mix" &&
+                    int.TryParse(messageTypes[1], out channelNumber) ) || ((messageTypes.Count() >= 2) && (messageTypes[0] == "m") && (messageTypes[1] == "mix")))
                 {
                     this.ChannelType = GetChannelType(messageTypes[0]);
                     this.ChannelTypeNumber = channelNumber;
@@ -71,6 +75,18 @@ namespace UI24RController
                     if (double.TryParse(messageParts[2], NumberStyles.Number, CultureInfo.InvariantCulture, out faderValue))
                     {
                         FaderValue = faderValue;
+                        IsValid = true;
+                    }
+                } 
+                else if (messageTypes.Count() >= 3 && messageTypes[0] == "hw" && messageTypes[2] == "gain" &&
+                    int.TryParse(messageTypes[1], out channelNumber))
+                {
+                    this.ChannelType = GetChannelType(messageTypes[0]);
+                    this.ChannelTypeNumber = channelNumber;
+                    double gain;
+                    if (double.TryParse(messageParts[2], NumberStyles.Number, CultureInfo.InvariantCulture, out gain))
+                    {
+                        Gain = gain;
                         IsValid = true;
                     }
                 }
@@ -93,6 +109,10 @@ namespace UI24RController
                     return ChannelTypeEnum.AUX;
                 case "v":
                     return ChannelTypeEnum.VCA;
+                case "m":
+                    return ChannelTypeEnum.Main;
+                case "hw":
+                    return ChannelTypeEnum.Input;
                 default: // "i":
                     return ChannelTypeEnum.Input;
             }

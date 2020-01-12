@@ -14,7 +14,12 @@ public interface IMIDIController
     event EventHandler<FaderEventArgs> FaderEvent;
     event EventHandler<EventArgs> PresetUp;
     event EventHandler<EventArgs> PresetDown;
+    event EventHandler<GainEventArgs> GainEvent;
+    event EventHandler<ChannelEventArgs> SelectChannelEvent;
 
     bool SetFader(int channelNumber, double faderValue);
+    bool SetGainLed(int channelNumber, double gainValue);
+
+    void SetSelectLed(int channelNumber, bool turnOn);
 
 }
