@@ -26,6 +26,16 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> PresetDown;
         public event EventHandler<GainEventArgs> GainEvent;
         public event EventHandler<ChannelEventArgs> SelectChannelEvent;
+        public event EventHandler<EventArgs> SaveEvent;
+        public event EventHandler<EventArgs> UndoEvent;
+        public event EventHandler<EventArgs> CancelEvent;
+        public event EventHandler<EventArgs> EnterEvent;
+        public event EventHandler<EventArgs> UpEvent;
+        public event EventHandler<EventArgs> DownEvent;
+        public event EventHandler<EventArgs> LeftEvent;
+        public event EventHandler<EventArgs> RightEvent;
+        public event EventHandler<EventArgs> CenterEvent;
+        public event EventHandler<ChannelEventArgs> MuteChannelEvent;
 
         protected void OnMessageReceived(string message)
         {
@@ -61,6 +71,14 @@ namespace UI24RController.MIDIController
             {
                 var channelArgs = new ChannelEventArgs(channelNumber);
                 SelectChannelEvent(this, channelArgs);
+            }
+        }
+        protected void OnMuteEvent(int channelNumber)
+        {
+            if (MuteChannelEvent != null)
+            {
+                var channelArgs = new ChannelEventArgs(channelNumber);
+                MuteChannelEvent(this, channelArgs);
             }
         }
 
@@ -136,6 +154,11 @@ namespace UI24RController.MIDIController
                 else if (message.MIDIEqual(0x90, 0x2e, 0x7f)) //fader bank left press
                 {
                     OnPresetDown();
+                }
+                else if (message[1] >= 0x10 && message[1] <= 0x17 && message[2] == 0x7f) //mute button
+                {
+                    byte channelNumber = (byte)(message[1] - 0x10);
+                    OnMuteEvent(channelNumber);
                 }
                 else if  (message[1] >= 0x18 && message[1] <= 0x1f && message[2] == 0x7f) //select button
                 {
@@ -242,6 +265,11 @@ namespace UI24RController.MIDIController
             }
         }
 
+        public void SetMuteLed(int channelNumber, bool turnOn)
+        {
+            _output.Send(new byte[] { 0x90, (byte)(0x10 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+        }
+
         public void WriteTextToChannelLCD(int channelNumber, string text)
         {
             if (channelNumber < 8)
@@ -252,5 +280,13 @@ namespace UI24RController.MIDIController
                 _output.Send(sysex, 0, sysex.Length, 0);
             }
         }
+
+        public void WriteTextToLCD( string text)
+        {
+                var message = ASCIIEncoding.ASCII.GetBytes((text + "                                                        ").Substring(0, 50));
+                byte[] sysex = (new byte[] { 0xf0, 0, 0, 0x66, 0x14, 0x12, 0x38 }).Concat(message).Concat(new byte[] { 0xf7 }).ToArray();
+                _output.Send(sysex, 0, sysex.Length, 0);
+        }
+
     }
 }

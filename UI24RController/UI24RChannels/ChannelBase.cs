@@ -14,6 +14,7 @@ namespace UI24RController.UI24RChannels
         public string Name { get; set; }
         public int ChannelNumber { get; internal set; }
         public bool IsSelected { get; set; }
+        public bool IsMute { get; set; }
         public virtual int ChannelNumberInMixer => ChannelNumber;
 
         public double Gain { get; set; }
@@ -23,7 +24,7 @@ namespace UI24RController.UI24RChannels
             ChannelFaderValue = 0;
             ChannelNumber = channelNumber;
             IsSelected = false;
-            
+            IsMute = false;
         }
 
         public virtual string MixFaderMessage()

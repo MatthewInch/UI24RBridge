@@ -12,6 +12,11 @@ namespace UI24RController
         Main, Uknown
     }
 
+    public enum MessageTypeEnum
+    {
+        mix, gain, mute, name, uknown
+    }
+
     public class UI24Message
     {
         // 3:::SETD^i.0.mix^0.7012820512871794
@@ -51,7 +56,9 @@ namespace UI24RController
         public double FaderValue { get; set; }
         public double Gain { get; set; }
         public bool IsValid { get; internal set; }
+        public bool LogicValue { get; internal set; }
         public ChannelTypeEnum ChannelType { get; internal set; }
+        public MessageTypeEnum MessageType { get; internal set; }
 
         public UI24Message(int channelNumber)
         {
@@ -66,38 +73,46 @@ namespace UI24RController
             {
                 var messageTypes = messageParts[1].Split('.');
                 var channelNumber = 0;
-                if ((messageTypes.Count() >= 3) && 
-                    (messageTypes[2] == "mix" &&
-                    int.TryParse(messageTypes[1], out channelNumber) ) || ((messageTypes.Count() >= 2) && (messageTypes[0] == "m") && (messageTypes[1] == "mix")))
+                this.ChannelType = GetChannelType(messageTypes[0]);
+                if (this.ChannelType == ChannelTypeEnum.Main && messageTypes.Count() >= 2) 
                 {
-                    this.ChannelType = GetChannelType(messageTypes[0]);
-                    this.ChannelTypeNumber = channelNumber;
-                    double faderValue;
-                    if (double.TryParse(messageParts[2], NumberStyles.Number, CultureInfo.InvariantCulture, out faderValue))
-                    {
-                        FaderValue = faderValue;
-                        IsValid = true;
-                    }
-                } 
-                else if (messageTypes.Count() >= 3 && messageTypes[0] == "hw" && messageTypes[2] == "gain" &&
-                    int.TryParse(messageTypes[1], out channelNumber))
-                {
-                    this.ChannelType = GetChannelType(messageTypes[0]);
-                    this.ChannelTypeNumber = channelNumber;
-                    double gain;
-                    if (double.TryParse(messageParts[2], NumberStyles.Number, CultureInfo.InvariantCulture, out gain))
-                    {
-                        Gain = gain;
-                        IsValid = true;
-                    }
+                    this.MessageType = GetMessageType(messageTypes[1]);
                 }
-                else if (messageTypes.Count() >= 3 && messageTypes[2] == "name" &&
-                    int.TryParse(messageTypes[1], out channelNumber))
+                else if (ChannelType != ChannelTypeEnum.Uknown && messageTypes.Count()>=3)
                 {
-                    this.ChannelType = GetChannelType(messageTypes[0]);
-                    this.ChannelTypeNumber = channelNumber;
-                    this.ChannelName = messageParts[2];
-                    IsValid = true;
+                    this.MessageType = GetMessageType(messageTypes[2]);
+                    int.TryParse(messageTypes[1], out channelNumber);
+                }
+                this.ChannelTypeNumber = channelNumber;
+                switch (this.MessageType)
+                {
+                    case MessageTypeEnum.mix:
+                        double faderValue;
+                        if (double.TryParse(messageParts[2], NumberStyles.Number, CultureInfo.InvariantCulture, out faderValue))
+                        {
+                            FaderValue = faderValue;
+                            IsValid = true;
+                        }
+                        break;
+                    case MessageTypeEnum.gain:
+                        double gain;
+                        if (double.TryParse(messageParts[2], NumberStyles.Number, CultureInfo.InvariantCulture, out gain))
+                        {
+                            Gain = gain;
+                            IsValid = true;
+                        }
+                        break;
+                    case MessageTypeEnum.name:
+                        this.ChannelName = messageParts[2];
+                        IsValid = true;
+                        break;
+                    case MessageTypeEnum.mute:
+                        if (messageParts[2] == "1")
+                            LogicValue = true;
+                        else
+                            LogicValue = false;
+                        IsValid = true;
+                        break;
                 }
             }
         }
@@ -129,6 +144,21 @@ namespace UI24RController
             }
         }
 
-
+        protected MessageTypeEnum GetMessageType(string messageType)
+        {
+            switch (messageType)
+            {
+                case "mix":
+                    return MessageTypeEnum.mix;
+                case "name":
+                    return MessageTypeEnum.name;
+                case "gain":
+                    return MessageTypeEnum.gain;
+                case "mute":
+                    return MessageTypeEnum.mute;
+                default: // "i":
+                    return MessageTypeEnum.uknown;
+            }
+        }
     }
 }

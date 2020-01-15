@@ -17,6 +17,16 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> PresetDown;
         public event EventHandler<GainEventArgs> GainEvent;
         public event EventHandler<ChannelEventArgs> SelectChannelEvent;
+        public event EventHandler<EventArgs> SaveEvent;
+        public event EventHandler<EventArgs> UndoEvent;
+        public event EventHandler<EventArgs> CancelEvent;
+        public event EventHandler<EventArgs> EnterEvent;
+        public event EventHandler<EventArgs> UpEvent;
+        public event EventHandler<EventArgs> DownEvent;
+        public event EventHandler<EventArgs> LeftEvent;
+        public event EventHandler<EventArgs> RightEvent;
+        public event EventHandler<EventArgs> CenterEvent;
+        public event EventHandler<ChannelEventArgs> MuteChannelEvent;
 
         event EventHandler<MessageEventArgs> IMIDIController.MessageReceived
         {
@@ -151,6 +161,16 @@ namespace UI24RController.MIDIController
         }
 
         public void WriteTextToChannelLCD(int channelNumber, string text)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void WriteTextToLCD(string text)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetMuteLed(int channelNumber, bool turnOn)
         {
             throw new NotImplementedException();
         }
