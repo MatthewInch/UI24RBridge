@@ -25,13 +25,13 @@ namespace UI24RController
         //38-47: AUX 1-10
         //48-53: VCA 1-6
 
-        protected string[][] _viewViewGroups = {
-            new string[] { "0", "1", "2", "3", "4", "5", "6", "7", "54"},
-            new string[] { "8", "9", "10", "11", "12", "13", "14", "15", "54"},
-            new string[] { "16", "17", "18", "19", "20", "21", "22", "23", "54"},
-            new string[] { "24", "25", "26", "27", "28", "29", "30", "31", "54"},
-            new string[] { "32", "33", "34", "35", "36", "37", "38", "39", "54"},
-            new string[] { "40", "41", "42", "43", "44", "45", "46", "47", "54" }
+        protected int[][] _viewViewGroups = {
+            new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 54},
+            new int[] { 8, 9, 10, 11, 12, 13, 14, 15, 54},
+            new int[] { 16, 17, 18, 19, 20, 21, 22, 23, 54},
+            new int[] { 24, 25, 26, 27, 28, 29, 30, 31, 54},
+            new int[] { 32, 33, 34, 35, 36, 37, 38, 39, 54},
+            new int[] { 40, 41, 42, 43, 44, 45, 46, 47, 54 }
         };
         protected int _selectedViewGroup = 0;
         /// <summary>
@@ -63,14 +63,14 @@ namespace UI24RController
             _midiController.SelectChannelEvent += _midiController_SelectChannelEvent;
             _client = new WebsocketClient(new Uri(address));
             _client.MessageReceived.Subscribe(msg => UI24RMessageReceived(msg));
-            
+            _midiController.WriteTextToLCD("");
             SendMessage("Connecting to UI24R....");
             _client.Start();
         }
 
         private void _midiController_SelectChannelEvent(object sender, MIDIController.ChannelEventArgs e)
         {
-            var ch = int.Parse(_viewViewGroups[_selectedViewGroup][e.ChannelNumber]);
+            var ch = _viewViewGroups[_selectedViewGroup][e.ChannelNumber];
             if (_selectedChannel != -1)
             {
                 _mixerChannels[_selectedChannel].IsSelected = false;
@@ -83,7 +83,7 @@ namespace UI24RController
 
         private void _midiController_GainEvent(object sender, MIDIController.GainEventArgs e)
         {
-            var ch = int.Parse(_viewViewGroups[_selectedViewGroup][e.ChannelNumber]);
+            var ch = _viewViewGroups[_selectedViewGroup][e.ChannelNumber];
             if (_mixerChannels[ch] is InputChannel)
             {
                 var inputChannel = _mixerChannels[ch] as InputChannel;
@@ -144,7 +144,7 @@ namespace UI24RController
 
         private void MidiController_FaderEvent(object sender, MIDIController.FaderEventArgs e)
         {
-            var ch = int.Parse(_viewViewGroups[_selectedViewGroup][e.ChannelNumber]);
+            var ch = _viewViewGroups[_selectedViewGroup][e.ChannelNumber];
             _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
             _client.Send(_mixerChannels[ch].MixFaderMessage());
         }
@@ -169,7 +169,7 @@ namespace UI24RController
             _midiController.SetSelectLed(0, false); //turn off all selecetd led;
             foreach (var ch in channels)
             {
-                var channelNumber = int.Parse(ch.Channel);
+                var channelNumber = ch.Channel;
                 _midiController.SetFader(ch.controllerChannelNumber, _mixerChannels[channelNumber].ChannelFaderValue);
                 if (_mixerChannels[channelNumber].IsSelected)
                 {
@@ -186,38 +186,45 @@ namespace UI24RController
             var messageparts = text.Replace("3:::","").Split('\n');
             foreach (var m in messageparts)
             {
-                if (m.Contains("SETD^i.") || m.Contains("SETS^i.") ||
-                    m.Contains("SETD^l.") || m.Contains("SETS^l.") ||
-                    m.Contains("SETD^p.") || m.Contains("SETS^p.") ||
-                    m.Contains("SETD^f.") || m.Contains("SETS^f.") ||
-                    m.Contains("SETD^s.") || m.Contains("SETS^s.") ||
-                    m.Contains("SETD^a.") || m.Contains("SETS^a.") ||
-                    m.Contains("SETD^v.") || m.Contains("SETS^v.") ||
-                    m.Contains("SETD^m.") || m.Contains("SETS^m.")
-                    )
+                var ui24Message = new UI24Message(m);
+                if (ui24Message.IsValid)
                 {
-                    if (m.Contains(".mix") || m.Contains(".name^"))
-                    {
-                        var ui24Message = new UI24Message(m);
-                        var channelNumber = _viewViewGroups[_selectedViewGroup].Select((item, i) => new { Channel = item, controllerChannelNumber = i })
-                            .Where(c => c.Channel == ui24Message.ChannelNumber.ToString()).FirstOrDefault();
+                    var controllerChannelNumber = _viewViewGroups[_selectedViewGroup].Select((item, i) => new { Channel = item, controllerChannelNumber = i })
+                        .Where(c => c.Channel == ui24Message.ChannelNumber).FirstOrDefault();
 
-                        if (m.Contains(".mix"))
-                        {
+                    switch (ui24Message.MessageType)
+                    {
+                        case MessageTypeEnum.mix:
                             _mixerChannels[ui24Message.ChannelNumber].ChannelFaderValue = ui24Message.FaderValue;
-                            if (ui24Message.IsValid && channelNumber != null && channelNumber.controllerChannelNumber <= 8)
+                            if (ui24Message.IsValid && controllerChannelNumber != null && controllerChannelNumber.controllerChannelNumber <= 8)
                             {
-                                _midiController.SetFader(channelNumber.controllerChannelNumber, ui24Message.FaderValue);
+                                _midiController.SetFader(controllerChannelNumber.controllerChannelNumber, ui24Message.FaderValue);
                             }
-                        }
-                        else if (ui24Message.ChannelType != ChannelTypeEnum.Uknown && ui24Message.ChannelName != "")
-                        {
+                            break;
+                        case MessageTypeEnum.name:
                             _mixerChannels[ui24Message.ChannelNumber].Name = ui24Message.ChannelName;
-                            if (ui24Message.IsValid && channelNumber != null && channelNumber.controllerChannelNumber < 8)
+                            if (ui24Message.IsValid && controllerChannelNumber != null && controllerChannelNumber.controllerChannelNumber < 8)
                             {
-                                _midiController.WriteTextToChannelLCD(channelNumber.controllerChannelNumber, ui24Message.ChannelName);
+                                _midiController.WriteTextToChannelLCD(controllerChannelNumber.controllerChannelNumber, ui24Message.ChannelName);
                             }
-                        }
+                            break;
+                        case MessageTypeEnum.gain:
+                            if (_mixerChannels[ui24Message.ChannelNumber] is InputChannel)
+                            {
+                                (_mixerChannels[ui24Message.ChannelNumber] as InputChannel).Gain = ui24Message.Gain;
+                                if (ui24Message.IsValid && controllerChannelNumber != null && controllerChannelNumber.controllerChannelNumber < 8)
+                                {
+                                    _midiController.SetGainLed(controllerChannelNumber.controllerChannelNumber, ui24Message.Gain);
+                                }
+                            }
+                            break;
+                        case MessageTypeEnum.mute:
+                            _mixerChannels[ui24Message.ChannelNumber].IsMute = ui24Message.LogicValue;
+                            if (ui24Message.IsValid && controllerChannelNumber != null && controllerChannelNumber.controllerChannelNumber < 8)
+                            {
+                                _midiController.SetMuteLed(controllerChannelNumber.controllerChannelNumber, ui24Message.LogicValue);
+                            }
+                            break;
                     }
                 }
                 else if (m.StartsWith("SETS^vg.")) //first global view group (e.g:"SETS^vg.0^[0,1,2,3,4,5,6,17,18,19,20,22,23,38,39,40,41,42,43,44,45,48,49,21]")
@@ -232,21 +239,7 @@ namespace UI24RController
                         {
                             var newViewChannelWithMain = newViewChannel.ToList().Take(8).ToList();
                             newViewChannelWithMain.Add("54");
-                            _viewViewGroups[viewGroup] = newViewChannelWithMain.ToArray();
-                        }
-                    }
-                }
-                else if (m.StartsWith("SETD^hw.") && m.Contains(".gain^")) //set gain message
-                {
-                    var ui24Message = new UI24Message(m);
-                    var channelNumber = _viewViewGroups[_selectedViewGroup].Select((item, i) => new { Channel = item, controllerChannelNumber = i })
-                            .Where(c => c.Channel == ui24Message.ChannelNumber.ToString()).FirstOrDefault();
-                    if (_mixerChannels[ui24Message.ChannelNumber] is InputChannel)
-                    {
-                        (_mixerChannels[ui24Message.ChannelNumber] as InputChannel).Gain = ui24Message.Gain;
-                        if (ui24Message.IsValid && channelNumber != null && channelNumber.controllerChannelNumber < 8)
-                        {
-                            _midiController.SetGainLed(channelNumber.controllerChannelNumber, ui24Message.Gain);
+                            _viewViewGroups[viewGroup] = newViewChannelWithMain.Select(i=> int.Parse(i)).ToArray();
                         }
                     }
                 }
@@ -269,7 +262,7 @@ namespace UI24RController
                             _selectedChannel = ch;
                         }
                         var channelNumber = _viewViewGroups[_selectedViewGroup].Select((item, i) => new { Channel = item, controllerChannelNumber = i })
-                           .Where(c => c.Channel == _mixerChannels[ch].ChannelNumberInMixer.ToString()).FirstOrDefault();
+                           .Where(c => c.Channel == _mixerChannels[ch].ChannelNumberInMixer).FirstOrDefault();
                         if (channelNumber != null)
                         {
                             _midiController.SetSelectLed(channelNumber.controllerChannelNumber, true);
