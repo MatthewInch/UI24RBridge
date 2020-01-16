@@ -79,10 +79,6 @@
               "version": "[3.1.0, 3.1.0]"
             },
             {
-              "name": "Microsoft.AspNetCore.App.Runtime.osx-x64",
-              "version": "[3.1.0, 3.1.0]"
-            },
-            {
               "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
               "version": "[3.1.0, 3.1.0]"
             },
@@ -95,15 +91,7 @@
               "version": "[3.1.0, 3.1.0]"
             },
             {
-              "name": "Microsoft.NETCore.App.Host.osx-x64",
-              "version": "[3.1.0, 3.1.0]"
-            },
-            {
               "name": "Microsoft.NETCore.App.Runtime.linux-x64",
-              "version": "[3.1.0, 3.1.0]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Runtime.osx-x64",
               "version": "[3.1.0, 3.1.0]"
             },
             {
@@ -133,9 +121,6 @@
       },
       "runtimes": {
         "linux-x64": {
-          "#import": []
-        },
-        "osx.10.12-x64": {
           "#import": []
         },
         "win7-x64": {

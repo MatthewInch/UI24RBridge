@@ -15,6 +15,8 @@ public interface IMIDIController
     event EventHandler<GainEventArgs> GainEvent;
     event EventHandler<ChannelEventArgs> SelectChannelEvent;
     event EventHandler<ChannelEventArgs> MuteChannelEvent;
+    event EventHandler<ChannelEventArgs> SoloChannelEvent;
+    event EventHandler<ChannelEventArgs> RecChannelEvent;
 
     #region Button Events
     event EventHandler<EventArgs> PresetUp;
@@ -38,6 +40,8 @@ public interface IMIDIController
 
     void SetSelectLed(int channelNumber, bool turnOn);
     void SetMuteLed(int channelNumber, bool turnOn);
+    void SetSoloLed(int channelNumber, bool turnOn);
+    void SetRecLed(int channelNumber, bool turnOn);
 
     public void WriteTextToChannelLCD(int channelNumber, string text);
     public void WriteTextToLCD(string text);

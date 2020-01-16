@@ -36,6 +36,8 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> RightEvent;
         public event EventHandler<EventArgs> CenterEvent;
         public event EventHandler<ChannelEventArgs> MuteChannelEvent;
+        public event EventHandler<ChannelEventArgs> SoloChannelEvent;
+        public event EventHandler<ChannelEventArgs> RecChannelEvent;
 
         protected void OnMessageReceived(string message)
         {
@@ -81,6 +83,24 @@ namespace UI24RController.MIDIController
                 MuteChannelEvent(this, channelArgs);
             }
         }
+
+        protected void OnSoloEvent(int channelNumber)
+        {
+            if (SoloChannelEvent != null)
+            {
+                var channelArgs = new ChannelEventArgs(channelNumber);
+                SoloChannelEvent(this, channelArgs);
+            }
+        }
+        protected void OnRecEvent(int channelNumber)
+        {
+            if (RecChannelEvent != null)
+            {
+                var channelArgs = new ChannelEventArgs(channelNumber);
+                RecChannelEvent(this, channelArgs);
+            }
+        }
+
 
         protected void OnPresetUp()
         {
@@ -159,6 +179,16 @@ namespace UI24RController.MIDIController
                 {
                     byte channelNumber = (byte)(message[1] - 0x10);
                     OnMuteEvent(channelNumber);
+                }
+                else if (message[1] >= 0x08 && message[1] <= 0x0f && message[2] == 0x7f) //mute button
+                {
+                    byte channelNumber = (byte)(message[1] - 0x08);
+                    OnSoloEvent(channelNumber);
+                }
+                else if (message[1] >= 0x00 && message[1] <= 0x07 && message[2] == 0x7f) //mute button
+                {
+                    byte channelNumber = (byte)(message[1]);
+                    OnRecEvent(channelNumber);
                 }
                 else if  (message[1] >= 0x18 && message[1] <= 0x1f && message[2] == 0x7f) //select button
                 {
@@ -268,6 +298,15 @@ namespace UI24RController.MIDIController
         public void SetMuteLed(int channelNumber, bool turnOn)
         {
             _output.Send(new byte[] { 0x90, (byte)(0x10 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+        }
+        public void SetSoloLed(int channelNumber, bool turnOn)
+        {
+            _output.Send(new byte[] { 0x90, (byte)(0x08 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+        }
+
+        public void SetRecLed(int channelNumber, bool turnOn)
+        {
+            _output.Send(new byte[] { 0x90, (byte)(0x00 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
         }
 
         public void WriteTextToChannelLCD(int channelNumber, string text)
