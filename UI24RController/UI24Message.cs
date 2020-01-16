@@ -14,7 +14,7 @@ namespace UI24RController
 
     public enum MessageTypeEnum
     {
-        mix, gain, mute, name, uknown
+        mix, gain, mute, solo, name, mtkrec, uknown
     }
 
     public class UI24Message
@@ -83,6 +83,10 @@ namespace UI24RController
                     this.MessageType = GetMessageType(messageTypes[2]);
                     int.TryParse(messageTypes[1], out channelNumber);
                 }
+                else
+                {
+                    this.MessageType = MessageTypeEnum.uknown;
+                }
                 this.ChannelTypeNumber = channelNumber;
                 switch (this.MessageType)
                 {
@@ -107,6 +111,20 @@ namespace UI24RController
                         IsValid = true;
                         break;
                     case MessageTypeEnum.mute:
+                        if (messageParts[2] == "1")
+                            LogicValue = true;
+                        else
+                            LogicValue = false;
+                        IsValid = true;
+                        break;
+                    case MessageTypeEnum.solo:
+                        if (messageParts[2] == "1")
+                            LogicValue = true;
+                        else
+                            LogicValue = false;
+                        IsValid = true;
+                        break;
+                    case MessageTypeEnum.mtkrec:
                         if (messageParts[2] == "1")
                             LogicValue = true;
                         else
@@ -156,6 +174,10 @@ namespace UI24RController
                     return MessageTypeEnum.gain;
                 case "mute":
                     return MessageTypeEnum.mute;
+                case "solo":
+                    return MessageTypeEnum.solo;
+                case "mtkrec":
+                    return MessageTypeEnum.mtkrec;
                 default: // "i":
                     return MessageTypeEnum.uknown;
             }

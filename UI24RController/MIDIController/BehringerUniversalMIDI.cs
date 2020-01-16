@@ -27,6 +27,8 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> RightEvent;
         public event EventHandler<EventArgs> CenterEvent;
         public event EventHandler<ChannelEventArgs> MuteChannelEvent;
+        public event EventHandler<ChannelEventArgs> SoloChannelEvent;
+        public event EventHandler<ChannelEventArgs> RecChannelEvent;
 
         event EventHandler<MessageEventArgs> IMIDIController.MessageReceived
         {
@@ -171,6 +173,16 @@ namespace UI24RController.MIDIController
         }
 
         public void SetMuteLed(int channelNumber, bool turnOn)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetSoloLed(int channelNumber, bool turnOn)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetRecLed(int channelNumber, bool turnOn)
         {
             throw new NotImplementedException();
         }
