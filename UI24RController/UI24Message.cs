@@ -9,12 +9,12 @@ namespace UI24RController
     public enum ChannelTypeEnum
     {
         Input, LineIn, Player, Fx, Subgroup, AUX, VCA,
-        Main, Uknown
+        Main,HW, Uknown
     }
 
     public enum MessageTypeEnum
     {
-        mix, gain, mute, solo, name, mtkrec, uknown
+        mix, gain, mute, solo, name, mtkrec, stereoIndex, uknown
     }
 
     public class UI24Message
@@ -57,6 +57,7 @@ namespace UI24RController
         public double Gain { get; set; }
         public bool IsValid { get; internal set; }
         public bool LogicValue { get; internal set; }
+        public int IntValue { get; internal set; }
         public ChannelTypeEnum ChannelType { get; internal set; }
         public MessageTypeEnum MessageType { get; internal set; }
 
@@ -131,6 +132,14 @@ namespace UI24RController
                             LogicValue = false;
                         IsValid = true;
                         break;
+                    case MessageTypeEnum.stereoIndex:
+                        int intValue;
+                        if (int.TryParse(messageParts[2], out intValue))
+                        {
+                            this.IntValue = intValue;
+                            IsValid = true;
+                        }
+                        break;
                 }
             }
         }
@@ -154,7 +163,7 @@ namespace UI24RController
                 case "m":
                     return ChannelTypeEnum.Main;
                 case "hw":
-                    return ChannelTypeEnum.Input;
+                    return ChannelTypeEnum.HW;
                 case "i":
                     return ChannelTypeEnum.Input;
                 default: // "i":
@@ -178,6 +187,8 @@ namespace UI24RController
                     return MessageTypeEnum.solo;
                 case "mtkrec":
                     return MessageTypeEnum.mtkrec;
+                case "stereoIndex":
+                    return MessageTypeEnum.stereoIndex;
                 default: // "i":
                     return MessageTypeEnum.uknown;
             }

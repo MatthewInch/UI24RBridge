@@ -1,16 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using UI24RController.UI24RChannels.Interfaces;
 
 namespace UI24RController.UI24RChannels
 {
-    public class InputChannel: ChannelBase
+    public class InputChannel: ChannelBase, IRecordable, IStereoLinkable
     {
 
+        public bool IsRec { get; set; }
+        public int LinkedWith { get; set ; }
 
         public InputChannel(int channelNumber): base(channelNumber)
         {
            this.Name = $"CH {(this.ChannelNumber + 1):D2}";
+            IsRec = false;
+            LinkedWith = -1; //-1: not linked, 0 left, 1 right
         }
 
         public override string MixFaderMessage()
@@ -29,9 +34,10 @@ namespace UI24RController.UI24RChannels
         {
             return $"3:::SETD^i.{this.ChannelNumber}.solo^{(this.IsSolo ? 1 : 0)}";
         }
-        public override string RecMessage()
+        public virtual string RecMessage()
         {
             return $"3:::SETD^i.{this.ChannelNumber}.mtkrec^{(this.IsRec ? 1 : 0)}";
         }
+
     }
 }

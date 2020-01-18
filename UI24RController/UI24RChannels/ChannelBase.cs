@@ -16,7 +16,6 @@ namespace UI24RController.UI24RChannels
         public bool IsSelected { get; set; }
         public bool IsMute { get; set; }
         public bool IsSolo { get; set; }
-        public bool IsRec { get; set; }
         public virtual int ChannelNumberInMixer => ChannelNumber;
 
         public double Gain { get; set; }
@@ -28,7 +27,6 @@ namespace UI24RController.UI24RChannels
             IsSelected = false;
             IsMute = false;
             IsSolo = false;
-            IsRec = false;
         }
 
         public virtual string MixFaderMessage()
@@ -47,10 +45,6 @@ namespace UI24RController.UI24RChannels
         public virtual string SoloMessage()
         {
             return $"3:::SETD^i.{this.ChannelNumber}.solo^{(this.IsSolo ? 1 : 0)}";
-        }
-        public virtual string RecMessage()
-        {
-            return $"3:::SETD^i.{this.ChannelNumber}.mtkrec^{(this.IsRec ? 1 : 0)}";
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using UI24RController.UI24RChannels;
+using UI24RController.UI24RChannels.Interfaces;
 using Websocket.Client;
 
 namespace UI24RController
@@ -12,7 +13,7 @@ namespace UI24RController
     {
 
         protected WebsocketClient _client;
-        protected Action<string> _sendMessageAction;
+        protected Action<string, bool> _sendMessageAction;
         protected IMIDIController _midiController;
         protected string _syncID;
         protected int _selectedChannel = -1; //-1 = no selected channel
@@ -50,7 +51,7 @@ namespace UI24RController
         /// <param name="address">address of the mixer (eg: 'ws://192.168.5.2')</param>
         /// <param name="midiController">the daw controller connection object</param>
         /// <param name="sendMessageAction">the logging function (implemented in the host app)</param>
-        public UI24RBridge(string address, IMIDIController midiController, Action<string> sendMessageAction, string syncID)
+        public UI24RBridge(string address, IMIDIController midiController, Action<string, bool> sendMessageAction, string syncID)
         {
             InitializeChannels();
             _syncID = syncID;
@@ -74,9 +75,9 @@ namespace UI24RController
         private void _midiController_RecChannelEvent(object sender, MIDIController.ChannelEventArgs e)
         {
             var ch = _viewViewGroups[_selectedViewGroup][e.ChannelNumber];
-            if (_mixerChannels[ch] is InputChannel || _mixerChannels[ch] is LineInChannel)
+            if (_mixerChannels[ch] is IRecordable )
             {
-                var channel = _mixerChannels[ch];
+                var channel = _mixerChannels[ch] as IRecordable;
                 channel.IsRec = !channel.IsRec;
                 _client.Send(channel.RecMessage());
                 _midiController.SetRecLed(e.ChannelNumber, channel.IsRec);
@@ -88,7 +89,7 @@ namespace UI24RController
             var ch = _viewViewGroups[_selectedViewGroup][e.ChannelNumber];
             _mixerChannels[ch].IsSolo = !_mixerChannels[ch].IsSolo;
             _client.Send(_mixerChannels[ch].SoloMessage());
-            _midiController.SetSoloLed(ch, _mixerChannels[ch].IsSolo);
+            _midiController.SetSoloLed(e.ChannelNumber, _mixerChannels[ch].IsSolo);
         }
 
         private void _midiController_MuteChannelEvent(object sender, MIDIController.ChannelEventArgs e)
@@ -96,7 +97,7 @@ namespace UI24RController
             var ch = _viewViewGroups[_selectedViewGroup][e.ChannelNumber];
             _mixerChannels[ch].IsMute = !_mixerChannels[ch].IsMute;
             _client.Send(_mixerChannels[ch].MuteMessage());
-            _midiController.SetMuteLed(ch, _mixerChannels[ch].IsMute);
+            _midiController.SetMuteLed(e.ChannelNumber, _mixerChannels[ch].IsMute);
          }
 
         private void _midiController_SelectChannelEvent(object sender, MIDIController.ChannelEventArgs e)
@@ -178,6 +179,23 @@ namespace UI24RController
             var ch = _viewViewGroups[_selectedViewGroup][e.ChannelNumber];
             _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
             _client.Send(_mixerChannels[ch].MixFaderMessage());
+            //if the channel is linked we have to set the other channel to the same value
+            if (_mixerChannels[ch] is IStereoLinkable)
+            {
+                var stereoChannel = _mixerChannels[ch] as IStereoLinkable;
+                if (stereoChannel.LinkedWith != -1)
+                {
+                    var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
+                    _mixerChannels[otherCh].ChannelFaderValue = e.FaderValue;
+                    _client.Send(_mixerChannels[otherCh].MixFaderMessage());
+                    //If the other chanel is on the current layout we have to set too
+                    (var otherChOnLayer, var isOnLayer) = GetControllerChannel(otherCh);
+                    if (isOnLayer)
+                    {
+                        _midiController.SetFader(otherChOnLayer, e.FaderValue);
+                    }
+                }
+            }
         }
 
         protected void UI24RMessageReceived(ResponseMessage msg)
@@ -211,8 +229,21 @@ namespace UI24RController
                 _midiController.WriteTextToChannelLCD(ch.controllerChannelNumber, _mixerChannels[channelNumber].Name);
                 _midiController.SetMuteLed(ch.controllerChannelNumber, _mixerChannels[channelNumber].IsMute);
                 _midiController.SetSoloLed(ch.controllerChannelNumber, _mixerChannels[channelNumber].IsSolo);
-                _midiController.SetRecLed(ch.controllerChannelNumber, _mixerChannels[channelNumber].IsRec);
+                if (_mixerChannels[channelNumber] is IRecordable)
+                    _midiController.SetRecLed(ch.controllerChannelNumber, (_mixerChannels[channelNumber] as IRecordable).IsRec);
+                else
+                    _midiController.SetRecLed(ch.controllerChannelNumber, false);
             }
+        }
+
+        protected (int, bool) GetControllerChannel(int ch)
+        {
+            var controllerChannelNumber = _viewViewGroups[_selectedViewGroup].Select((item, i) => new { Channel = item, controllerChannelNumber = i })
+                .Where(c => c.Channel == ch).FirstOrDefault();
+            if (controllerChannelNumber != null)
+                return (controllerChannelNumber.controllerChannelNumber, true);
+            else
+                return (0,false);
         }
 
         private void ProcessUI24Message(string text)
@@ -223,16 +254,15 @@ namespace UI24RController
                 var ui24Message = new UI24Message(m);
                 if (ui24Message.IsValid)
                 {
-                    var controllerChannelNumber = _viewViewGroups[_selectedViewGroup].Select((item, i) => new { Channel = item, controllerChannelNumber = i })
-                        .Where(c => c.Channel == ui24Message.ChannelNumber).FirstOrDefault();
+                    (var controllerChannelNumber, var isOnLayer) = GetControllerChannel(ui24Message.ChannelNumber);
 
                     switch (ui24Message.MessageType)
                     {
                         case MessageTypeEnum.mix:
                             _mixerChannels[ui24Message.ChannelNumber].ChannelFaderValue = ui24Message.FaderValue;
-                            if (ui24Message.IsValid && controllerChannelNumber != null && controllerChannelNumber.controllerChannelNumber <= 8)
+                            if (ui24Message.IsValid && isOnLayer && controllerChannelNumber <= 8)
                             {
-                                _midiController.SetFader(controllerChannelNumber.controllerChannelNumber, ui24Message.FaderValue);
+                                _midiController.SetFader(controllerChannelNumber, ui24Message.FaderValue);
                             }
                             break;
                         case MessageTypeEnum.name:
@@ -240,40 +270,50 @@ namespace UI24RController
                             {
                                 _mixerChannels[ui24Message.ChannelNumber].Name = ui24Message.ChannelName;
                             }
-                            if (ui24Message.IsValid && controllerChannelNumber != null && controllerChannelNumber.controllerChannelNumber < 8)
+                            if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8)
                             {
-                                _midiController.WriteTextToChannelLCD(controllerChannelNumber.controllerChannelNumber, ui24Message.ChannelName);
+                                _midiController.WriteTextToChannelLCD(controllerChannelNumber, ui24Message.ChannelName);
                             }
                             break;
                         case MessageTypeEnum.gain:
-                            if (_mixerChannels[ui24Message.ChannelNumber] is InputChannel)
+                            if (_mixerChannels[ui24Message.ChannelNumber] is InputChannel && ui24Message.ChannelType == ChannelTypeEnum.HW)
                             {
                                 (_mixerChannels[ui24Message.ChannelNumber] as InputChannel).Gain = ui24Message.Gain;
-                                if (ui24Message.IsValid && controllerChannelNumber != null && controllerChannelNumber.controllerChannelNumber < 8)
+                                if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8)
                                 {
-                                    _midiController.SetGainLed(controllerChannelNumber.controllerChannelNumber, ui24Message.Gain);
+                                    _midiController.SetGainLed(controllerChannelNumber, ui24Message.Gain);
                                 }
                             }
                             break;
                         case MessageTypeEnum.mute:
                             _mixerChannels[ui24Message.ChannelNumber].IsMute = ui24Message.LogicValue;
-                            if (ui24Message.IsValid && controllerChannelNumber != null && controllerChannelNumber.controllerChannelNumber < 8)
+                            if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8)
                             {
-                                _midiController.SetMuteLed(controllerChannelNumber.controllerChannelNumber, ui24Message.LogicValue);
+                                _midiController.SetMuteLed(controllerChannelNumber, ui24Message.LogicValue);
                             }
                             break;
                         case MessageTypeEnum.solo:
                             _mixerChannels[ui24Message.ChannelNumber].IsSolo = ui24Message.LogicValue;
-                            if (ui24Message.IsValid && controllerChannelNumber != null && controllerChannelNumber.controllerChannelNumber < 8)
+                            if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8)
                             {
-                                _midiController.SetSoloLed(controllerChannelNumber.controllerChannelNumber, ui24Message.LogicValue);
+                                _midiController.SetSoloLed(controllerChannelNumber, ui24Message.LogicValue);
                             }
                             break;
                         case MessageTypeEnum.mtkrec:
-                            _mixerChannels[ui24Message.ChannelNumber].IsRec = ui24Message.LogicValue;
-                            if (ui24Message.IsValid && controllerChannelNumber != null && controllerChannelNumber.controllerChannelNumber < 8)
+                            if (_mixerChannels[ui24Message.ChannelNumber] is IRecordable)
                             {
-                                _midiController.SetRecLed(controllerChannelNumber.controllerChannelNumber, ui24Message.LogicValue);
+                                (_mixerChannels[ui24Message.ChannelNumber] as IRecordable).IsRec = ui24Message.LogicValue;
+                                if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8)
+                                {
+                                    _midiController.SetRecLed(controllerChannelNumber, ui24Message.LogicValue);
+                                }
+                            }
+                            break;
+                        case MessageTypeEnum.stereoIndex:
+                            if (_mixerChannels[ui24Message.ChannelNumber] is IStereoLinkable)
+                            {
+                                var stereoChannel = _mixerChannels[ui24Message.ChannelNumber] as IStereoLinkable;
+                                stereoChannel.LinkedWith = ui24Message.IntValue;
                             }
                             break;
                     }
@@ -325,15 +365,15 @@ namespace UI24RController
             }
         }
 
-        protected void SendMessage(string message)
+        protected void SendMessage(string message, bool isDebug = true)
         {
             if (_sendMessageAction != null)
-                _sendMessageAction(message);
+                _sendMessageAction(message, isDebug);
         }
 
         public void Dispose()
         {
-            SendMessage("Disconnecting UI24R....");
+            SendMessage("Disconnecting UI24R....", false);
             if (_client != null)
             {
                 _client.Dispose();

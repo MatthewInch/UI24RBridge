@@ -20,6 +20,7 @@ namespace UI24RBridgeTest
             var midiOutputDevice = configuration["MIDI-Output-Name"];
             var protocol = configuration["Protocol"];
             var syncID = configuration["SyncID"];
+            var viewDebugMessage = configuration["DebugMessages"] == "true";
             //var controller = new BehringerUniversalMIDI();
             var controller = MIDIControllerFactory.GetMidiController(protocol);
             if (midiInputDevice == null || midiOutputDevice == null)
@@ -40,16 +41,19 @@ namespace UI24RBridgeTest
             controller.MessageReceived += (obj, e) => {
                 Console.WriteLine(e.Message);
             };
-            Action<string> messageWriter = (string messages) =>
+            Action<string,bool> messageWriter = (string messages, bool isDebugMessage) =>
             {
-                var m = messages.Split('\n');
-                foreach (var message in m)
+                if (!isDebugMessage || (isDebugMessage && viewDebugMessage))
                 {
-                    if (!message.StartsWith("3:::RTA^") && !message.StartsWith("RTA^") &&
-                        !message.StartsWith("3:::VU2^") && !message.StartsWith("VU2^")
-                    )
+                    var m = messages.Split('\n');
+                    foreach (var message in m)
                     {
-                        Console.WriteLine(message);
+                        if (!message.StartsWith("3:::RTA^") && !message.StartsWith("RTA^") &&
+                            !message.StartsWith("3:::VU2^") && !message.StartsWith("VU2^")
+                        )
+                        {
+                            Console.WriteLine(message);
+                        }
                     }
                 }
             };
