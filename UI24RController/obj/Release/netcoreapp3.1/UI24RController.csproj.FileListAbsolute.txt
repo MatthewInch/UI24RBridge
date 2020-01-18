@@ -1,8 +1,0 @@
-C:\Users\inch\Source\Repos\MatthewInch\UI24RBridge\UI24RController\bin\Release\netcoreapp3.1\UI24RController.deps.json
-C:\Users\inch\Source\Repos\MatthewInch\UI24RBridge\UI24RController\bin\Release\netcoreapp3.1\UI24RController.dll
-C:\Users\inch\Source\Repos\MatthewInch\UI24RBridge\UI24RController\bin\Release\netcoreapp3.1\UI24RController.pdb
-C:\Users\inch\Source\Repos\MatthewInch\UI24RBridge\UI24RController\obj\Release\netcoreapp3.1\UI24RController.csprojAssemblyReference.cache
-C:\Users\inch\Source\Repos\MatthewInch\UI24RBridge\UI24RController\obj\Release\netcoreapp3.1\UI24RController.AssemblyInfoInputs.cache
-C:\Users\inch\Source\Repos\MatthewInch\UI24RBridge\UI24RController\obj\Release\netcoreapp3.1\UI24RController.AssemblyInfo.cs
-C:\Users\inch\Source\Repos\MatthewInch\UI24RBridge\UI24RController\obj\Release\netcoreapp3.1\UI24RController.dll
-C:\Users\inch\Source\Repos\MatthewInch\UI24RBridge\UI24RController\obj\Release\netcoreapp3.1\UI24RController.pdb
