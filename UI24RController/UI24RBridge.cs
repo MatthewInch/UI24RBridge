@@ -17,6 +17,11 @@ namespace UI24RController
         protected IMIDIController _midiController;
         protected string _syncID;
         protected int _selectedChannel = -1; //-1 = no selected channel
+        /// <summary>
+        /// Represent the UI24R mixer state
+        /// TODO: need to move every global variable that store any mixer specific state to the Mixer class (viewGroups, selectedChannel etc.)
+        /// </summary>
+        protected Mixer _mixer = new Mixer();
 
         //0-23: input channels
         //24-25: Linie In L/R

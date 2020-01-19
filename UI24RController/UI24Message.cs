@@ -14,7 +14,7 @@ namespace UI24RController
 
     public enum MessageTypeEnum
     {
-        mix, gain, mute, solo, name, mtkrec, stereoIndex, uknown
+        mix, gain, mute, solo, name, mtkrec, stereoIndex, var, uknown
     }
 
     public class UI24Message
@@ -140,6 +140,16 @@ namespace UI24RController
                             IsValid = true;
                         }
                         break;
+                    case MessageTypeEnum.var:
+                        if (messageParts[1] == "var.mtk.rec.currentState")
+                        {
+                            if (messageParts[2] == "1")
+                                LogicValue = true;
+                            else
+                                LogicValue = false;
+                            IsValid = true;
+                        }
+                        break;
                 }
             }
         }
@@ -189,6 +199,8 @@ namespace UI24RController
                     return MessageTypeEnum.mtkrec;
                 case "stereoIndex":
                     return MessageTypeEnum.stereoIndex;
+                case "var":
+                    return MessageTypeEnum.var;
                 default: // "i":
                     return MessageTypeEnum.uknown;
             }
