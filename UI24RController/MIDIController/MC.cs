@@ -10,10 +10,28 @@ namespace UI24RController.MIDIController
 {
     public class MC : IMIDIController, IDisposable
     {
+
+        protected class FaderState
+        {
+            public double Value { get; set; }
+            public bool IsTouched { get; set; }
+
+            public FaderState()
+            {
+                Value = 0;
+                IsTouched = false;
+            }
+
+            public FaderState(double value)
+            {
+                Value = value;
+                IsTouched = false;
+            }
+        }
         /// <summary>
         /// Store every fader setted value of the faders, key is the channel number (z in the message)
         /// </summary>
-        protected Dictionary<byte, double> faderValues = new Dictionary<byte, double>();
+        protected Dictionary<byte, FaderState> faderValues = new Dictionary<byte, FaderState>();
             
         IMidiInput _input = null;
         protected string _inputDeviceNumber;
@@ -39,6 +57,13 @@ namespace UI24RController.MIDIController
         public event EventHandler<ChannelEventArgs> SoloChannelEvent;
         public event EventHandler<ChannelEventArgs> RecChannelEvent;
 
+        public MC()
+        {
+            for (byte i=0; i<9; i++)
+            {
+                faderValues.Add(i, new FaderState());
+            }
+        }
         protected void OnMessageReceived(string message)
         {
             if (MessageReceived != null)
@@ -164,7 +189,16 @@ namespace UI24RController.MIDIController
                     byte channelNumber = (byte)(message[1] - 0x68);
                     if (faderValues.ContainsKey(channelNumber))
                     {
-                        SetFader(channelNumber, faderValues[channelNumber]);
+                        faderValues[channelNumber].IsTouched = false;
+                        SetFader(channelNumber, faderValues[channelNumber].Value);
+                    }
+                }
+                if (message.MIDIEqual(0x90, 0x00, 0x7f, 0xff, 0x00, 0xff) && (message[1] >= 0x68) && (message[1] <= 0x70)) //touch fader (0x90 [0x68-0x70] 0x00)
+                {
+                    byte channelNumber = (byte)(message[1] - 0x68);
+                    if (faderValues.ContainsKey(channelNumber))
+                    {
+                        faderValues[channelNumber].IsTouched = true;
                     }
                 }
                 else if (message.MIDIEqual(0x90, 0x2f, 0x7f)) //fader bank right press
@@ -205,8 +239,13 @@ namespace UI24RController.MIDIController
                 int lower = message[1]; // lower 7 bit
 
                 var faderValue = (upper + lower) / 16383.0;
-                faderValues.AddOrSet(channelNumber, faderValue);
+                
+                faderValues[channelNumber].Value = faderValue;
                 OnFaderEvent(channelNumber, faderValue);
+                if (!faderValues[channelNumber].IsTouched)
+                {
+                    SetFader(channelNumber, faderValue);
+                }
 
             } 
             else if(message[0] == 0xb0 && (message[1] >= 0x10 && message[1] <= 0x17)) //channel knobb turning
@@ -260,7 +299,7 @@ namespace UI24RController.MIDIController
                 _output.Send(new byte[] { (byte)(0xe0 + channelNumber), lower, upper }, 0, 3, 0);
 
 
-                faderValues.AddOrSet(z, faderValue);
+                faderValues[z].Value = faderValue;
 
                 return true;
             }
@@ -297,16 +336,25 @@ namespace UI24RController.MIDIController
 
         public void SetMuteLed(int channelNumber, bool turnOn)
         {
-            _output.Send(new byte[] { 0x90, (byte)(0x10 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+            if (channelNumber < 8)
+            {
+                _output.Send(new byte[] { 0x90, (byte)(0x10 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+            }
         }
         public void SetSoloLed(int channelNumber, bool turnOn)
         {
-            _output.Send(new byte[] { 0x90, (byte)(0x08 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+            if (channelNumber < 8)
+            {
+                _output.Send(new byte[] { 0x90, (byte)(0x08 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+            }
         }
 
         public void SetRecLed(int channelNumber, bool turnOn)
         {
-            _output.Send(new byte[] { 0x90, (byte)(0x00 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+            if (channelNumber < 8)
+            {
+                _output.Send(new byte[] { 0x90, (byte)(0x00 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+            }
         }
 
         public void WriteTextToChannelLCD(int channelNumber, string text)
