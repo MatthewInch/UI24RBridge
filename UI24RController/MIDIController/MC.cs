@@ -214,12 +214,12 @@ namespace UI24RController.MIDIController
                     byte channelNumber = (byte)(message[1] - 0x10);
                     OnMuteEvent(channelNumber);
                 }
-                else if (message[1] >= 0x08 && message[1] <= 0x0f && message[2] == 0x7f) //mute button
+                else if (message[1] >= 0x08 && message[1] <= 0x0f && message[2] == 0x7f) //solo button
                 {
                     byte channelNumber = (byte)(message[1] - 0x08);
                     OnSoloEvent(channelNumber);
                 }
-                else if (message[1] >= 0x00 && message[1] <= 0x07 && message[2] == 0x7f) //mute button
+                else if (message[1] >= 0x00 && message[1] <= 0x07 && message[2] == 0x7f) //rec button
                 {
                     byte channelNumber = (byte)(message[1]);
                     OnRecEvent(channelNumber);
@@ -228,6 +228,11 @@ namespace UI24RController.MIDIController
                 {
                     byte channelNumber = (byte)(message[1] - 0x18);
                     OnSelectEvent(channelNumber);
+                }
+                else if (message.MIDIEqual(0x90, 0x32, 0x7f)) //main select button
+                {
+                    byte channelNumber = (byte)(message[1] - 0x18);
+                    OnSelectEvent(8);
                 }
 
             }
@@ -323,14 +328,10 @@ namespace UI24RController.MIDIController
 
         public void SetSelectLed(int channelNumber, bool turnOn)
         {
-            //turn off all select led
-            for (byte i = 0; i < 8; i++)
+            //turn off all select led and on in the current channel (channel 8 is 0x32 the main channel)
+            for (byte i = 0; i < 9; i++)
             {
-                _output.Send(new byte[] { 0x90, (byte)(0x18 + i), 0x00 }, 0, 3, 0);
-            }
-            if (turnOn)
-            {
-                _output.Send(new byte[] { 0x90, (byte)(0x18 + channelNumber), 0x7f }, 0, 3, 0);
+                _output.Send(new byte[] { 0x90, (byte)(i==8? 0x32 : 0x18 + i), (byte)(i==channelNumber? 0x7f : 0x00) }, 0, 3, 0);
             }
         }
 
