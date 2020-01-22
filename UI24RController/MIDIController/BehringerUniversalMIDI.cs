@@ -11,6 +11,9 @@ namespace UI24RController.MIDIController
     {
         IMidiInput _input = null;
         IMidiOutput _output = null;
+
+        public Dictionary<string, byte> ButtonsID { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
         public event EventHandler<MessageEventArgs> _messageReceived;
         public event EventHandler<FaderEventArgs> FaderEvent;
         public event EventHandler<EventArgs> PresetUp;
@@ -29,6 +32,9 @@ namespace UI24RController.MIDIController
         public event EventHandler<ChannelEventArgs> MuteChannelEvent;
         public event EventHandler<ChannelEventArgs> SoloChannelEvent;
         public event EventHandler<ChannelEventArgs> RecChannelEvent;
+        public event EventHandler<EventArgs> StopEvent;
+        public event EventHandler<EventArgs> PlayEvent;
+        public event EventHandler<EventArgs> RecEvent;
 
         event EventHandler<MessageEventArgs> IMIDIController.MessageReceived
         {
@@ -183,6 +189,11 @@ namespace UI24RController.MIDIController
         }
 
         public void SetRecLed(int channelNumber, bool turnOn)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetLed(string buttonName, bool turnOn)
         {
             throw new NotImplementedException();
         }

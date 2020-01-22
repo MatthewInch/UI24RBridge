@@ -1,16 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Net.WebSockets;
 using System.Threading;
 using UI24RController.UI24RChannels;
 using UI24RController.UI24RChannels.Interfaces;
 using Websocket.Client;
+using System.IO;
 
 namespace UI24RController
 {
     public class UI24RBridge : IDisposable
     {
+
+        const string CONFIGFILE_VIEW_GROUP = "ViewGroups.json";
+        protected bool _hasViewGroupConfig = false;
 
         protected WebsocketClient _client;
         protected Action<string, bool> _sendMessageAction;
@@ -19,7 +25,7 @@ namespace UI24RController
         protected int _selectedChannel = -1; //-1 = no selected channel
         /// <summary>
         /// Represent the UI24R mixer state
-        /// TODO: need to move every global variable that store any mixer specific state to the Mixer class (viewGroups, selectedChannel etc.)
+        /// TODO: need to move every global variable that store any mixer specific state to the Mixer class (viewGroups, selectedChannel etc.) 
         /// </summary>
         protected Mixer _mixer = new Mixer();
 
@@ -31,14 +37,7 @@ namespace UI24RController
         //38-47: AUX 1-10
         //48-53: VCA 1-6
 
-        protected int[][] _viewViewGroups = {
-            new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 54},
-            new int[] { 8, 9, 10, 11, 12, 13, 14, 15, 54},
-            new int[] { 16, 17, 18, 19, 20, 21, 22, 23, 54},
-            new int[] { 24, 25, 26, 27, 28, 29, 30, 31, 54},
-            new int[] { 32, 33, 34, 35, 36, 37, 38, 39, 54},
-            new int[] { 40, 41, 42, 43, 44, 45, 46, 47, 54 }
-        };
+        protected int[][] _viewViewGroups;
         protected int _selectedViewGroup = 0;
         /// <summary>
         /// Contains the channels of the mixer. the channel number like the view groups 0-23 input channels, 24-25 Line in etc.
@@ -59,10 +58,11 @@ namespace UI24RController
         public UI24RBridge(string address, IMIDIController midiController, Action<string, bool> sendMessageAction, string syncID)
         {
             InitializeChannels();
+            InitializeViewGroups();
             _syncID = syncID;
             _sendMessageAction = sendMessageAction;
             _midiController = midiController;
-            _midiController.FaderEvent += MidiController_FaderEvent;
+            _midiController.FaderEvent += _midiController_FaderEvent;
             _midiController.PresetUp += _midiController_PresetUp;
             _midiController.PresetDown += _midiController_PresetDown;
             _midiController.GainEvent += _midiController_GainEvent;
@@ -70,6 +70,8 @@ namespace UI24RController
             _midiController.SoloChannelEvent += _midiController_SoloChannelEvent;
             _midiController.SelectChannelEvent += _midiController_SelectChannelEvent;
             _midiController.RecChannelEvent += _midiController_RecChannelEvent;
+            _midiController.SaveEvent += _midiController_SaveEvent;
+            _midiController.RecEvent += _midiController_RecEvent;
             _client = new WebsocketClient(new Uri(address));
             _client.MessageReceived.Subscribe(msg => UI24RMessageReceived(msg));
             _midiController.WriteTextToLCD("");
@@ -77,10 +79,55 @@ namespace UI24RController
             _client.Start();
         }
 
+        private void _midiController_RecEvent(object sender, EventArgs e)
+        {
+            if (!_mixer.IsMultitrackRecordingRun)
+            {
+                _client.Send(_mixer.GetStartMTKRecordMessage());
+                _mixer.IsMultitrackRecordingRun = true;
+                _midiController.SetLed("Rec",true);
+            }
+            else
+            {
+                _client.Send(_mixer.GetStopMTKRecordMessage());
+                _mixer.IsMultitrackRecordingRun = false;
+                _midiController.SetLed("Rec", false);
+            }
+        }
+
+        private void InitializeViewGroups()
+        {
+            if (File.Exists(CONFIGFILE_VIEW_GROUP))
+            {
+                var jsonString = File.ReadAllText(CONFIGFILE_VIEW_GROUP);
+                _viewViewGroups = JsonSerializer.Deserialize<int[][]>(jsonString);
+                _hasViewGroupConfig = true;
+            }
+            else
+            {
+                _viewViewGroups = new int[][]{
+                    new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 54 },
+                    new int[] { 8, 9, 10, 11, 12, 13, 14, 15, 54 },
+                    new int[] { 16, 17, 18, 19, 20, 21, 22, 23, 54 },
+                    new int[] { 24, 25, 26, 27, 28, 29, 30, 31, 54 },
+                    new int[] { 32, 33, 34, 35, 36, 37, 38, 39, 54 },
+                    new int[] { 40, 41, 42, 43, 44, 45, 46, 47, 54 }
+                };
+            }
+        }
+
+        #region Midicontroller events
+
+        private void _midiController_SaveEvent(object sender, EventArgs e)
+        {
+            string jsonString;
+            jsonString = JsonSerializer.Serialize(_viewViewGroups);
+            File.WriteAllText(CONFIGFILE_VIEW_GROUP, jsonString);
+        }
         private void _midiController_RecChannelEvent(object sender, MIDIController.ChannelEventArgs e)
         {
             var ch = _viewViewGroups[_selectedViewGroup][e.ChannelNumber];
-            if (_mixerChannels[ch] is IRecordable )
+            if (_mixerChannels[ch] is IRecordable)
             {
                 var channel = _mixerChannels[ch] as IRecordable;
                 channel.IsRec = !channel.IsRec;
@@ -103,7 +150,7 @@ namespace UI24RController
             _mixerChannels[ch].IsMute = !_mixerChannels[ch].IsMute;
             _client.Send(_mixerChannels[ch].MuteMessage());
             _midiController.SetMuteLed(e.ChannelNumber, _mixerChannels[ch].IsMute);
-         }
+        }
 
         private void _midiController_SelectChannelEvent(object sender, MIDIController.ChannelEventArgs e)
         {
@@ -133,9 +180,49 @@ namespace UI24RController
                 _midiController.SetGainLed(e.ChannelNumber, inputChannel.Gain);
             }
         }
+        private void _midiController_PresetDown(object sender, EventArgs e)
+        {
+            if (_selectedViewGroup > 0)
+                _selectedViewGroup = (_selectedViewGroup - 1) % _viewViewGroups.Length;
+            SetControllerToCurrentViewGroup();
+        }
+
+
+        private void _midiController_PresetUp(object sender, EventArgs e)
+        {
+            if (_selectedViewGroup < _viewViewGroups.Length-1)
+                _selectedViewGroup = (_selectedViewGroup + 1) % _viewViewGroups.Length;
+            SetControllerToCurrentViewGroup();
+        }
+
+        private void _midiController_FaderEvent(object sender, MIDIController.FaderEventArgs e)
+        {
+            var ch = _viewViewGroups[_selectedViewGroup][e.ChannelNumber];
+            _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
+            _client.Send(_mixerChannels[ch].MixFaderMessage());
+            //if the channel is linked we have to set the other channel to the same value
+            if (_mixerChannels[ch] is IStereoLinkable)
+            {
+                var stereoChannel = _mixerChannels[ch] as IStereoLinkable;
+                if (stereoChannel.LinkedWith != -1)
+                {
+                    var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
+                    _mixerChannels[otherCh].ChannelFaderValue = e.FaderValue;
+                    _client.Send(_mixerChannels[otherCh].MixFaderMessage());
+                    //If the other chanel is on the current layout we have to set too
+                    (var otherChOnLayer, var isOnLayer) = GetControllerChannel(otherCh);
+                    if (isOnLayer)
+                    {
+                        _midiController.SetFader(otherChOnLayer, e.FaderValue);
+                    }
+                }
+            }
+        }
+
+        #endregion
 
         private void InitializeChannels()
-        {
+        { 
             _mixerChannels = new List<ChannelBase>();
             for (int i=0; i<24; i++)
             {
@@ -164,44 +251,7 @@ namespace UI24RController
             _mixerChannels.Add(new MainChannel());
         }
 
-        private void _midiController_PresetDown(object sender, EventArgs e)
-        {
-            if (_selectedViewGroup > 0)
-                _selectedViewGroup = (_selectedViewGroup - 1) % 6;
-            SetControllerToCurrentViewGroup();
-        }
 
-
-        private void _midiController_PresetUp(object sender, EventArgs e)
-        {
-            if (_selectedViewGroup <5)
-                _selectedViewGroup = (_selectedViewGroup+1) % 6;
-            SetControllerToCurrentViewGroup();
-        }
-
-        private void MidiController_FaderEvent(object sender, MIDIController.FaderEventArgs e)
-        {
-            var ch = _viewViewGroups[_selectedViewGroup][e.ChannelNumber];
-            _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
-            _client.Send(_mixerChannels[ch].MixFaderMessage());
-            //if the channel is linked we have to set the other channel to the same value
-            if (_mixerChannels[ch] is IStereoLinkable)
-            {
-                var stereoChannel = _mixerChannels[ch] as IStereoLinkable;
-                if (stereoChannel.LinkedWith != -1)
-                {
-                    var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
-                    _mixerChannels[otherCh].ChannelFaderValue = e.FaderValue;
-                    _client.Send(_mixerChannels[otherCh].MixFaderMessage());
-                    //If the other chanel is on the current layout we have to set too
-                    (var otherChOnLayer, var isOnLayer) = GetControllerChannel(otherCh);
-                    if (isOnLayer)
-                    {
-                        _midiController.SetFader(otherChOnLayer, e.FaderValue);
-                    }
-                }
-            }
-        }
 
         protected void UI24RMessageReceived(ResponseMessage msg)
         {
@@ -325,17 +375,20 @@ namespace UI24RController
                 }
                 else if (m.StartsWith("SETS^vg.")) //first global view group (e.g:"SETS^vg.0^[0,1,2,3,4,5,6,17,18,19,20,22,23,38,39,40,41,42,43,44,45,48,49,21]")
                 {
-                    var parts = m.Split('^');
-                    var newViewChannel = parts.Last().Trim('[',']').Split(',');
-                    var viewGroupString = parts[1].Split('.').Last();
-                    int viewGroup;
-                    if (int.TryParse(viewGroupString, out viewGroup))
+                    if (!_hasViewGroupConfig)
                     {
-                        if (newViewChannel.Length > 7)
+                        var parts = m.Split('^');
+                        var newViewChannel = parts.Last().Trim('[', ']').Split(',');
+                        var viewGroupString = parts[1].Split('.').Last();
+                        int viewGroup;
+                        if (int.TryParse(viewGroupString, out viewGroup))
                         {
-                            var newViewChannelWithMain = newViewChannel.ToList().Take(8).ToList();
-                            newViewChannelWithMain.Add("54");
-                            _viewViewGroups[viewGroup] = newViewChannelWithMain.Select(i=> int.Parse(i)).ToArray();
+                            if (newViewChannel.Length > 7)
+                            {
+                                var newViewChannelWithMain = newViewChannel.ToList().Take(8).ToList();
+                                newViewChannelWithMain.Add("54");
+                                _viewViewGroups[viewGroup] = newViewChannelWithMain.Select(i => int.Parse(i)).ToArray();
+                            }
                         }
                     }
                 }

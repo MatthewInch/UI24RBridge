@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UI24RController.MIDIController;
 
 public interface IMIDIController
@@ -10,6 +11,7 @@ public interface IMIDIController
     bool ConnectOutputDevice(string deviceName);
     #endregion
 
+    
     event EventHandler<MessageEventArgs> MessageReceived;
     event EventHandler<FaderEventArgs> FaderEvent;
     event EventHandler<GainEventArgs> GainEvent;
@@ -33,7 +35,14 @@ public interface IMIDIController
     event EventHandler<EventArgs> RightEvent;
     event EventHandler<EventArgs> CenterEvent;
 
+    event EventHandler<EventArgs> StopEvent;
+    event EventHandler<EventArgs> PlayEvent;
+    event EventHandler<EventArgs> RecEvent;
+
+
     #endregion
+
+    Dictionary<string, byte> ButtonsID { get; set; }
 
     bool SetFader(int channelNumber, double faderValue);
     bool SetGainLed(int channelNumber, double gainValue);
@@ -42,6 +51,7 @@ public interface IMIDIController
     void SetMuteLed(int channelNumber, bool turnOn);
     void SetSoloLed(int channelNumber, bool turnOn);
     void SetRecLed(int channelNumber, bool turnOn);
+    void SetLed(string buttonName, bool turnOn);
 
     public void WriteTextToChannelLCD(int channelNumber, string text);
     public void WriteTextToLCD(string text);

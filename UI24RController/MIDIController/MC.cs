@@ -10,7 +10,6 @@ namespace UI24RController.MIDIController
 {
     public class MC : IMIDIController, IDisposable
     {
-
         protected class FaderState
         {
             public double Value { get; set; }
@@ -38,6 +37,8 @@ namespace UI24RController.MIDIController
         IMidiOutput _output = null;
         protected int _outputDeviceNumber;
 
+        public Dictionary<string, byte> ButtonsID { get ; set; }
+
         public event EventHandler<MessageEventArgs> MessageReceived;
         public event EventHandler<FaderEventArgs> FaderEvent;
         public event EventHandler<EventArgs> PresetUp;
@@ -56,9 +57,16 @@ namespace UI24RController.MIDIController
         public event EventHandler<ChannelEventArgs> MuteChannelEvent;
         public event EventHandler<ChannelEventArgs> SoloChannelEvent;
         public event EventHandler<ChannelEventArgs> RecChannelEvent;
+        public event EventHandler<EventArgs> StopEvent;
+        public event EventHandler<EventArgs> PlayEvent;
+        public event EventHandler<EventArgs> RecEvent;
 
         public MC()
         {
+            ButtonsID = new Dictionary<string, byte>();
+            ButtonsID.Add("Play", 0x5e);
+            ButtonsID.Add("Rec", 0x5f);
+            ButtonsID.Add("Stop", 0x5d);
             for (byte i=0; i<9; i++)
             {
                 faderValues.Add(i, new FaderState());
@@ -123,6 +131,30 @@ namespace UI24RController.MIDIController
             {
                 var channelArgs = new ChannelEventArgs(channelNumber);
                 RecChannelEvent(this, channelArgs);
+            }
+        }
+
+        protected void OnSaveEvent()
+        {
+            if (SaveEvent != null)
+            {
+                SaveEvent(this, new EventArgs());
+            }
+        }
+
+        protected void OnRecEvent()
+        {
+            if (RecEvent != null)
+            {
+                RecEvent(this, new EventArgs());
+            }
+        }
+
+        protected void OnStopEvent()
+        {
+            if (StopEvent != null)
+            {
+                StopEvent(this, new EventArgs());
             }
         }
 
@@ -209,22 +241,22 @@ namespace UI24RController.MIDIController
                 {
                     OnPresetDown();
                 }
-                else if (message[1] >= 0x10 && message[1] <= 0x17 && message[2] == 0x7f) //mute button
+                else if (message[1] >= 0x10 && message[1] <= 0x17 && message[2] == 0x7f) //channel mute button
                 {
                     byte channelNumber = (byte)(message[1] - 0x10);
                     OnMuteEvent(channelNumber);
                 }
-                else if (message[1] >= 0x08 && message[1] <= 0x0f && message[2] == 0x7f) //solo button
+                else if (message[1] >= 0x08 && message[1] <= 0x0f && message[2] == 0x7f) //channel solo button
                 {
                     byte channelNumber = (byte)(message[1] - 0x08);
                     OnSoloEvent(channelNumber);
                 }
-                else if (message[1] >= 0x00 && message[1] <= 0x07 && message[2] == 0x7f) //rec button
+                else if (message[1] >= 0x00 && message[1] <= 0x07 && message[2] == 0x7f) //channel rec button
                 {
                     byte channelNumber = (byte)(message[1]);
                     OnRecEvent(channelNumber);
                 }
-                else if  (message[1] >= 0x18 && message[1] <= 0x1f && message[2] == 0x7f) //select button
+                else if  (message[1] >= 0x18 && message[1] <= 0x1f && message[2] == 0x7f) //channel select button
                 {
                     byte channelNumber = (byte)(message[1] - 0x18);
                     OnSelectEvent(channelNumber);
@@ -233,6 +265,18 @@ namespace UI24RController.MIDIController
                 {
                     byte channelNumber = (byte)(message[1] - 0x18);
                     OnSelectEvent(8);
+                }
+                else if (message.MIDIEqual(0x90, 0x50, 0x7f)) //Save button
+                {
+                    OnSaveEvent();
+                }
+                else if (message.MIDIEqual(0x90, ButtonsID["Rec"], 0x7f)) //Rec button
+                {
+                    OnRecEvent();
+                }
+                else if (message.MIDIEqual(0x90, ButtonsID["Stop"], 0x7f)) //Stop button
+                {
+                    OnStopEvent();
                 }
 
             }
@@ -376,5 +420,9 @@ namespace UI24RController.MIDIController
                 _output.Send(sysex, 0, sysex.Length, 0);
         }
 
+        public void SetLed(string buttonName, bool turnOn)
+        {
+            _output.Send(new byte[] { 0x90, ButtonsID[buttonName], (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+        }
     }
 }
