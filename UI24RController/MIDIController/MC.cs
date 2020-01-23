@@ -5,6 +5,7 @@ using Commons.Music.Midi;
 using System.Linq;
 using System.Threading.Tasks;
 using Commons.Music.Midi.RtMidi;
+using System.Threading;
 
 namespace UI24RController.MIDIController
 {
@@ -293,7 +294,15 @@ namespace UI24RController.MIDIController
                 OnFaderEvent(channelNumber, faderValue);
                 if (!faderValues[channelNumber].IsTouched)
                 {
-                    SetFader(channelNumber, faderValue);
+                    new Thread(() =>
+                    {
+                        Thread.Sleep(100);
+                        //if value change the other thread write back the last fader value
+                        if (faderValue == faderValues[channelNumber].Value)
+                        {
+                            SetFader(channelNumber, faderValue);
+                        }
+                    }).Start();
                 }
 
             } 
