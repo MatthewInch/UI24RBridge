@@ -150,6 +150,23 @@ namespace UI24RController
             _mixerChannels[ch].IsMute = !_mixerChannels[ch].IsMute;
             _client.Send(_mixerChannels[ch].MuteMessage());
             _midiController.SetMuteLed(e.ChannelNumber, _mixerChannels[ch].IsMute);
+            //if the channel is linked we have to set the other channel to the same value
+            if (_mixerChannels[ch] is IStereoLinkable)
+            {
+                var stereoChannel = _mixerChannels[ch] as IStereoLinkable;
+                if (stereoChannel.LinkedWith != -1)
+                {
+                    var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
+                    _mixerChannels[otherCh].IsMute = !_mixerChannels[otherCh].IsMute;
+                    _client.Send(_mixerChannels[otherCh].MuteMessage());
+                    //If the other chanel is on the current layout we have to set too
+                    (var otherChOnLayer, var isOnLayer) = GetControllerChannel(otherCh);
+                    if (isOnLayer)
+                    {
+                        _midiController.SetMuteLed(otherChOnLayer, _mixerChannels[otherCh].IsMute);
+                    }
+                }
+            }
         }
 
         private void _midiController_SelectChannelEvent(object sender, MIDIController.ChannelEventArgs e)
