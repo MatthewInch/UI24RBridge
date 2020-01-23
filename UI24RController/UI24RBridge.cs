@@ -142,6 +142,23 @@ namespace UI24RController
             _mixerChannels[ch].IsSolo = !_mixerChannels[ch].IsSolo;
             _client.Send(_mixerChannels[ch].SoloMessage());
             _midiController.SetSoloLed(e.ChannelNumber, _mixerChannels[ch].IsSolo);
+            //if the channel is linked we have to set the other channel to the same value
+            if (_mixerChannels[ch] is IStereoLinkable)
+            {
+                var stereoChannel = _mixerChannels[ch] as IStereoLinkable;
+                if (stereoChannel.LinkedWith != -1)
+                {
+                    var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
+                    _mixerChannels[otherCh].IsSolo = !_mixerChannels[otherCh].IsSolo;
+                    _client.Send(_mixerChannels[otherCh].SoloMessage());
+                    //If the other chanel is on the current layout we have to set too
+                    (var otherChOnLayer, var isOnLayer) = GetControllerChannel(otherCh);
+                    if (isOnLayer)
+                    {
+                        _midiController.SetSoloLed(otherChOnLayer, _mixerChannels[otherCh].IsSolo);
+                    }
+                }
+            }
         }
 
         private void _midiController_MuteChannelEvent(object sender, MIDIController.ChannelEventArgs e)
