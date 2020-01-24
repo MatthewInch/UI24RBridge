@@ -9,8 +9,12 @@ namespace UI24RController.UI24RChannels
 
         public FXChannel(int channelNumber): base(channelNumber)
         {
-            this.Name = $"FX {(this.ChannelNumber+1):D2}";
 
+        }
+
+        protected override string GetDefaultName()
+        {
+            return $"FX {(this.ChannelNumber + 1):D2}";
         }
         public override int ChannelNumberInMixer => this.ChannelNumber + 28;
         public override string MixFaderMessage()

@@ -13,9 +13,12 @@ namespace UI24RController.UI24RChannels
 
         public InputChannel(int channelNumber): base(channelNumber)
         {
-           this.Name = $"CH {(this.ChannelNumber + 1):D2}";
             IsRec = false;
             LinkedWith = -1; //-1: not linked, 0 left, 1 right
+        }
+        protected override string GetDefaultName()
+        {
+            return $"CH {(this.ChannelNumber + 1):D2}";
         }
 
         public override string MixFaderMessage()

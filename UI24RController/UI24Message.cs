@@ -9,12 +9,16 @@ namespace UI24RController
     public enum ChannelTypeEnum
     {
         Input, LineIn, Player, Fx, Subgroup, AUX, VCA,
-        Main,HW, Uknown
+        Main, HW, Var, Uknown
+    }
+    public enum SystemVarTypeEnum
+    {
+        MtkRecCurrentState, Uknown
     }
 
     public enum MessageTypeEnum
     {
-        mix, gain, mute, solo, name, mtkrec, stereoIndex, var, uknown
+        mix, gain, mute, solo, name, mtkrec, stereoIndex, mtk, uknown
     }
 
     public class UI24Message
@@ -60,6 +64,7 @@ namespace UI24RController
         public int IntValue { get; internal set; }
         public ChannelTypeEnum ChannelType { get; internal set; }
         public MessageTypeEnum MessageType { get; internal set; }
+        public SystemVarTypeEnum SystemVarType { get; internal set; }
 
         public UI24Message(int channelNumber)
         {
@@ -69,6 +74,7 @@ namespace UI24RController
         public UI24Message(string message)
         {
             IsValid = false;
+            SystemVarType = SystemVarTypeEnum.Uknown;
             var messageParts = message.Split('^');
             if (messageParts.Count() > 2)
             {
@@ -79,7 +85,11 @@ namespace UI24RController
                 {
                     this.MessageType = GetMessageType(messageTypes[1]);
                 }
-                else if (ChannelType != ChannelTypeEnum.Uknown && messageTypes.Count()>=3)
+                else if (ChannelType == ChannelTypeEnum.Var)
+                {
+                    this.MessageType = GetMessageType(messageTypes[1]);
+                }
+                else if (ChannelType != ChannelTypeEnum.Uknown && messageTypes.Count() >= 3)
                 {
                     this.MessageType = GetMessageType(messageTypes[2]);
                     int.TryParse(messageTypes[1], out channelNumber);
@@ -140,14 +150,16 @@ namespace UI24RController
                             IsValid = true;
                         }
                         break;
-                    case MessageTypeEnum.var:
+                    case MessageTypeEnum.mtk:
                         if (messageParts[1] == "var.mtk.rec.currentState")
                         {
+                            SystemVarType = SystemVarTypeEnum.MtkRecCurrentState;
                             if (messageParts[2] == "1")
                                 LogicValue = true;
                             else
                                 LogicValue = false;
                             IsValid = true;
+                            break;
                         }
                         break;
                 }
@@ -176,6 +188,8 @@ namespace UI24RController
                     return ChannelTypeEnum.HW;
                 case "i":
                     return ChannelTypeEnum.Input;
+                case "var":
+                    return ChannelTypeEnum.Var;
                 default: // "i":
                     return ChannelTypeEnum.Uknown;
             }
@@ -197,10 +211,10 @@ namespace UI24RController
                     return MessageTypeEnum.solo;
                 case "mtkrec":
                     return MessageTypeEnum.mtkrec;
+                case "mtk":
+                    return MessageTypeEnum.mtk;
                 case "stereoIndex":
                     return MessageTypeEnum.stereoIndex;
-                case "var":
-                    return MessageTypeEnum.var;
                 default: // "i":
                     return MessageTypeEnum.uknown;
             }

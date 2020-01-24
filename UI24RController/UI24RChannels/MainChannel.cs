@@ -10,6 +10,11 @@ namespace UI24RController.UI24RChannels
         {
             this.Name = "Main";
         }
+        protected override string GetDefaultName()
+        {
+            return "Main";
+        }
+
         public override int ChannelNumberInMixer => 54;
 
         public override string MixFaderMessage()

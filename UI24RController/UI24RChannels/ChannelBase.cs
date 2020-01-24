@@ -11,7 +11,22 @@ namespace UI24RController.UI24RChannels
         /// Between 0 and 1.0
         /// </summary>
         public double ChannelFaderValue { get; set; }
-        public string Name { get; set; }
+        protected string _name = "";
+        public virtual string Name { 
+            get
+            {
+                return _name;
+            }
+            set
+            {
+                if (value == "")
+                {
+                    _name = GetDefaultName();
+                }
+                else _name = value;
+            } 
+        }
+
         public int ChannelNumber { get; internal set; }
         public bool IsSelected { get; set; }
         public bool IsMute { get; set; }
@@ -27,6 +42,12 @@ namespace UI24RController.UI24RChannels
             IsSelected = false;
             IsMute = false;
             IsSolo = false;
+            Name = GetDefaultName();
+        }
+
+        protected virtual string GetDefaultName()
+        {
+            return "CH";
         }
 
         public virtual string MixFaderMessage()

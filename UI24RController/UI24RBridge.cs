@@ -85,13 +85,11 @@ namespace UI24RController
             {
                 _client.Send(_mixer.GetStartMTKRecordMessage());
                 _mixer.IsMultitrackRecordingRun = true;
-                _midiController.SetLed("Rec",true);
             }
             else
             {
                 _client.Send(_mixer.GetStopMTKRecordMessage());
                 _mixer.IsMultitrackRecordingRun = false;
-                _midiController.SetLed("Rec", false);
             }
         }
 
@@ -304,11 +302,12 @@ namespace UI24RController
         private void SetControllerToCurrentViewGroup()
         {
             var channels =  _viewViewGroups[_selectedViewGroup].Select((item, i) => new { Channel = item, controllerChannelNumber = i });
-            _midiController.SetSelectLed(0, false); //turn off all selecetd led;
+            _midiController.SetSelectLed(0, false); //turn off all
             foreach (var ch in channels)
             {
                 var channelNumber = ch.Channel;
                 _midiController.SetFader(ch.controllerChannelNumber, _mixerChannels[channelNumber].ChannelFaderValue);
+
                 if (_mixerChannels[channelNumber].IsSelected)
                 {
                     _midiController.SetSelectLed(ch.controllerChannelNumber, true);
@@ -355,13 +354,10 @@ namespace UI24RController
                             }
                             break;
                         case MessageTypeEnum.name:
-                            if (ui24Message.ChannelName != "")
-                            {
-                                _mixerChannels[ui24Message.ChannelNumber].Name = ui24Message.ChannelName;
-                            }
+                            _mixerChannels[ui24Message.ChannelNumber].Name = ui24Message.ChannelName;
                             if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8)
                             {
-                                _midiController.WriteTextToChannelLCD(controllerChannelNumber, ui24Message.ChannelName);
+                                _midiController.WriteTextToChannelLCD(controllerChannelNumber, _mixerChannels[ui24Message.ChannelNumber].Name);
                             }
                             break;
                         case MessageTypeEnum.gain:
@@ -403,6 +399,12 @@ namespace UI24RController
                             {
                                 var stereoChannel = _mixerChannels[ui24Message.ChannelNumber] as IStereoLinkable;
                                 stereoChannel.LinkedWith = ui24Message.IntValue;
+                            }
+                            break;
+                        case MessageTypeEnum.mtk:
+                            if (ui24Message.SystemVarType == SystemVarTypeEnum.MtkRecCurrentState)
+                            {
+                                _midiController.SetLed("Rec", ui24Message.LogicValue);
                             }
                             break;
                     }

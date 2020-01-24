@@ -384,7 +384,7 @@ namespace UI24RController.MIDIController
             //turn off all select led and on in the current channel (channel 8 is 0x32 the main channel)
             for (byte i = 0; i < 9; i++)
             {
-                _output.Send(new byte[] { 0x90, (byte)(i==8? 0x32 : 0x18 + i), (byte)(i==channelNumber? 0x7f : 0x00) }, 0, 3, 0);
+                _output.Send(new byte[] { 0x90, (byte)(i==8? 0x32 : 0x18 + i), (byte)((i==channelNumber && turnOn)? 0x7f : 0x00) }, 0, 3, 0);
             }
         }
 

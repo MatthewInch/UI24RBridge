@@ -14,12 +14,15 @@ namespace UI24RController.UI24RChannels
 
         public LineInChannel(int channelNumber): base(channelNumber)
         {
-            this.Name = this.ChannelNumber == 0 ? "L-IN L" : "L-IN R";
             IsRec = false;
             LinkedWith = -1; //-1: not linked, 0 left, 1 right
 
         }
 
+        protected override string GetDefaultName()
+        {
+            return this.ChannelNumber == 0 ? "L-IN L" : "L-IN R";
+        }
 
         public override string MixFaderMessage()
         {
