@@ -10,9 +10,14 @@ namespace UI24RController.UI24RChannels
 
         public AuxChannel(int channelNumber): base(channelNumber)
         {
-            this.Name = $"AUX {(this.ChannelNumber + 1):D2}";
             LinkedWith = -1; //-1: not linked, 0 left, 1 right
         }
+
+        protected override string GetDefaultName()
+        {
+            return $"AUX {(this.ChannelNumber + 1):D2}"; ;
+        }
+
 
         public override int ChannelNumberInMixer => this.ChannelNumber + 38;
 

@@ -8,9 +8,12 @@ namespace UI24RController.UI24RChannels
     {
         public SubgroupChannel(int channelNumber): base(channelNumber)
         {
-            this.Name = $"SUB {(this.ChannelNumber + 1):D2}";
         }
         public override int ChannelNumberInMixer => this.ChannelNumber + 32;
+        protected override string GetDefaultName()
+        {
+            return $"SUB {(this.ChannelNumber + 1):D2}";
+        }
 
         public override string MixFaderMessage()
         {
