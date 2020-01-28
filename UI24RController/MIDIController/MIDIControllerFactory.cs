@@ -8,7 +8,7 @@ namespace UI24RController.MIDIController
     {
         public static IMIDIController GetMidiController(string protocol)
         {
-            switch (protocol)
+            switch (protocol.ToUpper())
             {
                 case "HUI":
                     return new MackieHUI();

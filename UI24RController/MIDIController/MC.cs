@@ -193,7 +193,7 @@ namespace UI24RController.MIDIController
         public  bool ConnectInputDevice(string deviceName)
         {
             var access = MidiAccessManager.Default;
-            var deviceNumber = access.Inputs.Where(i => i.Name == deviceName).FirstOrDefault();
+            var deviceNumber = access.Inputs.Where(i => i.Name.ToUpper() == deviceName.ToUpper()).FirstOrDefault();
             if (deviceNumber != null)
             {
                 _input = access.OpenInputAsync(deviceNumber.Id).Result;
@@ -320,7 +320,7 @@ namespace UI24RController.MIDIController
         public  bool ConnectOutputDevice(string deviceName)
         {
             var access = MidiAccessManager.Default;
-            var deviceNumber = access.Outputs.Where(i => i.Name == deviceName).FirstOrDefault();
+            var deviceNumber = access.Outputs.Where(i => i.Name.ToUpper() == deviceName.ToUpper()).FirstOrDefault();
             if (deviceNumber != null)
             {
                 _output = access.OpenOutputAsync(deviceNumber.Id).Result;

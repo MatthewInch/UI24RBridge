@@ -79,6 +79,7 @@ namespace UI24RController
             _client.MessageReceived.Subscribe(msg => UI24RMessageReceived(msg));
             _client.DisconnectionHappened.Subscribe(info => WebsocketDisconnectionHappened(info));
             _client.ReconnectionHappened.Subscribe(info => WebsocketReconnectionHappened(info));
+            _client.ErrorReconnectTimeout = new TimeSpan(0,0,10);
             SendMessage("Connecting to UI24R....");
             _client.Start();
         }
@@ -470,6 +471,7 @@ namespace UI24RController
                             _midiController.SetSelectLed(0, false);
                     }
                 }
+
             }
         }
 
