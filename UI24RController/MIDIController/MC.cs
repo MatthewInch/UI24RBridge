@@ -37,6 +37,7 @@ namespace UI24RController.MIDIController
         protected string _inputDeviceNumber;
         IMidiOutput _output = null;
         protected int _outputDeviceNumber;
+        protected Guid _lcdTextSyncGuid = Guid.NewGuid();
 
         public Dictionary<string, byte> ButtonsID { get ; set; }
 
@@ -432,6 +433,23 @@ namespace UI24RController.MIDIController
         public void SetLed(string buttonName, bool turnOn)
         {
             _output.Send(new byte[] { 0x90, ButtonsID[buttonName], (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+        }
+
+        public void WriteTextToLCD(string text, int delay)
+        {
+            WriteTextToLCD(text);
+            var guid = Guid.NewGuid();
+            _lcdTextSyncGuid = guid;
+            new Thread(() =>
+            {
+                Thread.Sleep(delay*1000);
+                //if value change the other thread write back the last fader value
+                if (guid == _lcdTextSyncGuid)
+                {
+                    WriteTextToLCD("");
+                }
+            }).Start();
+
         }
     }
 }

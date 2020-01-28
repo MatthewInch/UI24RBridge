@@ -197,5 +197,10 @@ namespace UI24RController.MIDIController
         {
             throw new NotImplementedException();
         }
+
+        public void WriteTextToLCD(string text, int delay)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
