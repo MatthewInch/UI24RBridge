@@ -9,6 +9,7 @@ using UI24RController.UI24RChannels;
 using UI24RController.UI24RChannels.Interfaces;
 using Websocket.Client;
 using System.IO;
+using Websocket.Client.Models;
 
 namespace UI24RController
 {
@@ -72,11 +73,24 @@ namespace UI24RController
             _midiController.RecChannelEvent += _midiController_RecChannelEvent;
             _midiController.SaveEvent += _midiController_SaveEvent;
             _midiController.RecEvent += _midiController_RecEvent;
+            _midiController.WriteTextToLCD("");
+
             _client = new WebsocketClient(new Uri(address));
             _client.MessageReceived.Subscribe(msg => UI24RMessageReceived(msg));
-            _midiController.WriteTextToLCD("");
+            _client.DisconnectionHappened.Subscribe(info => WebsocketDisconnectionHappened(info));
+            _client.ReconnectionHappened.Subscribe(info => WebsocketReconnectionHappened(info));
             SendMessage("Connecting to UI24R....");
             _client.Start();
+        }
+
+        private void WebsocketReconnectionHappened(ReconnectionInfo info)
+        {
+            _midiController.WriteTextToLCD("UI24R is reconnected",5);
+        }
+
+        private void WebsocketDisconnectionHappened(DisconnectionInfo info)
+        {
+            _midiController.WriteTextToLCD("UI24R disconnected. Try to reconnect");
         }
 
         private void _midiController_RecEvent(object sender, EventArgs e)
