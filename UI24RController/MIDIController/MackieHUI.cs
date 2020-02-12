@@ -20,6 +20,8 @@ namespace UI24RController.MIDIController
 
         public Dictionary<string, byte> ButtonsID { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
+        public bool IsConnectionErrorOccured => throw new NotImplementedException();
+
         public event EventHandler<MessageEventArgs> MessageReceived;
         public event EventHandler<FaderEventArgs> FaderEvent;
         public event EventHandler<EventArgs> PresetUp;
@@ -41,6 +43,7 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> StopEvent;
         public event EventHandler<EventArgs> PlayEvent;
         public event EventHandler<EventArgs> RecEvent;
+        public event EventHandler<EventArgs> ConnectionErrorEvent;
 
         protected void OnMessageReceived(string message)
         {
@@ -270,6 +273,11 @@ namespace UI24RController.MIDIController
         }
 
         public void WriteTextToLCD(string text, int delay)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool ReConnectDevice()
         {
             throw new NotImplementedException();
         }

@@ -35,11 +35,16 @@ namespace UI24RController.MIDIController
             
         IMidiInput _input = null;
         protected string _inputDeviceNumber;
+        protected string _inputDeviceName;
         IMidiOutput _output = null;
         protected int _outputDeviceNumber;
+        protected string _outputDeviceName;
         protected Guid _lcdTextSyncGuid = Guid.NewGuid();
+        protected bool _isConnected = false;
+        protected bool _isConnectionErrorOccured = false;
 
         public Dictionary<string, byte> ButtonsID { get ; set; }
+        public bool IsConnectionErrorOccured { get => _isConnectionErrorOccured; }
 
         public event EventHandler<MessageEventArgs> MessageReceived;
         public event EventHandler<FaderEventArgs> FaderEvent;
@@ -62,6 +67,7 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> StopEvent;
         public event EventHandler<EventArgs> PlayEvent;
         public event EventHandler<EventArgs> RecEvent;
+        public event EventHandler<EventArgs> ConnectionErrorEvent;
 
         public MC()
         {
@@ -192,24 +198,107 @@ namespace UI24RController.MIDIController
 
         public  bool ConnectInputDevice(string deviceName)
         {
-            var access = MidiAccessManager.Default;
-            var deviceNumber = access.Inputs.Where(i => i.Name.ToUpper() == deviceName.ToUpper()).FirstOrDefault();
-            if (deviceNumber != null)
+            try
             {
-                _input = access.OpenInputAsync(deviceNumber.Id).Result;
-                _inputDeviceNumber = deviceNumber.Id;
-                _input.MessageReceived += (obj, e) =>
+                _inputDeviceName = deviceName;
+                var access = MidiAccessManager.Default;
+                var deviceNumber = access.Inputs.Where(i => i.Name.ToUpper() == deviceName.ToUpper()).FirstOrDefault();
+                if (deviceNumber != null)
                 {
-                    if (e.Data.Length>2)
+                    _input = access.OpenInputAsync(deviceNumber.Id).Result;
+                    _inputDeviceNumber = deviceNumber.Id;
+                    _input.MessageReceived += (obj, e) =>
                     {
-                        OnMessageReceived( $"{e.Data[0].ToString("x2")} - {e.Data[1].ToString("x2")} - {e.Data[2].ToString("x2")}");
-                        ProcessMidiMessage(e);
-                    }
-                };
-                return true;
+                        if (e.Data.Length > 2)
+                        {
+                            OnMessageReceived($"{e.Data[0].ToString("x2")} - {e.Data[1].ToString("x2")} - {e.Data[2].ToString("x2")}");
+                            ProcessMidiMessage(e);
+                        }
+                    };
+                    return true;
+                }
+                else
+                {
+                    _isConnectionErrorOccured = true;
+                    return false;
+                }
             }
-            else
-                return false;            
+            catch (Exception ex)
+            {
+            }
+            return false;
+        }
+
+
+
+        public bool ConnectOutputDevice(string deviceName)
+        {
+            try
+            {
+                _outputDeviceName = deviceName;
+                var access = MidiAccessManager.Default;
+                var deviceNumber = access.Outputs.Where(i => i.Name.ToUpper() == deviceName.ToUpper()).FirstOrDefault();
+                if (deviceNumber != null)
+                {
+                    _output = access.OpenOutputAsync(deviceNumber.Id).Result;
+                    _outputDeviceNumber = Convert.ToInt32(deviceNumber.Id);
+                    _isConnected = true;
+                    _isConnectionErrorOccured = false;
+                    return true;
+                }
+                else
+                {
+                    _isConnectionErrorOccured = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (ConnectionErrorEvent != null && !_isConnectionErrorOccured)
+                {
+                    _isConnectionErrorOccured = true;
+                    ConnectionErrorEvent(this, new EventArgs());
+                }
+            }
+            return false;
+        }
+
+        public bool ReConnectDevice()
+        {
+           return ConnectInputDevice(_inputDeviceName) &&
+            ConnectOutputDevice(_outputDeviceName);
+        }
+
+
+        public string[] GetInputDeviceNames()
+        {
+            var access = MidiAccessManager.Default;
+            return access.Inputs.Select(port => port.Name).ToArray();
+        }
+
+        public string[] GetOutputDeviceNames()
+        {
+            var access = MidiAccessManager.Default;
+            return access.Outputs.Select(port => port.Name).ToArray();
+        }
+
+        protected void Send(byte[] mevent, int offset, int length, long timestamp)
+        {
+            try
+            {
+                if (_isConnected)
+                {
+                    _output.Send(mevent, offset, length, timestamp);
+
+                }
+            }
+            catch (Exception ex)
+            { 
+                if (ConnectionErrorEvent != null && !_isConnectionErrorOccured)
+                {
+                    _isConnectionErrorOccured = true;
+                    ConnectionErrorEvent(this, new EventArgs());
+                }
+            }
         }
 
         private void ProcessMidiMessage(MidiReceivedEventArgs e)
@@ -317,33 +406,6 @@ namespace UI24RController.MIDIController
             }
         }
 
-        public  bool ConnectOutputDevice(string deviceName)
-        {
-            var access = MidiAccessManager.Default;
-            var deviceNumber = access.Outputs.Where(i => i.Name.ToUpper() == deviceName.ToUpper()).FirstOrDefault();
-            if (deviceNumber != null)
-            {
-                _output = access.OpenOutputAsync(deviceNumber.Id).Result;
-                _outputDeviceNumber = Convert.ToInt32( deviceNumber.Id);
-                return true;
-            }
-            return false;
-        }
-
-
-
-        public  string[] GetInputDeviceNames()
-        {
-            var access = MidiAccessManager.Default;
-            return access.Inputs.Select(port => port.Name).ToArray();
-        }
-
-        public  string[] GetOutputDeviceNames()
-        {
-            var access = MidiAccessManager.Default;
-            return access.Outputs.Select(port => port.Name).ToArray();
-        }
-
         public  bool SetFader(int channelNumber, double faderValue)
         {
             if (_output != null && channelNumber < 9)
@@ -355,7 +417,7 @@ namespace UI24RController.MIDIController
                 byte upper = (byte)(data2 >> 7); //upper 7 bit
                 byte lower = (byte)((data2) & 0x7f); // lower 7 bit
 
-                _output.Send(new byte[] { (byte)(0xe0 + channelNumber), lower, upper }, 0, 3, 0);
+                Send(new byte[] { (byte)(0xe0 + channelNumber), lower, upper }, 0, 3, 0);
 
 
                 faderValues[z].Value = faderValue;
@@ -374,7 +436,7 @@ namespace UI24RController.MIDIController
                     segment = 1;
                 if (segment == 0x0c)
                     segment = 0x0b;
-                _output.Send(new byte[] {0xb0, (byte)(0x30 + channelNumber), segment }, 0, 3, 0);
+                Send(new byte[] {0xb0, (byte)(0x30 + channelNumber), segment }, 0, 3, 0);
                 return true;
             }
             return false;
@@ -385,7 +447,7 @@ namespace UI24RController.MIDIController
             //turn off all select led and on in the current channel (channel 8 is 0x32 the main channel)
             for (byte i = 0; i < 9; i++)
             {
-                _output.Send(new byte[] { 0x90, (byte)(i==8? 0x32 : 0x18 + i), (byte)((i==channelNumber && turnOn)? 0x7f : 0x00) }, 0, 3, 0);
+                Send(new byte[] { 0x90, (byte)(i==8? 0x32 : 0x18 + i), (byte)((i==channelNumber && turnOn)? 0x7f : 0x00) }, 0, 3, 0);
             }
         }
 
@@ -393,14 +455,14 @@ namespace UI24RController.MIDIController
         {
             if (channelNumber < 8)
             {
-                _output.Send(new byte[] { 0x90, (byte)(0x10 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+                Send(new byte[] { 0x90, (byte)(0x10 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
             }
         }
         public void SetSoloLed(int channelNumber, bool turnOn)
         {
             if (channelNumber < 8)
             {
-                _output.Send(new byte[] { 0x90, (byte)(0x08 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+                Send(new byte[] { 0x90, (byte)(0x08 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
             }
         }
 
@@ -408,7 +470,7 @@ namespace UI24RController.MIDIController
         {
             if (channelNumber < 8)
             {
-                _output.Send(new byte[] { 0x90, (byte)(0x00 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+                Send(new byte[] { 0x90, (byte)(0x00 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
             }
         }
 
@@ -419,7 +481,7 @@ namespace UI24RController.MIDIController
                 var position = channelNumber * 7;
                 var message = ASCIIEncoding.ASCII.GetBytes((text + "       ").Substring(0, 7));
                 byte[] sysex = (new byte[] { 0xf0, 0, 0, 0x66, 0x14, 0x12, (byte)position }).Concat(message).Concat(new byte[] { 0xf7 }).ToArray();
-                _output.Send(sysex, 0, sysex.Length, 0);
+                Send(sysex, 0, sysex.Length, 0);
             }
         }
 
@@ -427,12 +489,12 @@ namespace UI24RController.MIDIController
         {
                 var message = ASCIIEncoding.ASCII.GetBytes((text + "                                                        ").Substring(0, 50));
                 byte[] sysex = (new byte[] { 0xf0, 0, 0, 0x66, 0x14, 0x12, 0x38 }).Concat(message).Concat(new byte[] { 0xf7 }).ToArray();
-                _output.Send(sysex, 0, sysex.Length, 0);
+                Send(sysex, 0, sysex.Length, 0);
         }
 
         public void SetLed(string buttonName, bool turnOn)
         {
-            _output.Send(new byte[] { 0x90, ButtonsID[buttonName], (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+            Send(new byte[] { 0x90, ButtonsID[buttonName], (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
         }
 
         public void WriteTextToLCD(string text, int delay)
@@ -451,5 +513,6 @@ namespace UI24RController.MIDIController
             }).Start();
 
         }
+
     }
 }
