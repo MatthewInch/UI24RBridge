@@ -9,9 +9,16 @@ public interface IMIDIController
     string[] GetOutputDeviceNames();
     bool ConnectInputDevice(string deviceName);
     bool ConnectOutputDevice(string deviceName);
+
+    bool ReConnectDevice();
+
+    bool IsConnectionErrorOccured { get; }
+
+    event EventHandler<EventArgs> ConnectionErrorEvent;
+
     #endregion
 
-    
+
     event EventHandler<MessageEventArgs> MessageReceived;
     event EventHandler<FaderEventArgs> FaderEvent;
     event EventHandler<GainEventArgs> GainEvent;

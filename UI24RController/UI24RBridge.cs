@@ -74,6 +74,11 @@ namespace UI24RController
             _midiController.SaveEvent += _midiController_SaveEvent;
             _midiController.RecEvent += _midiController_RecEvent;
             _midiController.WriteTextToLCD("");
+            _midiController.ConnectionErrorEvent += _midiController_ConnectionErrorEvent;
+            if (_midiController.IsConnectionErrorOccured)
+            {
+                _midiController_ConnectionErrorEvent(this, null);
+            }
 
             _client = new WebsocketClient(new Uri(address));
             _client.MessageReceived.Subscribe(msg => UI24RMessageReceived(msg));
@@ -82,6 +87,18 @@ namespace UI24RController
             _client.ErrorReconnectTimeout = new TimeSpan(0,0,10);
             SendMessage("Connecting to UI24R....");
             _client.Start();
+        }
+
+        private void _midiController_ConnectionErrorEvent(object sender, EventArgs e)
+        {
+            new Thread(() =>
+            {
+                while (!_midiController.ReConnectDevice())
+                {
+                    Thread.Sleep(100);
+                }
+                SetControllerToCurrentViewGroup();
+            }).Start();
         }
 
         private void WebsocketReconnectionHappened(ReconnectionInfo info)
