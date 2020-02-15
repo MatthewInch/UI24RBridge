@@ -42,6 +42,7 @@ namespace UI24RController.MIDIController
         protected Guid _lcdTextSyncGuid = Guid.NewGuid();
         protected bool _isConnected = false;
         protected bool _isConnectionErrorOccured = false;
+        protected Thread _pingThread;
 
         public Dictionary<string, byte> ButtonsID { get ; set; }
         public bool IsConnectionErrorOccured { get => _isConnectionErrorOccured; }
@@ -194,6 +195,11 @@ namespace UI24RController.MIDIController
                 _output.Dispose();
                 _output = null;
             }
+            if (_pingThread != null)
+            {
+                //stop the pinging thread
+                _isConnectionErrorOccured = true;
+            }
         }
 
         public  bool ConnectInputDevice(string deviceName)
@@ -244,6 +250,7 @@ namespace UI24RController.MIDIController
                     _outputDeviceNumber = Convert.ToInt32(deviceNumber.Id);
                     _isConnected = true;
                     _isConnectionErrorOccured = false;
+                    StartPingThread();
                     return true;
                 }
                 else
@@ -260,6 +267,25 @@ namespace UI24RController.MIDIController
                 }
             }
             return false;
+        }
+
+        private void StartPingThread()
+        {
+            if (_pingThread == null || !_pingThread.IsAlive)
+            {
+                _pingThread = new Thread(() =>
+                {
+                    bool isSuccess = true;
+                    while (!_isConnectionErrorOccured)
+                    {
+                        Thread.Sleep(5000);
+                        Send(new byte[] { 0x90, 0x00, 0x00 }, 0, 3, 0);
+                    }
+                });
+            }
+            if (!_pingThread.IsAlive)
+                _pingThread.Start();
+
         }
 
         public bool ReConnectDevice()
