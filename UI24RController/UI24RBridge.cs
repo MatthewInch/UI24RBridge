@@ -101,6 +101,7 @@ namespace UI24RController
                 }
 
                 SetControllerToCurrentViewGroup();
+                SetStateLedsOnController();
                 SendMessage("Midi controller reconnected.");
             }).Start();
         }
@@ -360,6 +361,11 @@ namespace UI24RController
             }
         }
 
+        private void SetStateLedsOnController()
+        {
+            _midiController.SetLed("Rec", _mixer.IsMultitrackRecordingRun);
+        }
+
         protected (int, bool) GetControllerChannel(int ch)
         {
             var controllerChannelNumber = _viewViewGroups[_selectedViewGroup].Select((item, i) => new { Channel = item, controllerChannelNumber = i })
@@ -441,6 +447,7 @@ namespace UI24RController
                             if (ui24Message.SystemVarType == SystemVarTypeEnum.MtkRecCurrentState)
                             {
                                 _midiController.SetLed("Rec", ui24Message.LogicValue);
+                                _mixer.IsMultitrackRecordingRun = ui24Message.LogicValue;
                             }
                             break;
                     }

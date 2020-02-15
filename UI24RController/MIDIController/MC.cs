@@ -279,7 +279,7 @@ namespace UI24RController.MIDIController
                     while (!_isConnectionErrorOccured)
                     {
                         Thread.Sleep(5000);
-                        Send(new byte[] { 0x90, 0x00, 0x00 }, 0, 3, 0);
+                        Send(new byte[] { 0xb0, 0x00, 0x00 }, 0, 3, 0);
                     }
                 });
             }
