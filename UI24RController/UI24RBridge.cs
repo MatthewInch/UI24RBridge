@@ -510,6 +510,10 @@ namespace UI24RController
                 _client.Dispose();
                 _client = null;
             }
+            if ((_midiController is IDisposable) && _midiController!= null)
+            {
+                (_midiController as IDisposable).Dispose();
+            }
         }
     }
 }
