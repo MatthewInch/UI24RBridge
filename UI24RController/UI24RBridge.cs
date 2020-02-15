@@ -91,13 +91,17 @@ namespace UI24RController
 
         private void _midiController_ConnectionErrorEvent(object sender, EventArgs e)
         {
+            SendMessage("Midi controller connection error.");
+            SendMessage("Try to reconnect....");
             new Thread(() =>
             {
                 while (!_midiController.ReConnectDevice())
                 {
                     Thread.Sleep(100);
                 }
+
                 SetControllerToCurrentViewGroup();
+                SendMessage("Midi controller reconnected.");
             }).Start();
         }
 
