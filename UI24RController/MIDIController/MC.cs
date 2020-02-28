@@ -69,13 +69,23 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> PlayEvent;
         public event EventHandler<EventArgs> RecEvent;
         public event EventHandler<EventArgs> ConnectionErrorEvent;
+        public event EventHandler<FunctionEventArgs> FunctionButtonEvent;
 
         public MC()
         {
             ButtonsID = new Dictionary<string, byte>();
+            //It will be configurable 
             ButtonsID.Add("Play", 0x5e);
             ButtonsID.Add("Rec", 0x5f);
             ButtonsID.Add("Stop", 0x5d);
+            ButtonsID.Add("F1", 0x36);
+            ButtonsID.Add("F2", 0x37);
+            ButtonsID.Add("F3", 0x38);
+            ButtonsID.Add("F4", 0x39);
+            ButtonsID.Add("F5", 0x3a);
+            ButtonsID.Add("F6", 0x3b);
+            ButtonsID.Add("F7", 0x3c);
+            ButtonsID.Add("F8", 0x3d);
             for (byte i=0; i<9; i++)
             {
                 faderValues.Add(i, new FaderState());
@@ -83,104 +93,64 @@ namespace UI24RController.MIDIController
         }
         protected void OnMessageReceived(string message)
         {
-            if (MessageReceived != null)
-            {
-                var messageEventArgs = new MessageEventArgs();
-                messageEventArgs.Message = message;
-                MessageReceived(this, messageEventArgs);
-            }
+            MessageReceived?.Invoke(this, new MessageEventArgs(message));
         }
 
         protected void OnFaderEvent(int channelNumber, double faderValue)
         {
-            if (FaderEvent != null)
-            {
-                var faderEventArgs = new FaderEventArgs(channelNumber, faderValue);
-                FaderEvent(this, faderEventArgs);
-            }
+            FaderEvent?.Invoke(this, new FaderEventArgs(channelNumber, faderValue));
         }
 
         protected void OnGainEvent(int channelNumber, int gainDirection)
         {
-            if (GainEvent != null)
-            {
-                var gainEventArgs = new GainEventArgs(channelNumber, gainDirection);
-                GainEvent(this, gainEventArgs);
-            }
+            GainEvent?.Invoke(this, new GainEventArgs(channelNumber, gainDirection));
         }
 
         protected void OnSelectEvent(int channelNumber)
         {
-            if (SelectChannelEvent != null)
-            {
-                var channelArgs = new ChannelEventArgs(channelNumber);
-                SelectChannelEvent(this, channelArgs);
-            }
+            SelectChannelEvent?.Invoke(this, new ChannelEventArgs(channelNumber));
         }
         protected void OnMuteEvent(int channelNumber)
         {
-            if (MuteChannelEvent != null)
-            {
-                var channelArgs = new ChannelEventArgs(channelNumber);
-                MuteChannelEvent(this, channelArgs);
-            }
+            MuteChannelEvent?.Invoke(this, new ChannelEventArgs(channelNumber));
         }
 
         protected void OnSoloEvent(int channelNumber)
         {
-            if (SoloChannelEvent != null)
-            {
-                var channelArgs = new ChannelEventArgs(channelNumber);
-                SoloChannelEvent(this, channelArgs);
-            }
+            SoloChannelEvent?.Invoke(this, new ChannelEventArgs(channelNumber));
         }
         protected void OnRecEvent(int channelNumber)
         {
-            if (RecChannelEvent != null)
-            {
-                var channelArgs = new ChannelEventArgs(channelNumber);
-                RecChannelEvent(this, channelArgs);
-            }
+            RecChannelEvent?.Invoke(this, new ChannelEventArgs(channelNumber));
         }
 
         protected void OnSaveEvent()
         {
-            if (SaveEvent != null)
-            {
-                SaveEvent(this, new EventArgs());
-            }
+            SaveEvent?.Invoke(this, new EventArgs());
         }
 
         protected void OnRecEvent()
         {
-            if (RecEvent != null)
-            {
-                RecEvent(this, new EventArgs());
-            }
+            RecEvent?.Invoke(this, new EventArgs());
         }
 
         protected void OnStopEvent()
         {
-            if (StopEvent != null)
-            {
-                StopEvent(this, new EventArgs());
-            }
+            StopEvent?.Invoke(this, new EventArgs());
         }
 
+        protected void OnFunctionButtonEvent(int functionNumber,bool isPress)
+        {
+            FunctionButtonEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
+        }
 
         protected void OnPresetUp()
         {
-            if (PresetUp != null)
-            {
-                PresetUp(this, new EventArgs());
-            }
+            PresetUp?.Invoke(this, new EventArgs());
         }
         protected void OnPresetDown()
         {
-            if (PresetDown != null)
-            {
-                PresetDown(this, new EventArgs());
-            }
+            PresetDown?.Invoke(this, new EventArgs());
         }
 
         public void Dispose()
@@ -231,6 +201,7 @@ namespace UI24RController.MIDIController
             }
             catch (Exception ex)
             {
+                OnMessageReceived($"Input device connection error. ({ex.Message})");
             }
             return false;
         }
@@ -260,6 +231,7 @@ namespace UI24RController.MIDIController
             }
             catch (Exception ex)
             {
+                OnMessageReceived($"Output device connection error. ({ex.Message})");
                 if (ConnectionErrorEvent != null && !_isConnectionErrorOccured)
                 {
                     _isConnectionErrorOccured = true;
@@ -275,7 +247,6 @@ namespace UI24RController.MIDIController
             {
                 _pingThread = new Thread(() =>
                 {
-                    bool isSuccess = true;
                     while (!_isConnectionErrorOccured)
                     {
                         Thread.Sleep(5000);
@@ -317,7 +288,7 @@ namespace UI24RController.MIDIController
 
                 }
             }
-            catch (Exception ex)
+            catch 
             { 
                 if (ConnectionErrorEvent != null && !_isConnectionErrorOccured)
                 {
@@ -395,6 +366,10 @@ namespace UI24RController.MIDIController
                 {
                     OnStopEvent();
                 }
+                else if (message[0]== 0x90 && message[1]>=ButtonsID["F1"] && message[1] <= ButtonsID["F8"]) //F1-F8 press
+                {
+                    OnFunctionButtonEvent(message[1] - ButtonsID["F1"], message[2] == 0x7f);
+                }
 
             }
             else if (message[0] >= 0xe0 && (message[0] <= 0xe8)) //move fader
@@ -437,7 +412,6 @@ namespace UI24RController.MIDIController
             if (_output != null && channelNumber < 9)
             {
 
-                byte data0 = 0xb0;
                 byte z = Convert.ToByte(channelNumber);
                 int data2 = (int)Math.Round(faderValue * 16383); //14 bit
                 byte upper = (byte)(data2 >> 7); //upper 7 bit

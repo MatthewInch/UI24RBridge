@@ -16,6 +16,7 @@ namespace UI24RController.UI24RChannels
         {
             IsRec = false;
             LinkedWith = -1; //-1: not linked, 0 left, 1 right
+            channelTypeID = "l";
 
         }
 

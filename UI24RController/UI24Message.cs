@@ -18,7 +18,7 @@ namespace UI24RController
 
     public enum MessageTypeEnum
     {
-        mix, gain, mute, solo, name, mtkrec, stereoIndex, mtk, uknown
+        mix, gain, mute, solo, name, mtkrec, stereoIndex, mtk, auxFaderValue, uknown
     }
 
     public class UI24Message
@@ -99,10 +99,11 @@ namespace UI24RController
                     this.MessageType = MessageTypeEnum.uknown;
                 }
                 this.ChannelTypeNumber = channelNumber;
+                int intValue;
+                double faderValue;
                 switch (this.MessageType)
                 {
                     case MessageTypeEnum.mix:
-                        double faderValue;
                         if (double.TryParse(messageParts[2], NumberStyles.Number, CultureInfo.InvariantCulture, out faderValue))
                         {
                             FaderValue = faderValue;
@@ -143,7 +144,6 @@ namespace UI24RController
                         IsValid = true;
                         break;
                     case MessageTypeEnum.stereoIndex:
-                        int intValue;
                         if (int.TryParse(messageParts[2], out intValue))
                         {
                             this.IntValue = intValue;
@@ -160,6 +160,19 @@ namespace UI24RController
                                 LogicValue = false;
                             IsValid = true;
                             break;
+                        }
+                        break;
+                    case MessageTypeEnum.auxFaderValue:
+                        if (messageTypes.Length > 4) //SETD^i.0.aux.0.value^val 
+                        {
+                            if (int.TryParse(messageTypes[3], out intValue) 
+                                && messageTypes[4] == "value" &&
+                                double.TryParse(messageParts[2], NumberStyles.Number, CultureInfo.InvariantCulture, out faderValue))
+                            {
+                                this.IntValue = intValue;
+                                this.FaderValue = faderValue;
+                                IsValid = true;
+                            }
                         }
                         break;
                 }
@@ -215,6 +228,8 @@ namespace UI24RController
                     return MessageTypeEnum.mtk;
                 case "stereoIndex":
                     return MessageTypeEnum.stereoIndex;
+                case "aux":
+                    return MessageTypeEnum.auxFaderValue;
                 default: // "i":
                     return MessageTypeEnum.uknown;
             }

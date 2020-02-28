@@ -32,6 +32,8 @@ namespace UI24RController.UI24RChannels
         public bool IsMute { get; set; }
         public bool IsSolo { get; set; }
         public virtual int ChannelNumberInMixer => ChannelNumber;
+        public List<double> AuxSendValues { get; set; }
+        protected string channelTypeID { get; set; }
 
         public double Gain { get; set; }
 
@@ -43,6 +45,8 @@ namespace UI24RController.UI24RChannels
             IsMute = false;
             IsSolo = false;
             Name = GetDefaultName();
+            AuxSendValues = new List<double>() {0,0,0,0,0,0,0,0,0,0 };
+            channelTypeID = "i";
         }
 
         protected virtual string GetDefaultName()
@@ -50,10 +54,16 @@ namespace UI24RController.UI24RChannels
             return "CH";
         }
 
+        public virtual string SetAuxValueMessage(int auxNumber)
+        {
+            return $"3:::SETD^{this.channelTypeID}.{this.ChannelNumber}.aux.{auxNumber}.value^{this.AuxSendValues[auxNumber].ToString().Replace(',', '.')}";
+        }
+
         public virtual string MixFaderMessage()
         {
             return $"3:::SETD^i.{this.ChannelNumber}.mix^{this.ChannelFaderValue.ToString().Replace(',', '.')}";
         }
+
 
         public virtual string SelectChannelMessage(string syncID)
         {

@@ -9,6 +9,7 @@ namespace UI24RController.UI24RChannels
 
         public FXChannel(int channelNumber): base(channelNumber)
         {
+            channelTypeID = "f";
 
         }
 
