@@ -18,9 +18,8 @@ public interface IMIDIController
 
     #endregion
 
-
-    event EventHandler<MessageEventArgs> MessageReceived;
     event EventHandler<FaderEventArgs> FaderEvent;
+    event EventHandler<MessageEventArgs> MessageReceived;
     event EventHandler<GainEventArgs> GainEvent;
     event EventHandler<ChannelEventArgs> SelectChannelEvent;
     event EventHandler<ChannelEventArgs> MuteChannelEvent;
@@ -45,6 +44,8 @@ public interface IMIDIController
     event EventHandler<EventArgs> StopEvent;
     event EventHandler<EventArgs> PlayEvent;
     event EventHandler<EventArgs> RecEvent;
+
+    event EventHandler<FunctionEventArgs> FunctionButtonEvent;
 
 
     #endregion

@@ -8,15 +8,15 @@ namespace UI24RController.MIDIController
     {
         public static IMIDIController GetMidiController(string protocol)
         {
-            switch (protocol.ToUpper())
-            {
-                case "HUI":
-                    return new MackieHUI();
-                case "MC":
+            //switch (protocol.ToUpper())
+            //{
+                //case "HUI":
+                //    return new MackieHUI();
+                //case "MC":
                     return new MC();
-                default:
-                    return new BehringerUniversalMIDI();
-            }
+                //default:
+                //    return new BehringerUniversalMIDI();
+            //}
         }
 
 

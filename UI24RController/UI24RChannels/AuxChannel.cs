@@ -11,6 +11,8 @@ namespace UI24RController.UI24RChannels
         public AuxChannel(int channelNumber): base(channelNumber)
         {
             LinkedWith = -1; //-1: not linked, 0 left, 1 right
+            channelTypeID = "a";
+
         }
 
         protected override string GetDefaultName()

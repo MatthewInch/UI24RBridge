@@ -44,6 +44,7 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> PlayEvent;
         public event EventHandler<EventArgs> RecEvent;
         public event EventHandler<EventArgs> ConnectionErrorEvent;
+        public event EventHandler<FunctionEventArgs> FunctionButtonEvent;
 
         protected void OnMessageReceived(string message)
         {
@@ -281,5 +282,6 @@ namespace UI24RController.MIDIController
         {
             throw new NotImplementedException();
         }
+
     }
 }

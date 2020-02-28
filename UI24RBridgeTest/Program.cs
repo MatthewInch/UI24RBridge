@@ -8,6 +8,7 @@ namespace UI24RBridgeTest
 {
     class Program
     {
+        private static readonly object balanceLock = new object();
         static void Main(string[] args)
         {
             var builder = new ConfigurationBuilder()
@@ -37,15 +38,22 @@ namespace UI24RBridgeTest
                 }
                 else
                 {
+                    Console.WriteLine("Set controller message event....");
+                    controller.MessageReceived += (obj, e) =>
+                    {
+                        lock (balanceLock)
+                        {
+                            Console.WriteLine(e.Message);
+                        }
+                    };
+
+                    Console.WriteLine("Connect input device...");
                     controller.ConnectInputDevice(midiInputDevice);
+                    Console.WriteLine("Connect output device...");
                     controller.ConnectOutputDevice(midiOutputDevice);
 
                 }
 
-                controller.MessageReceived += (obj, e) =>
-                {
-                    Console.WriteLine(e.Message);
-                };
                 Action<string, bool> messageWriter = (string messages, bool isDebugMessage) =>
                  {
                      if (!isDebugMessage || (isDebugMessage && viewDebugMessage))
@@ -57,11 +65,15 @@ namespace UI24RBridgeTest
                                                                                                 //!message.StartsWith("3:::VU2^") && !message.StartsWith("VU2^")
                              )
                              {
-                                 Console.WriteLine(message);
+                                 lock (balanceLock)
+                                 {
+                                     Console.WriteLine(message);
+                                 }
                              }
                          }
                      }
                  };
+                Console.WriteLine("Start bridge...");
                 using (UI24RBridge bridge = new UI24RBridge(address, controller, messageWriter, syncID))
                 {
                     while (!Console.KeyAvailable)

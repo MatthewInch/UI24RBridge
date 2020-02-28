@@ -14,6 +14,8 @@ namespace UI24RController.UI24RChannels
         public PlayerChannel(int channelNumber): base(channelNumber)
         {
             LinkedWith = -1; //-1: not linked, 0 left, 1 right
+            channelTypeID = "p";
+
         }
         protected override string GetDefaultName()
         {

@@ -15,6 +15,12 @@ namespace UI24RController
 {
     public class UI24RBridge : IDisposable
     {
+        protected enum ViewTypeEnum
+        {
+            GlobalView, MidiTracks, Inputs, AudioTrack, AudioInst, Aux, Buses, Outputs, User
+        }
+
+
 
         const string CONFIGFILE_VIEW_GROUP = "ViewGroups.json";
         protected bool _hasViewGroupConfig = false;
@@ -24,11 +30,15 @@ namespace UI24RController
         protected IMIDIController _midiController;
         protected string _syncID;
         protected int _selectedChannel = -1; //-1 = no selected channel
+        protected int _pressedFunctionButton = -1; //-1 = no pressed button
+ 
         /// <summary>
         /// Represent the UI24R mixer state
         /// TODO: need to move every global variable that store any mixer specific state to the Mixer class (viewGroups, selectedChannel etc.) 
         /// </summary>
         protected Mixer _mixer = new Mixer();
+
+        protected ViewTypeEnum _viewTypeEnum;
 
         //0-23: input channels
         //24-25: Linie In L/R
@@ -58,11 +68,13 @@ namespace UI24RController
         /// <param name="sendMessageAction">the logging function (implemented in the host app)</param>
         public UI24RBridge(string address, IMIDIController midiController, Action<string, bool> sendMessageAction, string syncID)
         {
+            SendMessage("Start initialization...", false);
             InitializeChannels();
             InitializeViewGroups();
             _syncID = syncID;
             _sendMessageAction = sendMessageAction;
             _midiController = midiController;
+            SendMessage("Create controller events....", false);
             _midiController.FaderEvent += _midiController_FaderEvent;
             _midiController.PresetUp += _midiController_PresetUp;
             _midiController.PresetDown += _midiController_PresetDown;
@@ -75,24 +87,38 @@ namespace UI24RController
             _midiController.RecEvent += _midiController_RecEvent;
             _midiController.WriteTextToLCD("");
             _midiController.ConnectionErrorEvent += _midiController_ConnectionErrorEvent;
+            _midiController.FunctionButtonEvent += _midiController_FunctionButtonEvent;
             if (_midiController.IsConnectionErrorOccured)
             {
                 _midiController_ConnectionErrorEvent(this, null);
             }
-
+            SendMessage("Start websocket connection...", false);
             _client = new WebsocketClient(new Uri(address));
             _client.MessageReceived.Subscribe(msg => UI24RMessageReceived(msg));
             _client.DisconnectionHappened.Subscribe(info => WebsocketDisconnectionHappened(info));
             _client.ReconnectionHappened.Subscribe(info => WebsocketReconnectionHappened(info));
             _client.ErrorReconnectTimeout = new TimeSpan(0,0,10);
-            SendMessage("Connecting to UI24R....");
+            SendMessage("Connecting to UI24R....", false);
             _client.Start();
+        }
+
+        private void _midiController_FunctionButtonEvent(object sender, MIDIController.FunctionEventArgs e)
+        {
+            if (e.IsPress)
+            {
+                _pressedFunctionButton = e.FunctionButton;
+            }
+            else
+            {
+                _pressedFunctionButton = -1;
+            }
+            SetControllerToCurrentViewGroup();
         }
 
         private void _midiController_ConnectionErrorEvent(object sender, EventArgs e)
         {
-            SendMessage("Midi controller connection error.");
-            SendMessage("Try to reconnect....");
+            SendMessage("Midi controller connection error.", false);
+            SendMessage("Try to reconnect....", false);
             new Thread(() =>
             {
                 while (!_midiController.ReConnectDevice())
@@ -102,7 +128,7 @@ namespace UI24RController
 
                 SetControllerToCurrentViewGroup();
                 SetStateLedsOnController();
-                SendMessage("Midi controller reconnected.");
+                SendMessage("Midi controller reconnected.", false);
             }).Start();
         }
 
@@ -267,24 +293,32 @@ namespace UI24RController
         private void _midiController_FaderEvent(object sender, MIDIController.FaderEventArgs e)
         {
             var ch = _viewViewGroups[_selectedViewGroup][e.ChannelNumber];
-            _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
-            _client.Send(_mixerChannels[ch].MixFaderMessage());
-            //if the channel is linked we have to set the other channel to the same value
-            if (_mixerChannels[ch] is IStereoLinkable)
+            if (_pressedFunctionButton == -1)
             {
-                var stereoChannel = _mixerChannels[ch] as IStereoLinkable;
-                if (stereoChannel.LinkedWith != -1)
+                _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
+                _client.Send(_mixerChannels[ch].MixFaderMessage());
+                //if the channel is linked we have to set the other channel to the same value
+                if (_mixerChannels[ch] is IStereoLinkable)
                 {
-                    var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
-                    _mixerChannels[otherCh].ChannelFaderValue = e.FaderValue;
-                    _client.Send(_mixerChannels[otherCh].MixFaderMessage());
-                    //If the other chanel is on the current layout we have to set too
-                    (var otherChOnLayer, var isOnLayer) = GetControllerChannel(otherCh);
-                    if (isOnLayer)
+                    var stereoChannel = _mixerChannels[ch] as IStereoLinkable;
+                    if (stereoChannel.LinkedWith != -1)
                     {
-                        _midiController.SetFader(otherChOnLayer, e.FaderValue);
+                        var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
+                        _mixerChannels[otherCh].ChannelFaderValue = e.FaderValue;
+                        _client.Send(_mixerChannels[otherCh].MixFaderMessage());
+                        //If the other chanel is on the current layout we have to set too
+                        (var otherChOnLayer, var isOnLayer) = GetControllerChannel(otherCh);
+                        if (isOnLayer)
+                        {
+                            _midiController.SetFader(otherChOnLayer, e.FaderValue);
+                        }
                     }
                 }
+            }
+            else
+            {
+                _mixerChannels[ch].AuxSendValues[_pressedFunctionButton] = e.FaderValue;
+                _client.Send(_mixerChannels[ch].SetAuxValueMessage(_pressedFunctionButton));
             }
         }
 
@@ -343,7 +377,18 @@ namespace UI24RController
             foreach (var ch in channels)
             {
                 var channelNumber = ch.Channel;
-                _midiController.SetFader(ch.controllerChannelNumber, _mixerChannels[channelNumber].ChannelFaderValue);
+
+                if (_pressedFunctionButton == -1)
+                {
+                    _midiController.SetFader(ch.controllerChannelNumber, _mixerChannels[channelNumber].ChannelFaderValue);
+                }
+                else
+                {
+                    if (!(_mixerChannels[channelNumber] is MainChannel))
+                    {
+                        _midiController.SetFader(ch.controllerChannelNumber, _mixerChannels[channelNumber].AuxSendValues[_pressedFunctionButton]);
+                    }
+                }
 
                 if (_mixerChannels[channelNumber].IsSelected)
                 {
@@ -450,6 +495,13 @@ namespace UI24RController
                                 _mixer.IsMultitrackRecordingRun = ui24Message.LogicValue;
                             }
                             break;
+                        case MessageTypeEnum.auxFaderValue:
+                            _mixerChannels[ui24Message.ChannelNumber].AuxSendValues[ui24Message.IntValue] = ui24Message.FaderValue;
+                            if (isOnLayer && controllerChannelNumber < 8)
+                            {
+                                _midiController.SetFader(controllerChannelNumber, ui24Message.FaderValue);
+                            }
+                            break;
                     }
                 }
                 else if (m.StartsWith("SETS^vg.")) //first global view group (e.g:"SETS^vg.0^[0,1,2,3,4,5,6,17,18,19,20,22,23,38,39,40,41,42,43,44,45,48,49,21]")
@@ -490,7 +542,7 @@ namespace UI24RController
                             _selectedChannel = ch;
                         }
                         var channelNumber = _viewViewGroups[_selectedViewGroup].Select((item, i) => new { Channel = item, controllerChannelNumber = i })
-                           .Where(c => c.Channel == _mixerChannels[ch].ChannelNumberInMixer).FirstOrDefault();
+                           .Where(c => c.Channel == _mixerChannels[_selectedChannel].ChannelNumberInMixer).FirstOrDefault();
                         if (channelNumber != null)
                         {
                             _midiController.SetSelectLed(channelNumber.controllerChannelNumber, true);
