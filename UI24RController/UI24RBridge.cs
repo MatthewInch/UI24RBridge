@@ -497,7 +497,7 @@ namespace UI24RController
                             break;
                         case MessageTypeEnum.auxFaderValue:
                             _mixerChannels[ui24Message.ChannelNumber].AuxSendValues[ui24Message.IntValue] = ui24Message.FaderValue;
-                            if (isOnLayer && controllerChannelNumber < 8)
+                            if (isOnLayer && controllerChannelNumber < 8 && _pressedFunctionButton == ui24Message.IntValue)
                             {
                                 _midiController.SetFader(controllerChannelNumber, ui24Message.FaderValue);
                             }
