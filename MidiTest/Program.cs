@@ -34,11 +34,14 @@ namespace MidiTest
             var ch = Console.ReadKey();
             bool lastValue = false;
             bool isrunning = true;
+            byte modulus = 0;
             while (isrunning)
             {
                 if (Console.KeyAvailable)
                 {
-                    output.Send(new byte[] { 0x90, 0x00, (byte)(lastValue ? 0x7f : 0x00) }, 0, 3, 0);
+                    modulus = (byte)((modulus + 1) % 16);
+                    Console.Write($" {modulus}");
+                    output.Send(new byte[] { 0xD0, modulus }, 0, 2, 0);
                     lastValue = !lastValue;
                     ch = Console.ReadKey();
                     isrunning = ch.KeyChar != ' ';

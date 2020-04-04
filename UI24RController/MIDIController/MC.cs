@@ -514,5 +514,17 @@ namespace UI24RController.MIDIController
 
         }
 
+        public void WriteChannelMeter(int channelNumber, byte value)
+        {
+            if (channelNumber < 8)
+            {
+                byte calculatedValue = 0;
+                if (value > 251) //clip
+                    calculatedValue = 14;
+                else
+                    calculatedValue = Convert.ToByte(value / 18);
+                Send(new byte[] { 0xd0, (byte)(channelNumber * 16 + calculatedValue) }, 0, 2, 0);
+            }
+        }
     }
 }

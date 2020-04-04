@@ -551,6 +551,18 @@ namespace UI24RController
                             _midiController.SetSelectLed(0, false);
                     }
                 }
+                else if (m.StartsWith("VU2^"))
+                {
+                    var ui24rvumessage = new UI24RVUMessage(m);
+                    for (int i = 0; i < 8; i++)
+                    {
+                       var channelNumber =  _viewViewGroups[_selectedViewGroup][i];
+                        if (channelNumber < 24) //input channel
+                        {
+                            _midiController.WriteChannelMeter(i, ui24rvumessage.VUInputChannelValues[channelNumber].vuPostFader);
+                        }
+                    }
+                }
 
             }
         }
