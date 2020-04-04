@@ -65,4 +65,6 @@ public interface IMIDIController
     public void WriteTextToLCD(string text);
     public void WriteTextToLCD(string text, int delay);
 
+    public void WriteChannelMeter(int channelNumber, byte value);
+
 }
