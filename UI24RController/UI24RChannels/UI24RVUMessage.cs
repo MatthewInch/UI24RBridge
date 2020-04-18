@@ -7,21 +7,80 @@ using System.IO;
 
 namespace UI24RController.UI24RChannels
 {
-    [Serializable]
     class UI24RVUMessage
     {
-        [Serializable]
-        public struct VUInputMediaChannel
+        public interface IVUChannel
+        {
+            byte GetPreValue();
+            byte GetPostValue();
+        }
+
+        public class VUInputMediaChannel : IVUChannel
         {
             public byte vuPre; 
             public byte vuPost; 
             public byte vuPostFader;
             public byte vuGateIn;
             public byte vuCompOut; 
-            public byte vuCompMeter; 
+            public byte vuCompMeter;
+
+            public byte GetPostValue()
+            {
+                return vuPostFader;
+            }
+
+            public byte GetPreValue()
+            {
+                return vuPre;
+            }
         }
 
-        [Serializable]
+        public class VUSubgroupFXChannel : IVUChannel
+        {
+            public byte vuPostL;
+            public byte vuPostR;
+            public byte vuPostFaderL;
+            public byte vuPostFaderR;
+            public byte vuGateIn;
+            public byte vuCompOut;
+            public byte vuCompMeter;
+
+            public byte GetPostValue()
+            {
+                if (vuPostFaderR > vuPostFaderL)
+                    return vuPostFaderR;
+                else
+                    return vuPostFaderL;
+            }
+
+            public byte GetPreValue()
+            {
+                if (vuPostR > vuPostL)
+                    return vuPostR;
+                else
+                    return vuPostL;
+            }
+        }
+
+        public class VUAuxMasterChannel : IVUChannel
+        {
+            public byte vuPost;
+            public byte vuPostFader;
+            public byte vuGateIn;
+            public byte vuCompOut;
+            public byte vuCompMeter;
+
+            public byte GetPostValue()
+            {
+                return vuPostFader;
+            }
+
+            public byte GetPreValue()
+            {
+                return vuPost;
+            }
+        }
+
         public struct VUHeader {
             public byte NINPUTS;
             public byte NMEDIA;
@@ -33,7 +92,7 @@ namespace UI24RController.UI24RChannels
             public byte ZeroValue;
         }
 
-        public List<VUInputMediaChannel> VUInputChannelValues = new List<VUInputMediaChannel>();
+        public List<IVUChannel> VUChannels = new List<IVUChannel>();
 
         public UI24RVUMessage(string inputMessage)
         {
@@ -70,7 +129,7 @@ namespace UI24RController.UI24RChannels
                     vuCompMeter     = inputsByteArray[i+5]
                 };
                 i += 6;
-                VUInputChannelValues.Add(vu);
+                VUChannels.Add(vu);
             }
         }
     }

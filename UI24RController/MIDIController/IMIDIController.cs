@@ -41,6 +41,8 @@ public interface IMIDIController
     event EventHandler<EventArgs> RightEvent;
     event EventHandler<EventArgs> CenterEvent;
 
+    event EventHandler<EventArgs> PrevEvent;
+    event EventHandler<EventArgs> NextEvent;
     event EventHandler<EventArgs> StopEvent;
     event EventHandler<EventArgs> PlayEvent;
     event EventHandler<EventArgs> RecEvent;
@@ -65,6 +67,6 @@ public interface IMIDIController
     public void WriteTextToLCD(string text);
     public void WriteTextToLCD(string text, int delay);
 
-    public void WriteChannelMeter(int channelNumber, byte value);
-
+    void WriteChannelMeter(int channelNumber, byte value);
+    void TurnOffClipLed(int channelNumber);
 }

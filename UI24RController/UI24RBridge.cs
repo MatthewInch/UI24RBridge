@@ -399,6 +399,7 @@ namespace UI24RController
                 _midiController.WriteTextToChannelLCD(ch.controllerChannelNumber, _mixerChannels[channelNumber].Name);
                 _midiController.SetMuteLed(ch.controllerChannelNumber, _mixerChannels[channelNumber].IsMute);
                 _midiController.SetSoloLed(ch.controllerChannelNumber, _mixerChannels[channelNumber].IsSolo);
+                //_midiController.TurnOffClipLed(ch.controllerChannelNumber);
                 if (_mixerChannels[channelNumber] is IRecordable)
                     _midiController.SetRecLed(ch.controllerChannelNumber, (_mixerChannels[channelNumber] as IRecordable).IsRec);
                 else
@@ -559,7 +560,7 @@ namespace UI24RController
                        var channelNumber =  _viewViewGroups[_selectedViewGroup][i];
                         if (channelNumber < 24) //input channel
                         {
-                            _midiController.WriteChannelMeter(i, ui24rvumessage.VUInputChannelValues[channelNumber].vuPostFader);
+                            _midiController.WriteChannelMeter(i, ui24rvumessage.VUChannels[channelNumber].GetPostValue());
                         }
                     }
                 }
