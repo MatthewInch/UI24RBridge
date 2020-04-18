@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Commons.Music.Midi.RtMidi;
 using System.Threading;
+using System.Collections.Concurrent;
 
 namespace UI24RController.MIDIController
 {
@@ -31,7 +32,7 @@ namespace UI24RController.MIDIController
         /// <summary>
         /// Store every fader setted value of the faders, key is the channel number (z in the message)
         /// </summary>
-        protected Dictionary<byte, FaderState> faderValues = new Dictionary<byte, FaderState>();
+        protected ConcurrentDictionary<byte, FaderState> faderValues = new ConcurrentDictionary<byte, FaderState>();
             
         IMidiInput _input = null;
         protected string _inputDeviceNumber;
@@ -43,6 +44,7 @@ namespace UI24RController.MIDIController
         protected bool _isConnected = false;
         protected bool _isConnectionErrorOccured = false;
         protected Thread _pingThread;
+        protected ConcurrentDictionary<int, DateTime> _clipLeds = new ConcurrentDictionary<int, DateTime>();
 
         public Dictionary<string, byte> ButtonsID { get ; set; }
         public bool IsConnectionErrorOccured { get => _isConnectionErrorOccured; }
@@ -70,11 +72,15 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> RecEvent;
         public event EventHandler<EventArgs> ConnectionErrorEvent;
         public event EventHandler<FunctionEventArgs> FunctionButtonEvent;
+        public event EventHandler<EventArgs> PrevEvent;
+        public event EventHandler<EventArgs> NextEvent;
 
         public MC()
         {
             ButtonsID = new Dictionary<string, byte>();
             //It will be configurable 
+            ButtonsID.Add("PlayPrev", 0x5b);
+            ButtonsID.Add("PlayNext", 0xc);
             ButtonsID.Add("Play", 0x5e);
             ButtonsID.Add("Rec", 0x5f);
             ButtonsID.Add("Stop", 0x5d);
@@ -88,7 +94,8 @@ namespace UI24RController.MIDIController
             ButtonsID.Add("F8", 0x3d);
             for (byte i=0; i<9; i++)
             {
-                faderValues.Add(i, new FaderState());
+                faderValues.TryAdd(i, new FaderState());
+                _clipLeds.TryAdd(i, DateTime.MinValue);
             }
         }
         protected void OnMessageReceived(string message)
@@ -155,6 +162,7 @@ namespace UI24RController.MIDIController
 
         public void Dispose()
         {
+            _isConnected = false;
             if (_input != null)
             {
                 _input.Dispose();
@@ -282,7 +290,7 @@ namespace UI24RController.MIDIController
         {
             try
             {
-                if (_isConnected)
+                if (_isConnected && _output != null)
                 {
                     _output.Send(mevent, offset, length, timestamp);
 
@@ -519,12 +527,34 @@ namespace UI24RController.MIDIController
             if (channelNumber < 8)
             {
                 byte calculatedValue = 0;
-                if (value > 251) //clip
+                if (value >= 240) //clip
+                {
                     calculatedValue = 14;
+                    if (_clipLeds[channelNumber] == DateTime.MinValue)
+                    {
+                        _clipLeds[channelNumber] = DateTime.Now;
+                    }
+                }
                 else
+                {
                     calculatedValue = Convert.ToByte(value / 18);
+                    if (_clipLeds[channelNumber] != DateTime.MinValue)
+                    {
+                        var ticksNumber = DateTime.Now - _clipLeds[channelNumber];
+                        if (ticksNumber.TotalMilliseconds > 1000)
+                        {
+                            TurnOffClipLed(channelNumber);
+                            _clipLeds[channelNumber] = DateTime.MinValue;
+                        }
+                    }
+                }
                 Send(new byte[] { 0xd0, (byte)(channelNumber * 16 + calculatedValue) }, 0, 2, 0);
             }
+        }
+
+        public void TurnOffClipLed(int channelNumber)
+        {
+            Send(new byte[] { 0xd0, (byte)(channelNumber * 16 + 0x0f) }, 0, 2, 0);
         }
     }
 }
