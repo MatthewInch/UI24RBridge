@@ -39,6 +39,7 @@ namespace UI24RController
         protected Mixer _mixer = new Mixer();
 
         protected ViewTypeEnum _viewTypeEnum;
+        protected bool _recSectionIsMtk;
 
         //0-23: input channels
         //24-25: Linie In L/R
@@ -56,7 +57,7 @@ namespace UI24RController
         protected List<ChannelBase> _mixerChannels;
 
 
-        public UI24RBridge(string address, IMIDIController midiController):this(address, midiController, null, "SyncID")
+        public UI24RBridge(string address, IMIDIController midiController):this(address, midiController, null, "SyncID", true)
         {
         }
 
@@ -66,9 +67,10 @@ namespace UI24RController
         /// <param name="address">address of the mixer (eg: 'ws://192.168.5.2')</param>
         /// <param name="midiController">the daw controller connection object</param>
         /// <param name="sendMessageAction">the logging function (implemented in the host app)</param>
-        public UI24RBridge(string address, IMIDIController midiController, Action<string, bool> sendMessageAction, string syncID)
+        public UI24RBridge(string address, IMIDIController midiController, Action<string, bool> sendMessageAction, string syncID, bool isMtkRecord)
         {
             SendMessage("Start initialization...", false);
+            _recSectionIsMtk = isMtkRecord;
             InitializeChannels();
             InitializeViewGroups();
             _syncID = syncID;
@@ -85,6 +87,10 @@ namespace UI24RController
             _midiController.RecChannelEvent += _midiController_RecChannelEvent;
             _midiController.SaveEvent += _midiController_SaveEvent;
             _midiController.RecEvent += _midiController_RecEvent;
+            _midiController.PlayEvent += _midiController_PlayEvent;
+            _midiController.StopEvent += _midiController_StopEvent;
+            _midiController.NextEvent += _midiController_NextEvent;
+            _midiController.PrevEvent += _midiController_PrevEvent;
             _midiController.WriteTextToLCD("");
             _midiController.ConnectionErrorEvent += _midiController_ConnectionErrorEvent;
             _midiController.FunctionButtonEvent += _midiController_FunctionButtonEvent;
@@ -100,6 +106,26 @@ namespace UI24RController
             _client.ErrorReconnectTimeout = new TimeSpan(0,0,10);
             SendMessage("Connecting to UI24R....", false);
             _client.Start();
+        }
+
+        private void _midiController_PrevEvent(object sender, EventArgs e)
+        {
+            _client.Send(_mixer.Get2TrackPrevMessage());
+        }
+
+        private void _midiController_NextEvent(object sender, EventArgs e)
+        {
+            _client.Send(_mixer.Get2TrackNextMessage());
+        }
+
+        private void _midiController_StopEvent(object sender, EventArgs e)
+        {
+            _client.Send(_mixer.Get2TrackStopMessage());
+        }
+
+        private void _midiController_PlayEvent(object sender, EventArgs e)
+        {
+            _client.Send(_mixer.Get2TrackPlayMessage());
         }
 
         private void _midiController_FunctionButtonEvent(object sender, MIDIController.FunctionEventArgs e)
@@ -495,6 +521,9 @@ namespace UI24RController
                                 _midiController.SetLed("Rec", ui24Message.LogicValue);
                                 _mixer.IsMultitrackRecordingRun = ui24Message.LogicValue;
                             }
+                            break;
+                        case MessageTypeEnum.currentState:
+                                _midiController.SetLed("Play", ui24Message.LogicValue);
                             break;
                         case MessageTypeEnum.auxFaderValue:
                             _mixerChannels[ui24Message.ChannelNumber].AuxSendValues[ui24Message.IntValue] = ui24Message.FaderValue;

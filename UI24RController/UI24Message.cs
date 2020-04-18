@@ -18,7 +18,7 @@ namespace UI24RController
 
     public enum MessageTypeEnum
     {
-        mix, gain, mute, solo, name, mtkrec, stereoIndex, mtk, auxFaderValue, uknown
+        mix, gain, mute, solo, name, mtkrec, stereoIndex, mtk, auxFaderValue, currentState, uknown
     }
 
     public class UI24Message
@@ -162,6 +162,17 @@ namespace UI24RController
                             break;
                         }
                         break;
+                    case MessageTypeEnum.currentState:
+                        if (messageParts[2] == "2")
+                        {
+                            LogicValue = true;
+                        }
+                        else
+                        {
+                            LogicValue = false;
+                        }
+                        IsValid = true;
+                        break;
                     case MessageTypeEnum.auxFaderValue:
                         if (messageTypes.Length > 4) //SETD^i.0.aux.0.value^val 
                         {
@@ -230,6 +241,8 @@ namespace UI24RController
                     return MessageTypeEnum.stereoIndex;
                 case "aux":
                     return MessageTypeEnum.auxFaderValue;
+                case "currentState":
+                    return MessageTypeEnum.currentState;
                 default: // "i":
                     return MessageTypeEnum.uknown;
             }

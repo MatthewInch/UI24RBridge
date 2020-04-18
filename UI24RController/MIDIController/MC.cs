@@ -80,7 +80,7 @@ namespace UI24RController.MIDIController
             ButtonsID = new Dictionary<string, byte>();
             //It will be configurable 
             ButtonsID.Add("PlayPrev", 0x5b);
-            ButtonsID.Add("PlayNext", 0xc);
+            ButtonsID.Add("PlayNext", 0x5c);
             ButtonsID.Add("Play", 0x5e);
             ButtonsID.Add("Rec", 0x5f);
             ButtonsID.Add("Stop", 0x5d);
@@ -144,6 +144,19 @@ namespace UI24RController.MIDIController
         protected void OnStopEvent()
         {
             StopEvent?.Invoke(this, new EventArgs());
+        }
+
+        protected void OnPlayEvent()
+        {
+            PlayEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnNextEvent()
+        {
+            NextEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnPrevEvent()
+        {
+            PrevEvent?.Invoke(this, new EventArgs());
         }
 
         protected void OnFunctionButtonEvent(int functionNumber,bool isPress)
@@ -373,6 +386,18 @@ namespace UI24RController.MIDIController
                 else if (message.MIDIEqual(0x90, ButtonsID["Stop"], 0x7f)) //Stop button
                 {
                     OnStopEvent();
+                }
+                else if (message.MIDIEqual(0x90, ButtonsID["Play"], 0x7f)) //Stop button
+                {
+                    OnPlayEvent();
+                }
+                else if (message.MIDIEqual(0x90, ButtonsID["PlayPrev"], 0x7f)) //Stop button
+                {
+                    OnPrevEvent();
+                }
+                else if (message.MIDIEqual(0x90, ButtonsID["PlayNext"], 0x7f)) //Stop button
+                {
+                    OnNextEvent();
                 }
                 else if (message[0]== 0x90 && message[1]>=ButtonsID["F1"] && message[1] <= ButtonsID["F8"]) //F1-F8 press
                 {
