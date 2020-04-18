@@ -21,6 +21,7 @@ namespace UI24RBridgeTest
             var protocol = configuration["Protocol"];
             var syncID = configuration["SyncID"];
             var viewDebugMessage = configuration["DebugMessages"] == "true";
+            var defaultRecButtonIsMtk = configuration["DefaultRecButton"] == "mtk";
             //var controller = new BehringerUniversalMIDI();
             var controller = MIDIControllerFactory.GetMidiController(protocol);
             if (args.Length > 0)
@@ -61,8 +62,8 @@ namespace UI24RBridgeTest
                          var m = messages.Split('\n');
                          foreach (var message in m)
                          {
-                             if (!message.StartsWith("3:::RTA^") && !message.StartsWith("RTA^") //&&
-                                                                                                //!message.StartsWith("3:::VU2^") && !message.StartsWith("VU2^")
+                             if (!message.StartsWith("3:::RTA^") && !message.StartsWith("RTA^") &&
+                                 !message.StartsWith("3:::VU2^") && !message.StartsWith("VU2^")
                              )
                              {
                                  lock (balanceLock)
@@ -74,7 +75,7 @@ namespace UI24RBridgeTest
                      }
                  };
                 Console.WriteLine("Start bridge...");
-                using (UI24RBridge bridge = new UI24RBridge(address, controller, messageWriter, syncID))
+                using (UI24RBridge bridge = new UI24RBridge(address, controller, messageWriter, syncID, defaultRecButtonIsMtk))
                 {
                     while (!Console.KeyAvailable)
                     {

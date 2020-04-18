@@ -27,5 +27,23 @@ namespace UI24RController.UI24RChannels
             return "3:::RECTOGGLE";
         }
 
+        public string Get2TrackPlayMessage()
+        {
+            return "3:::MEDIA_PLAY";
+        }
+        public string Get2TrackStopMessage()
+        {
+            return "3:::MEDIA_STOP";
+        }
+
+        public string Get2TrackNextMessage()
+        {
+            return "3:::MEDIA_NEXT";
+        }
+        public string Get2TrackPrevMessage()
+        {
+            return "3:::MEDIA_PREV";
+        }
+
     }
 }
