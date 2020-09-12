@@ -13,12 +13,12 @@ namespace UI24RController
     }
     public enum SystemVarTypeEnum
     {
-        MtkRecCurrentState, Uknown
+        MtkRecCurrentState, IsRecording, Uknown
     }
 
     public enum MessageTypeEnum
     {
-        mix, gain, mute, solo, name, mtkrec, stereoIndex, mtk, auxFaderValue, currentState, uknown
+        mix, gain, mute, solo, name, mtkrec, stereoIndex, mtk, isRecording, auxFaderValue, currentState, uknown
     }
 
     public class UI24Message
@@ -162,6 +162,14 @@ namespace UI24RController
                             break;
                         }
                         break;
+                    case MessageTypeEnum.isRecording:
+                        SystemVarType = SystemVarTypeEnum.IsRecording;
+                        if (messageParts[2] == "1")
+                            LogicValue = true;
+                        else
+                            LogicValue = false;
+                        IsValid = true;
+                        break;
                     case MessageTypeEnum.currentState:
                         if (messageParts[2] == "2")
                         {
@@ -237,6 +245,8 @@ namespace UI24RController
                     return MessageTypeEnum.mtkrec;
                 case "mtk":
                     return MessageTypeEnum.mtk;
+                case "isRecording":
+                    return MessageTypeEnum.isRecording;
                 case "stereoIndex":
                     return MessageTypeEnum.stereoIndex;
                 case "aux":

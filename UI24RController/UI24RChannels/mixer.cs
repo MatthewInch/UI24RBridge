@@ -7,6 +7,7 @@ namespace UI24RController.UI24RChannels
     public class Mixer
     {
         public bool IsMultitrackRecordingRun { get; set; }
+        public bool IsTwoTrackRecordingRun { get; set; }
 
         public string GetStartMTKRecordMessage()
         {

@@ -21,9 +21,10 @@ namespace UI24RBridgeTest
             var protocol = configuration["Protocol"];
             var syncID = configuration["SyncID"];
             var viewDebugMessage = configuration["DebugMessages"] == "true";
-            var defaultRecButtonIsMtk = configuration["DefaultRecButton"] == "mtk";
+            var recButtonBahavior = configuration["DefaultRecButton"];
             //var controller = new BehringerUniversalMIDI();
             var controller = MIDIControllerFactory.GetMidiController(protocol);
+            
             if (args.Length > 0)
                 WriteMIDIDeviceNames(controller);
             else
@@ -75,7 +76,28 @@ namespace UI24RBridgeTest
                      }
                  };
                 Console.WriteLine("Start bridge...");
-                using (UI24RBridge bridge = new UI24RBridge(address, controller, messageWriter, syncID, defaultRecButtonIsMtk))
+
+                BridgeSettings settings = new BridgeSettings(address, controller, messageWriter);
+                if (syncID != null)
+                {
+                    settings.SyncID = syncID;
+                }
+                if (recButtonBahavior != null)
+                {
+                    switch (recButtonBahavior.ToLower())
+                    {
+                        case "onlymtk": 
+                            settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.OnlyMTK;
+                            break;
+                        case "only2track":
+                            settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.OnlyTwoTrack;
+                            break;
+                        default:
+                            settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.TwoTrackAndMTK;
+                            break;
+                    }
+                }
+                using (UI24RBridge bridge = new UI24RBridge(settings))
                 {
                     while (!Console.KeyAvailable)
                     {
