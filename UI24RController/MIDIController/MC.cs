@@ -46,7 +46,7 @@ namespace UI24RController.MIDIController
         protected Thread _pingThread;
         protected ConcurrentDictionary<int, DateTime> _clipLeds = new ConcurrentDictionary<int, DateTime>();
 
-        public Dictionary<string, byte> ButtonsID { get ; set; }
+        protected ButtonsID _buttonsID { get ; set; }
         public bool IsConnectionErrorOccured { get => _isConnectionErrorOccured; }
 
         public event EventHandler<MessageEventArgs> MessageReceived;
@@ -77,21 +77,7 @@ namespace UI24RController.MIDIController
 
         public MC()
         {
-            ButtonsID = new Dictionary<string, byte>();
-            //It will be configurable 
-            ButtonsID.Add("PlayPrev", 0x5b);
-            ButtonsID.Add("PlayNext", 0x5c);
-            ButtonsID.Add("Play", 0x5e);
-            ButtonsID.Add("Rec", 0x5f);
-            ButtonsID.Add("Stop", 0x5d);
-            ButtonsID.Add("F1", 0x36);
-            ButtonsID.Add("F2", 0x37);
-            ButtonsID.Add("F3", 0x38);
-            ButtonsID.Add("F4", 0x39);
-            ButtonsID.Add("F5", 0x3a);
-            ButtonsID.Add("F6", 0x3b);
-            ButtonsID.Add("F7", 0x3c);
-            ButtonsID.Add("F8", 0x3d);
+            _buttonsID = new ButtonsID();
             for (byte i=0; i<9; i++)
             {
                 faderValues.TryAdd(i, new FaderState());
@@ -379,29 +365,29 @@ namespace UI24RController.MIDIController
                 {
                     OnSaveEvent();
                 }
-                else if (message.MIDIEqual(0x90, ButtonsID["Rec"], 0x7f)) //Rec button
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Rec], 0x7f)) //Rec button
                 {
                     OnRecEvent();
                 }
-                else if (message.MIDIEqual(0x90, ButtonsID["Stop"], 0x7f)) //Stop button
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Stop], 0x7f)) //Stop button
                 {
                     OnStopEvent();
                 }
-                else if (message.MIDIEqual(0x90, ButtonsID["Play"], 0x7f)) //Stop button
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Play], 0x7f)) //Stop button
                 {
                     OnPlayEvent();
                 }
-                else if (message.MIDIEqual(0x90, ButtonsID["PlayPrev"], 0x7f)) //Stop button
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlayPrev], 0x7f)) //Stop button
                 {
                     OnPrevEvent();
                 }
-                else if (message.MIDIEqual(0x90, ButtonsID["PlayNext"], 0x7f)) //Stop button
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlayNext], 0x7f)) //Stop button
                 {
                     OnNextEvent();
                 }
-                else if (message[0]== 0x90 && message[1]>=ButtonsID["F1"] && message[1] <= ButtonsID["F8"]) //F1-F8 press
+                else if (message[0]== 0x90 && message[1]>=_buttonsID[ButtonsEnum.Aux1] && message[1] <= _buttonsID[ButtonsEnum.Aux8]) //F1-F8 press
                 {
-                    OnFunctionButtonEvent(message[1] - ButtonsID["F1"], message[2] == 0x7f);
+                    OnFunctionButtonEvent(message[1] - _buttonsID[ButtonsEnum.Aux1], message[2] == 0x7f);
                 }
 
             }
@@ -525,9 +511,9 @@ namespace UI24RController.MIDIController
                 Send(sysex, 0, sysex.Length, 0);
         }
 
-        public void SetLed(string buttonName, bool turnOn)
+        public void SetLed(ButtonsEnum buttonName, bool turnOn)
         {
-            Send(new byte[] { 0x90, ButtonsID[buttonName], (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+            Send(new byte[] { 0x90, _buttonsID[buttonName], (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
         }
 
         public void WriteTextToLCD(string text, int delay)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UI24RController;
 using UI24RController.MIDIController;
 
 public interface IMIDIController
@@ -52,7 +53,7 @@ public interface IMIDIController
 
     #endregion
 
-    Dictionary<string, byte> ButtonsID { get; set; }
+   //ButtonsID _buttonsID { get; set; }
 
     bool SetFader(int channelNumber, double faderValue);
     bool SetGainLed(int channelNumber, double gainValue);
@@ -61,7 +62,7 @@ public interface IMIDIController
     void SetMuteLed(int channelNumber, bool turnOn);
     void SetSoloLed(int channelNumber, bool turnOn);
     void SetRecLed(int channelNumber, bool turnOn);
-    void SetLed(string buttonName, bool turnOn);
+    void SetLed(ButtonsEnum buttonName, bool turnOn);
 
     public void WriteTextToChannelLCD(int channelNumber, string text);
     public void WriteTextToLCD(string text);

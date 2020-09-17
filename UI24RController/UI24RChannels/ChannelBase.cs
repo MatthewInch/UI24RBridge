@@ -32,7 +32,7 @@ namespace UI24RController.UI24RChannels
         public bool IsMute { get; set; }
         public bool IsSolo { get; set; }
         public virtual int ChannelNumberInMixer => ChannelNumber;
-        public List<double> AuxSendValues { get; set; }
+        public Dictionary<SelectedLayoutEnum, double> AuxSendValues { get; set; }
         protected string channelTypeID { get; set; }
 
         public double Gain { get; set; }
@@ -45,7 +45,17 @@ namespace UI24RController.UI24RChannels
             IsMute = false;
             IsSolo = false;
             Name = GetDefaultName();
-            AuxSendValues = new List<double>() {0,0,0,0,0,0,0,0,0,0 };
+            AuxSendValues = new Dictionary<SelectedLayoutEnum, double>() 
+            {
+                {SelectedLayoutEnum.Aux1, 0 },
+                {SelectedLayoutEnum.Aux2, 0 },
+                {SelectedLayoutEnum.Aux3, 0 },
+                {SelectedLayoutEnum.Aux4, 0 },
+                {SelectedLayoutEnum.Aux5, 0 },
+                {SelectedLayoutEnum.Aux6, 0 },
+                {SelectedLayoutEnum.Aux7, 0 },
+                {SelectedLayoutEnum.Aux8, 0 },
+            };
             channelTypeID = "i";
         }
 
@@ -54,9 +64,10 @@ namespace UI24RController.UI24RChannels
             return "CH";
         }
 
-        public virtual string SetAuxValueMessage(int auxNumber)
+        public virtual string SetAuxValueMessage(SelectedLayoutEnum selectedLayout)
         {
-            return $"3:::SETD^{this.channelTypeID}.{this.ChannelNumber}.aux.{auxNumber}.value^{this.AuxSendValues[auxNumber].ToString().Replace(',', '.')}";
+            int auxNumber = selectedLayout.AuxToInt();
+            return $"3:::SETD^{this.channelTypeID}.{this.ChannelNumber}.aux.{auxNumber}.value^{this.AuxSendValues[selectedLayout].ToString().Replace(',', '.')}";
         }
 
         public virtual string MixFaderMessage()
