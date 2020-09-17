@@ -22,6 +22,9 @@ In the settings file (appsettings.json)
 
 "SyncID" if you want to use the select button you can set the syncID to the same value that you use in the mixer's default surface (you can set it on the Settings/Locals page)
 
+"DefaultRecButton": if you press the rec button on the controller, the bridge start/stop the MTK and/or 2 track recording it depend the value of the "DefaultRecButton"
+                    possible value is: onlyMTK, only2Track, 2TrackAndMTK
+
 The Linux binary wasn't tested.
 
 Example of the settings file:
@@ -38,6 +41,11 @@ Example of the settings file:
 
 "SyncID": "Abaliget"
 
+"DefaultRecButton": "2TrackAndMTK", //possible values: "onlyMTK", "only2Track", "2TrackAndMTK"; default is "2TrackAndMTK
+
+"DebugMessages": "true",
+
+"AuxButtonBehavior": "Lock" //possible values: "Release", "Lock"; Default is "Release"
 }
 
 The Bridge functionalities:
