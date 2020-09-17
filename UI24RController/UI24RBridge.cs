@@ -10,15 +10,12 @@ using UI24RController.UI24RChannels.Interfaces;
 using Websocket.Client;
 using System.IO;
 using Websocket.Client.Models;
+using UI24RController.MIDIController;
 
 namespace UI24RController
 {
     public class UI24RBridge : IDisposable
     {
-        protected enum ViewTypeEnum
-        {
-            GlobalView, MidiTracks, Inputs, AudioTrack, AudioInst, Aux, Buses, Outputs, User
-        }
 
 
 
@@ -27,12 +24,10 @@ namespace UI24RController
 
         protected BridgeSettings _settings;
         protected WebsocketClient _client;
-        //protected Action<string, bool> _settings.MessageWriter;
-        //protected IMIDIController _midiController;
-        //protected string _syncID;
    
         protected int _selectedChannel = -1; //-1 = no selected channel
-        protected int _pressedFunctionButton = -1; //-1 = no pressed button
+        //protected int _pressedFunctionButton = -1; //-1 = no pressed button
+        protected SelectedLayoutEnum _selectedLayout;
  
         /// <summary>
         /// Represent the UI24R mixer state
@@ -40,7 +35,7 @@ namespace UI24RController
         /// </summary>
         protected Mixer _mixer = new Mixer();
 
-        protected ViewTypeEnum _viewTypeEnum;
+        protected ViewTypeEnum _activeView;
         protected bool _recSectionIsMtk;
 
         //0-23: input channels
@@ -62,10 +57,6 @@ namespace UI24RController
         /// <summary>
         ///  Represent the bridge between the UI24R and a DAW controller
         /// </summary>
-        /// <param name="address">address of the mixer (eg: 'ws://192.168.5.2')</param>
-        /// <param name="midiController">the daw controller connection object</param>
-        /// <param name="sendMessageAction">the logging function (implemented in the host app)</param>
-        //public UI24RBridge(string address, IMIDIController midiController, Action<string, bool> sendMessageAction, string syncID, bool isMtkRecord)
         public UI24RBridge(BridgeSettings settings)
         {
             this._settings = settings;
@@ -126,13 +117,32 @@ namespace UI24RController
 
         private void _midiController_FunctionButtonEvent(object sender, MIDIController.FunctionEventArgs e)
         {
-            if (e.IsPress)
+            if (_settings.AuxButtonBehavior == BridgeSettings.AuxButtonBehaviorEnum.Release)
             {
-                _pressedFunctionButton = e.FunctionButton;
+                if (e.IsPress)
+                {
+                    _selectedLayout = e.FunctionButton.ToAux();
+                }
+                else
+                {
+                    _selectedLayout = SelectedLayoutEnum.Channels;
+                }
             }
             else
             {
-                _pressedFunctionButton = -1;
+                if (e.IsPress)
+                {
+                    if (_selectedLayout == e.FunctionButton.ToAux())
+                    {
+                        _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
+                        _selectedLayout = SelectedLayoutEnum.Channels;
+                    }
+                    else
+                    {
+                        _selectedLayout = e.FunctionButton.ToAux();
+                        _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
+                    }
+                }
             }
             SetControllerToCurrentViewGroup();
         }
@@ -333,9 +343,10 @@ namespace UI24RController
         private void _midiController_FaderEvent(object sender, MIDIController.FaderEventArgs e)
         {
             var ch = _viewViewGroups[_selectedViewGroup][e.ChannelNumber];
-            if (_pressedFunctionButton == -1)
-            {
-                _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
+            //if (_pressedFunctionButton == -1)
+            if (_selectedLayout == SelectedLayoutEnum.Channels)
+                {
+                    _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
                 _client.Send(_mixerChannels[ch].MixFaderMessage());
                 //if the channel is linked we have to set the other channel to the same value
                 if (_mixerChannels[ch] is IStereoLinkable)
@@ -357,8 +368,9 @@ namespace UI24RController
             }
             else
             {
-                _mixerChannels[ch].AuxSendValues[_pressedFunctionButton] = e.FaderValue;
-                _client.Send(_mixerChannels[ch].SetAuxValueMessage(_pressedFunctionButton));
+                //_mixerChannels[ch].AuxSendValues[_pressedFunctionButton] = e.FaderValue;
+                _mixerChannels[ch].AuxSendValues[_selectedLayout] = e.FaderValue;
+                _client.Send(_mixerChannels[ch].SetAuxValueMessage(_selectedLayout));
             }
         }
 
@@ -418,7 +430,7 @@ namespace UI24RController
             {
                 var channelNumber = ch.Channel;
 
-                if (_pressedFunctionButton == -1)
+                if (_selectedLayout == SelectedLayoutEnum.Channels  )
                 {
                     _settings.Controller.SetFader(ch.controllerChannelNumber, _mixerChannels[channelNumber].ChannelFaderValue);
                 }
@@ -426,7 +438,7 @@ namespace UI24RController
                 {
                     if (!(_mixerChannels[channelNumber] is MainChannel))
                     {
-                        _settings.Controller.SetFader(ch.controllerChannelNumber, _mixerChannels[channelNumber].AuxSendValues[_pressedFunctionButton]);
+                        _settings.Controller.SetFader(ch.controllerChannelNumber, _mixerChannels[channelNumber].AuxSendValues[_selectedLayout]);
                     }
                 }
 
@@ -439,7 +451,6 @@ namespace UI24RController
                 _settings.Controller.WriteTextToChannelLCD(ch.controllerChannelNumber, _mixerChannels[channelNumber].Name);
                 _settings.Controller.SetMuteLed(ch.controllerChannelNumber, _mixerChannels[channelNumber].IsMute);
                 _settings.Controller.SetSoloLed(ch.controllerChannelNumber, _mixerChannels[channelNumber].IsSolo);
-                //_settings.Controller.TurnOffClipLed(ch.controllerChannelNumber);
                 if (_mixerChannels[channelNumber] is IRecordable)
                     _settings.Controller.SetRecLed(ch.controllerChannelNumber, (_mixerChannels[channelNumber] as IRecordable).IsRec);
                 else
@@ -449,7 +460,7 @@ namespace UI24RController
 
         private void SetStateLedsOnController()
         {
-            _settings.Controller.SetLed("Rec", _mixer.IsMultitrackRecordingRun || _mixer.IsTwoTrackRecordingRun);
+            _settings.Controller.SetLed(ButtonsEnum.Rec, _mixer.IsMultitrackRecordingRun || _mixer.IsTwoTrackRecordingRun);
         }
 
         protected (int, bool) GetControllerChannel(int ch)
@@ -534,7 +545,7 @@ namespace UI24RController
                             {
                                 if (_settings.RecButtonBehavior == BridgeSettings.RecButtonBehaviorEnum.OnlyMTK || _settings.RecButtonBehavior == BridgeSettings.RecButtonBehaviorEnum.TwoTrackAndMTK)
                                 {
-                                    _settings.Controller.SetLed("Rec", ui24Message.LogicValue || _mixer.IsTwoTrackRecordingRun);
+                                    _settings.Controller.SetLed(ButtonsEnum.Rec, ui24Message.LogicValue || _mixer.IsTwoTrackRecordingRun);
                                     _mixer.IsMultitrackRecordingRun = ui24Message.LogicValue;
                                 }
                             }
@@ -542,16 +553,16 @@ namespace UI24RController
                         case MessageTypeEnum.isRecording:
                             if (_settings.RecButtonBehavior == BridgeSettings.RecButtonBehaviorEnum.OnlyTwoTrack || _settings.RecButtonBehavior == BridgeSettings.RecButtonBehaviorEnum.TwoTrackAndMTK)
                             {
-                                _settings.Controller.SetLed("Rec", ui24Message.LogicValue || _mixer.IsMultitrackRecordingRun);
+                                _settings.Controller.SetLed(ButtonsEnum.Rec, ui24Message.LogicValue || _mixer.IsMultitrackRecordingRun);
                                 _mixer.IsTwoTrackRecordingRun = ui24Message.LogicValue;
                             }
                             break;
                         case MessageTypeEnum.currentState:
-                                _settings.Controller.SetLed("Play", ui24Message.LogicValue);
+                                _settings.Controller.SetLed(ButtonsEnum.Play, ui24Message.LogicValue);
                             break;
                         case MessageTypeEnum.auxFaderValue:
-                            _mixerChannels[ui24Message.ChannelNumber].AuxSendValues[ui24Message.IntValue] = ui24Message.FaderValue;
-                            if (isOnLayer && controllerChannelNumber < 8 && _pressedFunctionButton == ui24Message.IntValue)
+                            _mixerChannels[ui24Message.ChannelNumber].AuxSendValues[ui24Message.IntValue.ToAux()] = ui24Message.FaderValue;
+                            if (isOnLayer && controllerChannelNumber < 8 && _selectedLayout == ui24Message.IntValue.ToAux())
                             {
                                 _settings.Controller.SetFader(controllerChannelNumber, ui24Message.FaderValue);
                             }

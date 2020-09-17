@@ -13,12 +13,18 @@ namespace UI24RController
             TwoTrackAndMTK
         }
 
+        public enum AuxButtonBehaviorEnum
+        {
+            Release, Lock
+        }
+
         //address, controller, messageWriter, syncID, defaultRecButtonIsMtk
         public string Address { get; set; }
         public IMIDIController Controller { get; set; }
         public Action<string,bool> MessageWriter { get; set; }
         public string SyncID { get; set; }
         public RecButtonBehaviorEnum RecButtonBehavior { get; set; }
+        public AuxButtonBehaviorEnum AuxButtonBehavior { get; set; }
 
         public BridgeSettings(string address, IMIDIController controller, Action<string, bool> messageWriter) 
             : this(address, controller, messageWriter, "SYNC_ID", RecButtonBehaviorEnum.TwoTrackAndMTK)
@@ -42,6 +48,7 @@ namespace UI24RController
             this.MessageWriter = messageWriter;
             this.SyncID = syncID;
             this.RecButtonBehavior = recButtonBehavior;
+            this.AuxButtonBehavior = AuxButtonBehaviorEnum.Release;
         }
 
     }
