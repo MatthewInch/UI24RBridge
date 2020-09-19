@@ -27,7 +27,7 @@ namespace UI24RController
    
         protected int _selectedChannel = -1; //-1 = no selected channel
         //protected int _pressedFunctionButton = -1; //-1 = no pressed button
-        protected SelectedLayoutEnum _selectedLayout;
+        protected SelectedLayoutEnum _selectedLayout = SelectedLayoutEnum.Channels;
  
         /// <summary>
         /// Represent the UI24R mixer state
@@ -139,6 +139,7 @@ namespace UI24RController
                     }
                     else
                     {
+                        _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                         _selectedLayout = e.FunctionButton.ToAux();
                         _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
                     }
