@@ -622,7 +622,7 @@ namespace UI24RController
                     for (int i = 0; i < 8; i++)
                     {
                        var channelNumber =  _viewViewGroups[_selectedViewGroup][i];
-                        if (channelNumber < 24) //input channel
+                        if (channelNumber < 48) //input channel
                         {
                             _settings.Controller.WriteChannelMeter(i, ui24rvumessage.VUChannels[channelNumber].GetPostValue());
                         }

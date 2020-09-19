@@ -92,7 +92,9 @@ namespace UI24RController.UI24RChannels
             public byte ZeroValue;
         }
 
-        public List<IVUChannel> VUChannels = new List<IVUChannel>();
+        private const int NUM_CHANNELS = 55;
+
+        public List<IVUChannel> VUChannels = new List<IVUChannel>(NUM_CHANNELS);
 
         public UI24RVUMessage(string inputMessage)
         {
@@ -114,9 +116,13 @@ namespace UI24RController.UI24RChannels
                 NLINEIN   = headerByeArray[6],
                 ZeroValue = headerByeArray[7]
             };
-            var inputsByteArray = decodedByteArray.Skip(done).Take(header.NINPUTS*6).ToArray();
+            var inputsByteArray = decodedByteArray.Skip(done)
+                .Take(header.NINPUTS*6 + header.NMEDIA*6 + header.NSUBGROUPS*7
+                + header.NFX*7 + header.NAUX*5 + header.NMASTERS*5 + header.NLINEIN*6).ToArray();
             done += header.NINPUTS * 6;
             int i = 0;
+
+            //0-23: input channels
             while (i < header.NINPUTS * 6)
             {
                 VUInputMediaChannel vu = new VUInputMediaChannel()
@@ -130,6 +136,89 @@ namespace UI24RController.UI24RChannels
                 };
                 i += 6;
                 VUChannels.Add(vu);
+            }
+
+            //26-27: Player L/R
+            for (int j=0; j < header.NMEDIA; j++)
+            {
+                VUInputMediaChannel vu = new VUInputMediaChannel()
+                {
+                    vuPre = inputsByteArray[i],
+                    vuPost = inputsByteArray[i + 1],
+                    vuPostFader = inputsByteArray[i + 2],
+                    vuGateIn = inputsByteArray[i + 3],
+                    vuCompOut = inputsByteArray[i + 4],
+                    vuCompMeter = inputsByteArray[i + 5]
+                };
+                i += 6;
+                VUChannels.Add(vu);
+            }
+            //32-37: Subgroups
+            for (int j = 0; j < header.NSUBGROUPS; j++)
+            {
+                VUSubgroupFXChannel vu = new VUSubgroupFXChannel()
+                {
+                    vuPostL = inputsByteArray[i],
+                    vuPostR = inputsByteArray[i + 1],
+                    vuPostFaderL = inputsByteArray[i + 2],
+                    vuPostFaderR = inputsByteArray[i + 3],
+                    vuGateIn = inputsByteArray[i + 4],
+                    vuCompOut = inputsByteArray[i + 5],
+                    vuCompMeter = inputsByteArray[i + 6]
+                };
+                i += 7;
+                VUChannels.Add(vu);
+            }
+            //28-31: FX channels
+            for (int j = 0; j < header.NFX; j++)
+            {
+                VUSubgroupFXChannel vu = new VUSubgroupFXChannel()
+                {
+                    vuPostL = inputsByteArray[i],
+                    vuPostR = inputsByteArray[i + 1],
+                    vuPostFaderL = inputsByteArray[i + 2],
+                    vuPostFaderR = inputsByteArray[i + 3],
+                    vuGateIn = inputsByteArray[i + 4],
+                    vuCompOut = inputsByteArray[i + 5],
+                    vuCompMeter = inputsByteArray[i + 6]
+                };
+                i += 7;
+                VUChannels.Insert(header.NINPUTS + header.NMEDIA + j, vu);
+            }
+
+            //38-47: AUX 1-10
+            for (int j = 0; j < header.NAUX; j++)
+            {
+                VUAuxMasterChannel vu = new VUAuxMasterChannel()
+                {
+                    vuPost = inputsByteArray[i],
+                    vuPostFader = inputsByteArray[i + 1],
+                    vuGateIn = inputsByteArray[i + 2],
+                    vuCompOut = inputsByteArray[i + 3],
+                    vuCompMeter = inputsByteArray[i + 4]
+                };
+                i += 5;
+                VUChannels.Add(vu);
+            }
+            //48-53: VCA 1-6 - none
+
+            //MAIN -> skip 2*5 bytes
+            i += 10;
+
+            //24-25: Linie In L/R
+            for (int j = 0; j < header.NMEDIA; j++)
+            {
+                VUInputMediaChannel vu = new VUInputMediaChannel()
+                {
+                    vuPre = inputsByteArray[i],
+                    vuPost = inputsByteArray[i + 1],
+                    vuPostFader = inputsByteArray[i + 2],
+                    vuGateIn = inputsByteArray[i + 3],
+                    vuCompOut = inputsByteArray[i + 4],
+                    vuCompMeter = inputsByteArray[i + 5]
+                };
+                i += 6;
+                VUChannels.Insert(header.NINPUTS+j, vu);
             }
         }
     }
