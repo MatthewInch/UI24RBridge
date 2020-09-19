@@ -6,6 +6,15 @@ namespace UI24RController.MIDIController
 {
     public class ButtonsID 
     {
+        //Thread safe Singleton
+        private static readonly ButtonsID _instance = new ButtonsID();
+        public static ButtonsID Instance 
+        { 
+            get 
+            { 
+                return _instance; 
+            } 
+        }
         
         protected Dictionary<ButtonsEnum, byte> _buttonsDictionary;
 
@@ -15,7 +24,7 @@ namespace UI24RController.MIDIController
             set { _buttonsDictionary[s] = value; }
         }
 
-        public ButtonsID() : base()
+        protected ButtonsID() : base()
         {
             _buttonsDictionary = new Dictionary<ButtonsEnum, byte>();
             //It will be configurable 
@@ -36,7 +45,27 @@ namespace UI24RController.MIDIController
             _buttonsDictionary.Add(ButtonsEnum.Fx2, 0x47);
             _buttonsDictionary.Add(ButtonsEnum.Fx3, 0x48);
             _buttonsDictionary.Add(ButtonsEnum.Fx4, 0x49);
+        }
 
+        public (bool isFX, int fxNum) GetFxButton(byte value)
+        {
+            if (value == _buttonsDictionary[ButtonsEnum.Fx1])
+            {
+                return (true, 0);
+            }
+            else if (value == _buttonsDictionary[ButtonsEnum.Fx2])
+            {
+                return (true, 1);
+            }
+            else if (value == _buttonsDictionary[ButtonsEnum.Fx3])
+            {
+                return (true, 2);
+            }
+            else if (value == _buttonsDictionary[ButtonsEnum.Fx4])
+            {
+                return (true, 3);
+            }
+            return (false, 0);
         }
     }
 }

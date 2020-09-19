@@ -55,6 +55,10 @@ namespace UI24RController.UI24RChannels
                 {SelectedLayoutEnum.Aux6, 0 },
                 {SelectedLayoutEnum.Aux7, 0 },
                 {SelectedLayoutEnum.Aux8, 0 },
+                {SelectedLayoutEnum.Fx1, 0 },
+                {SelectedLayoutEnum.Fx2, 0 },
+                {SelectedLayoutEnum.Fx3, 0 },
+                {SelectedLayoutEnum.Fx4, 0 },
             };
             channelTypeID = "i";
         }
@@ -68,6 +72,12 @@ namespace UI24RController.UI24RChannels
         {
             int auxNumber = selectedLayout.AuxToInt();
             return $"3:::SETD^{this.channelTypeID}.{this.ChannelNumber}.aux.{auxNumber}.value^{this.AuxSendValues[selectedLayout].ToString().Replace(',', '.')}";
+        }
+
+        public virtual string SetFxValueMessage(SelectedLayoutEnum selectedLayout)
+        {
+            int auxNumber = selectedLayout.AuxToInt();
+            return $"3:::SETD^{this.channelTypeID}.{this.ChannelNumber}.fx.{auxNumber}.value^{this.AuxSendValues[selectedLayout].ToString().Replace(',', '.')}";
         }
 
         public virtual string MixFaderMessage()

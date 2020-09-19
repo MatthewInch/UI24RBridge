@@ -48,12 +48,12 @@ public interface IMIDIController
     event EventHandler<EventArgs> PlayEvent;
     event EventHandler<EventArgs> RecEvent;
 
-    event EventHandler<FunctionEventArgs> FunctionButtonEvent;
-
+    event EventHandler<FunctionEventArgs> AuxButtonEvent;
+    event EventHandler<FunctionEventArgs> FxButtonEvent;
 
     #endregion
 
-   //ButtonsID _buttonsID { get; set; }
+    //ButtonsID _buttonsID { get; set; }
 
     bool SetFader(int channelNumber, double faderValue);
     bool SetGainLed(int channelNumber, double gainValue);
