@@ -105,6 +105,37 @@ namespace UI24RController
                  layout == SelectedLayoutEnum.Aux7 ||
                  layout == SelectedLayoutEnum.Aux8;
         }
+        
+        public static SelectedLayoutEnum ToFx(this int fx)
+        {
+            SelectedLayoutEnum result = SelectedLayoutEnum.Fx1;
+            switch (fx)
+            {
+                case 0:
+                    result = SelectedLayoutEnum.Fx1;
+                    break;
+                case 1:
+                    result = SelectedLayoutEnum.Fx2;
+                    break;
+                case 2:
+                    result = SelectedLayoutEnum.Fx3;
+                    break;
+                case 3:
+                    result = SelectedLayoutEnum.Fx4;
+                    break;
+               
+
+            }
+            return result;
+        }
+
+        public static bool IsFx(this SelectedLayoutEnum layout)
+        {
+            return layout == SelectedLayoutEnum.Fx1 ||
+                 layout == SelectedLayoutEnum.Fx2 ||
+                 layout == SelectedLayoutEnum.Fx3 ||
+                 layout == SelectedLayoutEnum.Fx4;
+        }
 
         public static SelectedLayoutEnum ToLayoutEnum(this ButtonsEnum button)
         {
@@ -166,6 +197,18 @@ namespace UI24RController
                     break;
                 case SelectedLayoutEnum.Aux8:
                     button = ButtonsEnum.Aux8;
+                    break;
+                case SelectedLayoutEnum.Fx1:
+                    button = ButtonsEnum.Fx1;
+                    break;
+                case SelectedLayoutEnum.Fx2:
+                    button = ButtonsEnum.Fx2;
+                    break;
+                case SelectedLayoutEnum.Fx3:
+                    button = ButtonsEnum.Fx3;
+                    break;
+                case SelectedLayoutEnum.Fx4:
+                    button = ButtonsEnum.Fx4;
                     break;
             }
             return button;

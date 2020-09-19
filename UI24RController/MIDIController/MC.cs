@@ -46,7 +46,7 @@ namespace UI24RController.MIDIController
         protected Thread _pingThread;
         protected ConcurrentDictionary<int, DateTime> _clipLeds = new ConcurrentDictionary<int, DateTime>();
 
-        protected ButtonsID _buttonsID { get ; set; }
+        protected ButtonsID _buttonsID = ButtonsID.Instance;
         public bool IsConnectionErrorOccured { get => _isConnectionErrorOccured; }
 
         public event EventHandler<MessageEventArgs> MessageReceived;
@@ -71,13 +71,13 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> PlayEvent;
         public event EventHandler<EventArgs> RecEvent;
         public event EventHandler<EventArgs> ConnectionErrorEvent;
-        public event EventHandler<FunctionEventArgs> FunctionButtonEvent;
+        public event EventHandler<FunctionEventArgs> AuxButtonEvent;
+        public event EventHandler<FunctionEventArgs> FxButtonEvent;
         public event EventHandler<EventArgs> PrevEvent;
         public event EventHandler<EventArgs> NextEvent;
 
         public MC()
         {
-            _buttonsID = new ButtonsID();
             for (byte i=0; i<9; i++)
             {
                 faderValues.TryAdd(i, new FaderState());
@@ -145,9 +145,14 @@ namespace UI24RController.MIDIController
             PrevEvent?.Invoke(this, new EventArgs());
         }
 
-        protected void OnFunctionButtonEvent(int functionNumber,bool isPress)
+        protected void OnAuxButtonEvent(int functionNumber,bool isPress)
         {
-            FunctionButtonEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
+            AuxButtonEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
+        }
+
+        protected void OnFxButtonEvent(int functionNumber, bool isPress)
+        {
+            FxButtonEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
         }
 
         protected void OnPresetUp()
@@ -387,7 +392,12 @@ namespace UI24RController.MIDIController
                 }
                 else if (message[0]== 0x90 && message[1]>=_buttonsID[ButtonsEnum.Aux1] && message[1] <= _buttonsID[ButtonsEnum.Aux8]) //F1-F8 press
                 {
-                    OnFunctionButtonEvent(message[1] - _buttonsID[ButtonsEnum.Aux1], message[2] == 0x7f);
+                    OnAuxButtonEvent(message[1] - _buttonsID[ButtonsEnum.Aux1], message[2] == 0x7f);
+                }
+                else if ((message[0] == 0x90) && ButtonsID.Instance.GetFxButton(message[1]).isFX)
+                {
+                    var fxNum = ButtonsID.Instance.GetFxButton(message[1]).fxNum;
+                    OnFxButtonEvent(fxNum, message[2] == 0x7f);
                 }
 
             }

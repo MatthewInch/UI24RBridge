@@ -77,7 +77,8 @@ namespace UI24RController
             _settings.Controller.PrevEvent += _midiController_PrevEvent;
             _settings.Controller.WriteTextToLCD("");
             _settings.Controller.ConnectionErrorEvent += _midiController_ConnectionErrorEvent;
-            _settings.Controller.FunctionButtonEvent += _midiController_FunctionButtonEvent;
+            _settings.Controller.AuxButtonEvent += _midiController_AuxButtonEvent;
+            _settings.Controller.FxButtonEvent += Controller_FXButtonEvent;
             if (_settings.Controller.IsConnectionErrorOccured)
             {
                 _midiController_ConnectionErrorEvent(this, null);
@@ -91,6 +92,7 @@ namespace UI24RController
             SendMessage("Connecting to UI24R....", false);
             _client.Start();
         }
+
 
         private void _midiController_PrevEvent(object sender, EventArgs e)
         {
@@ -112,7 +114,7 @@ namespace UI24RController
             _client.Send(_mixer.Get2TrackPlayMessage());
         }
 
-        private void _midiController_FunctionButtonEvent(object sender, MIDIController.FunctionEventArgs e)
+        private void _midiController_AuxButtonEvent(object sender, MIDIController.FunctionEventArgs e)
         {
             if (_settings.AuxButtonBehavior == BridgeSettings.AuxButtonBehaviorEnum.Release)
             {
@@ -140,6 +142,41 @@ namespace UI24RController
                     {
                         _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                         _selectedLayout = e.FunctionButton.ToAux();
+                        _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
+                    }
+                }
+            }
+            SetControllerToCurrentViewGroup();
+        }
+
+        private void Controller_FXButtonEvent(object sender, FunctionEventArgs e)
+        {
+            if (_settings.AuxButtonBehavior == BridgeSettings.AuxButtonBehaviorEnum.Release)
+            {
+                if (e.IsPress)
+                {
+                    _selectedLayout = e.FunctionButton.ToFx();
+                    _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
+                }
+                else
+                {
+                    _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
+                    _selectedLayout = SelectedLayoutEnum.Channels;
+                }
+            }
+            else
+            {
+                if (e.IsPress)
+                {
+                    if (_selectedLayout == e.FunctionButton.ToFx())
+                    {
+                        _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
+                        _selectedLayout = SelectedLayoutEnum.Channels;
+                    }
+                    else
+                    {
+                        _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
+                        _selectedLayout = e.FunctionButton.ToFx();
                         _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
                     }
                 }
@@ -370,7 +407,14 @@ namespace UI24RController
             {
                 //_mixerChannels[ch].AuxSendValues[_pressedFunctionButton] = e.FaderValue;
                 _mixerChannels[ch].AuxSendValues[_selectedLayout] = e.FaderValue;
-                _client.Send(_mixerChannels[ch].SetAuxValueMessage(_selectedLayout));
+                if (_selectedLayout.IsAux())
+                {
+                    _client.Send(_mixerChannels[ch].SetAuxValueMessage(_selectedLayout));
+                }
+                else if (_selectedLayout.IsFx())
+                {
+                    _client.Send(_mixerChannels[ch].SetFxValueMessage(_selectedLayout));
+                }
             }
         }
 
@@ -563,6 +607,13 @@ namespace UI24RController
                         case MessageTypeEnum.auxFaderValue:
                             _mixerChannels[ui24Message.ChannelNumber].AuxSendValues[ui24Message.IntValue.ToAux()] = ui24Message.FaderValue;
                             if (isOnLayer && controllerChannelNumber < 8 && _selectedLayout == ui24Message.IntValue.ToAux())
+                            {
+                                _settings.Controller.SetFader(controllerChannelNumber, ui24Message.FaderValue);
+                            }
+                            break;
+                        case MessageTypeEnum.fxFaderValue:
+                            _mixerChannels[ui24Message.ChannelNumber].AuxSendValues[ui24Message.IntValue.ToFx()] = ui24Message.FaderValue;
+                            if (isOnLayer && controllerChannelNumber < 8 && _selectedLayout == ui24Message.IntValue.ToFx())
                             {
                                 _settings.Controller.SetFader(controllerChannelNumber, ui24Message.FaderValue);
                             }
