@@ -35,9 +35,6 @@ namespace UI24RController
         /// </summary>
         protected Mixer _mixer = new Mixer();
 
-        protected ViewTypeEnum _activeView;
-        protected bool _recSectionIsMtk;
-
         //0-23: input channels
         //24-25: Linie In L/R
         //26-27: Player L/R
@@ -122,9 +119,11 @@ namespace UI24RController
                 if (e.IsPress)
                 {
                     _selectedLayout = e.FunctionButton.ToAux();
+                    _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
                 }
                 else
                 {
+                    _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = SelectedLayoutEnum.Channels;
                 }
             }
