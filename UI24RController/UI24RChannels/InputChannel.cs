@@ -5,15 +5,17 @@ using UI24RController.UI24RChannels.Interfaces;
 
 namespace UI24RController.UI24RChannels
 {
-    public class InputChannel: ChannelBase, IRecordable, IStereoLinkable
+    public class InputChannel: ChannelBase, IRecordable, IStereoLinkable, IPhantomable
     {
 
         public bool IsRec { get; set; }
+        public bool IsPhantom { get; set; }
         public int LinkedWith { get; set ; }
 
         public InputChannel(int channelNumber): base(channelNumber)
         {
             IsRec = false;
+            IsPhantom = false;
             LinkedWith = -1; //-1: not linked, 0 left, 1 right
             channelTypeID = "i";
 
@@ -30,6 +32,10 @@ namespace UI24RController.UI24RChannels
         public string GainMessage()
         {
             return $"3:::SETD^hw.{this.ChannelNumber}.gain^{this.Gain.ToString().Replace(',', '.')}";
+        }
+        public string PhantomMessage()
+        {
+            return $"3:::SETD^hw.{this.ChannelNumber}.phantom^{(this.IsPhantom ? 1 : 0)}";
         }
         public override string MuteMessage()
         {

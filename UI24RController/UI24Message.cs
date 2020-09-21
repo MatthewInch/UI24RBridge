@@ -18,7 +18,7 @@ namespace UI24RController
 
     public enum MessageTypeEnum
     {
-        mix, gain, mute, solo, name, mtkrec, stereoIndex, mtk, isRecording, auxFaderValue, fxFaderValue, currentState, uknown
+        mix, gain, mute, solo, name, mtkrec, stereoIndex, mtk, isRecording, auxFaderValue, fxFaderValue, currentState, phantom, uknown
     }
 
     public class UI24Message
@@ -73,6 +73,7 @@ namespace UI24RController
 
         public UI24Message(string message)
         {
+
             IsValid = false;
             SystemVarType = SystemVarTypeEnum.Uknown;
             var messageParts = message.Split('^');
@@ -137,6 +138,19 @@ namespace UI24RController
                         IsValid = true;
                         break;
                     case MessageTypeEnum.mtkrec:
+                        if (messageParts[2] == "1")
+                            LogicValue = true;
+                        else
+                            LogicValue = false;
+                        IsValid = true;
+                        break;
+                    case MessageTypeEnum.phantom:
+                        if(this.ChannelType != ChannelTypeEnum.HW)
+                        {
+                            IsValid = false;
+                            break;
+                        }
+
                         if (messageParts[2] == "1")
                             LogicValue = true;
                         else
@@ -250,6 +264,8 @@ namespace UI24RController
                     return MessageTypeEnum.name;
                 case "gain":
                     return MessageTypeEnum.gain;
+                case "phantom":
+                    return MessageTypeEnum.phantom;
                 case "mute":
                     return MessageTypeEnum.mute;
                 case "solo":

@@ -22,6 +22,7 @@ namespace UI24RBridgeTest
             var syncID = configuration["SyncID"];
             var viewDebugMessage = configuration["DebugMessages"] == "true";
             var recButtonBahavior = configuration["DefaultRecButton"];
+            var channelRecButtonBahavior = configuration["DefaultChannelRecButton"];
             var auxButtonBehavior = configuration["AuxButtonBehavior"];
             //var controller = new BehringerUniversalMIDI();
             var controller = MIDIControllerFactory.GetMidiController(protocol);
@@ -87,7 +88,7 @@ namespace UI24RBridgeTest
                 {
                     switch (recButtonBahavior.ToLower())
                     {
-                        case "onlymtk": 
+                        case "onlymtk":
                             settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.OnlyMTK;
                             break;
                         case "only2track":
@@ -95,6 +96,18 @@ namespace UI24RBridgeTest
                             break;
                         default:
                             settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.TwoTrackAndMTK;
+                            break;
+                    }
+                }
+                if (channelRecButtonBahavior != null)
+                {
+                    switch (channelRecButtonBahavior.ToLower())
+                    {
+                        case "phantom":
+                            settings.ChannelRecButtonBehavior = BridgeSettings.ChannelRecButtonBehaviorEnum.Phantom;
+                            break;
+                        default:
+                            settings.ChannelRecButtonBehavior = BridgeSettings.ChannelRecButtonBehaviorEnum.Rec;
                             break;
                     }
                 }
