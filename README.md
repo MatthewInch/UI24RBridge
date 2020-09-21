@@ -1,23 +1,22 @@
 # UI24RBridge
-Bridge between the UI24R and a MIDI controller
-
-This is a beta project. It tested only in windows, a Behringer BCF2000 and a begringer X-Touch midi controller
+Bridge between the UI24R and a MIDI controller.\
+This is a beta project. It tested only in windows, a Behringer BCF2000 and a begringer X-Touch midi controller.
 
 You can download the latest release for
 - **Windows**: https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/win-x86-core.zip
 - **Linux**: https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/linux-x64.zip
  The Linux binary wasn't tested.
 
-Implemented the Mackie Control protocol (It can work with any daw controller that can use in MC mode)
+Implemented the Mackie Control protocol (It can work with any daw controller that can use in MC mode)\
 The earlier protocol has not been removed but the new functions only implemented in MC mode.
 
 
 
 ### The Bridge functionalities:
- - Use 6 layer of faders
-You can select the channels in the mixer own surface with the Global view groups.
-You have to select 8 channels per viewgroup at least.
-Switch between layers with Fader Bank << and >> buttons
+ - Use 6 layer of faders\
+You can select the channels in the mixer own surface with the Global view groups.\
+You have to select 8 channels per viewgroup at least.\
+Switch between layers with Fader Bank << and >> buttons\
 If there isn't any global view group in the mixer the Bridge use the channel in this order:
     - input 1-8;
     - input 9-16;
@@ -48,14 +47,14 @@ In the settings file (**appsettings.json**):
 
 
 **Example of the settings file**
-{
-    "UI24R-Url": "ws://192.168.5.2",
-    "MIDI-Input-Name": "X-Touch",
-    "MIDI-Output-Name": "X-Touch",
-    "Protocol": "MC",
-    "SyncID": "Abaliget"
-    "DefaultRecButton": "2TrackAndMTK", //possible values: "onlyMTK", "only2Track", "2TrackAndMTK"; default is "2TrackAndMTK
-    "DefaultChannelRecButton": "phantom", //possible values: "phantom","rec"; default is "rec
-    "AuxButtonBehavior": "Lock" //possible values: "Release", "Lock"; Default is "Release"
-    "DebugMessages": "true",
+{\
+    "UI24R-Url": "ws://192.168.5.2",\
+    "MIDI-Input-Name": "X-Touch",\
+    "MIDI-Output-Name": "X-Touch",\
+    "Protocol": "MC",\
+    "SyncID": "Abaliget",\
+    "DefaultRecButton": "2TrackAndMTK", //possible values: "onlyMTK", "only2Track", "2TrackAndMTK"; default is "2TrackAndMTK\
+    "DefaultChannelRecButton": "phantom", //possible values: "phantom","rec"; default is "rec\
+    "AuxButtonBehavior": "Lock", //possible values: "Release", "Lock"; Default is "Release"\
+    "DebugMessages": "true",\
 }
