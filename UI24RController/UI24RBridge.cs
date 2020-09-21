@@ -275,13 +275,27 @@ namespace UI24RController
         private void _midiController_RecChannelEvent(object sender, MIDIController.ChannelEventArgs e)
         {
             var ch = _viewViewGroups[_selectedViewGroup][e.ChannelNumber];
-            if (_mixerChannels[ch] is IRecordable)
+            if (_settings.ChannelRecButtonBehavior == BridgeSettings.ChannelRecButtonBehaviorEnum.Rec )
             {
-                var channel = _mixerChannels[ch] as IRecordable;
-                channel.IsRec = !channel.IsRec;
-                _client.Send(channel.RecMessage());
-                _settings.Controller.SetRecLed(e.ChannelNumber, channel.IsRec);
+                if (_mixerChannels[ch] is IRecordable)
+                {
+                    var channel = _mixerChannels[ch] as IRecordable;
+                    channel.IsRec = !channel.IsRec;
+                    _client.Send(channel.RecMessage());
+                    _settings.Controller.SetRecLed(e.ChannelNumber, channel.IsRec);
+                }
             }
+            else //phantom
+            {
+                if (_mixerChannels[ch] is IPhantomable)
+                {
+                    var channel = _mixerChannels[ch] as IPhantomable;
+                    channel.IsPhantom = !channel.IsPhantom;
+                    _client.Send(channel.PhantomMessage());
+                    _settings.Controller.SetRecLed(e.ChannelNumber, channel.IsPhantom);
+                }
+            }
+
         }
 
         private void _midiController_SoloChannelEvent(object sender, MIDIController.ChannelEventArgs e)
@@ -495,10 +509,22 @@ namespace UI24RController
                 _settings.Controller.WriteTextToChannelLCD(ch.controllerChannelNumber, _mixerChannels[channelNumber].Name);
                 _settings.Controller.SetMuteLed(ch.controllerChannelNumber, _mixerChannels[channelNumber].IsMute);
                 _settings.Controller.SetSoloLed(ch.controllerChannelNumber, _mixerChannels[channelNumber].IsSolo);
-                if (_mixerChannels[channelNumber] is IRecordable)
-                    _settings.Controller.SetRecLed(ch.controllerChannelNumber, (_mixerChannels[channelNumber] as IRecordable).IsRec);
-                else
-                    _settings.Controller.SetRecLed(ch.controllerChannelNumber, false);
+
+                if (_settings.ChannelRecButtonBehavior == BridgeSettings.ChannelRecButtonBehaviorEnum.Rec)
+                {
+                    if (_mixerChannels[channelNumber] is IRecordable)
+                        _settings.Controller.SetRecLed(ch.controllerChannelNumber, (_mixerChannels[channelNumber] as IRecordable).IsRec);
+                    else
+                        _settings.Controller.SetRecLed(ch.controllerChannelNumber, false);
+                }
+                else //phantom
+                {
+                    if (_mixerChannels[channelNumber] is IPhantomable)
+                        _settings.Controller.SetRecLed(ch.controllerChannelNumber, (_mixerChannels[channelNumber] as IPhantomable).IsPhantom);
+                    else
+                        _settings.Controller.SetRecLed(ch.controllerChannelNumber, false);
+                }
+
             }
         }
 
@@ -568,9 +594,19 @@ namespace UI24RController
                             }
                             break;
                         case MessageTypeEnum.mtkrec:
-                            if (_mixerChannels[ui24Message.ChannelNumber] is IRecordable)
+                            if (_mixerChannels[ui24Message.ChannelNumber] is IRecordable && _settings.ChannelRecButtonBehavior == BridgeSettings.ChannelRecButtonBehaviorEnum.Rec)
                             {
                                 (_mixerChannels[ui24Message.ChannelNumber] as IRecordable).IsRec = ui24Message.LogicValue;
+                                if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8)
+                                {
+                                    _settings.Controller.SetRecLed(controllerChannelNumber, ui24Message.LogicValue);
+                                }
+                            }
+                            break;
+                        case MessageTypeEnum.phantom:
+                            if (_mixerChannels[ui24Message.ChannelNumber] is IPhantomable && _settings.ChannelRecButtonBehavior == BridgeSettings.ChannelRecButtonBehaviorEnum.Phantom)
+                            {
+                                (_mixerChannels[ui24Message.ChannelNumber] as IPhantomable).IsPhantom = ui24Message.LogicValue;
                                 if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8)
                                 {
                                     _settings.Controller.SetRecLed(controllerChannelNumber, ui24Message.LogicValue);
