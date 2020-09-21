@@ -47,6 +47,7 @@ In the settings file (**appsettings.json**):
 
 
 **Example of the settings file**
+
 {\
     "UI24R-Url": "ws://192.168.5.2",\
     "MIDI-Input-Name": "X-Touch",\
