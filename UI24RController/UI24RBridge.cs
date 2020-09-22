@@ -287,12 +287,31 @@ namespace UI24RController
             }
             else //phantom
             {
-                if (_mixerChannels[ch] is IPhantomable)
+                if (_mixerChannels[ch] is IInputable)
                 {
-                    var channel = _mixerChannels[ch] as IPhantomable;
-                    channel.IsPhantom = !channel.IsPhantom;
-                    _client.Send(channel.PhantomMessage());
-                    _settings.Controller.SetRecLed(e.ChannelNumber, channel.IsPhantom);
+                    var currentChannel = _mixerChannels[ch] as IInputable;
+                    if (currentChannel.SrcType == SrcTypeEnum.Hw)
+                    {
+                        currentChannel.IsPhantom = !currentChannel.IsPhantom;
+                        _client.Send(currentChannel.PhantomMessage());
+                        _settings.Controller.SetRecLed(e.ChannelNumber, currentChannel.IsPhantom);
+
+                        //if multiple channels are set to same HW input
+                        foreach (var singleChannel in _mixerChannels)
+                        {
+                            if (singleChannel is IInputable)
+                            {
+                                var singleInputChannel = singleChannel as IInputable;
+                                if (singleInputChannel.SrcType == SrcTypeEnum.Hw && singleInputChannel.SrcNumber == currentChannel.SrcNumber)
+                                {
+                                    singleInputChannel.IsPhantom = currentChannel.IsPhantom;
+                                    for (int i = 0; i < 8; ++i)
+                                        if (singleInputChannel == _mixerChannels[_viewViewGroups[_selectedViewGroup][i]])
+                                            _settings.Controller.SetRecLed(i, currentChannel.IsPhantom);
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -364,16 +383,36 @@ namespace UI24RController
         private void _midiController_GainEvent(object sender, MIDIController.GainEventArgs e)
         {
             var ch = _viewViewGroups[_selectedViewGroup][e.ChannelNumber];
-            if (_mixerChannels[ch] is InputChannel)
+            if (_mixerChannels[ch] is IInputable)
             {
-                var inputChannel = _mixerChannels[ch] as InputChannel;
-                inputChannel.Gain = inputChannel.Gain + (1.0d / 100.0d) * e.GainDirection;
-                if (inputChannel.Gain > 1)
-                    inputChannel.Gain = 1;
-                if (inputChannel.Gain < 0)
-                    inputChannel.Gain = 0;
-                _client.Send(inputChannel.GainMessage());
-                _settings.Controller.SetGainLed(e.ChannelNumber, inputChannel.Gain);
+                var currentChannel = _mixerChannels[ch] as IInputable;
+                if(currentChannel.SrcType == SrcTypeEnum.Hw)
+                {
+                    currentChannel.Gain = currentChannel.Gain + (1.0d / 100.0d) * e.GainDirection;
+                    if (currentChannel.Gain > 1)
+                        currentChannel.Gain = 1;
+                    if (currentChannel.Gain < 0)
+                        currentChannel.Gain = 0;
+
+                    _client.Send(currentChannel.GainMessage());
+                    _settings.Controller.SetGainLed(e.ChannelNumber, currentChannel.Gain);
+                    //if multiple channels are set to same HW input
+                    foreach (var singleChannel in _mixerChannels)
+                    {
+                        if (singleChannel is IInputable)
+                        {
+                            var singleInputChannel = singleChannel as IInputable;
+                            if (singleInputChannel.SrcType == SrcTypeEnum.Hw && singleInputChannel.SrcNumber == currentChannel.SrcNumber)
+                            {
+                                singleInputChannel.Gain = currentChannel.Gain;
+                                for(int i=0;i<8; ++i)
+                                    if(singleInputChannel == _mixerChannels[_viewViewGroups[_selectedViewGroup][i]])
+                                        _settings.Controller.SetGainLed(i, currentChannel.Gain);
+                            }
+                        }
+                    }
+
+                }
             }
         }
         private void _midiController_PresetDown(object sender, EventArgs e)
@@ -505,7 +544,17 @@ namespace UI24RController
                     _settings.Controller.SetSelectLed(ch.controllerChannelNumber, true);
                 }
 
-                _settings.Controller.SetGainLed(ch.controllerChannelNumber, _mixerChannels[channelNumber].Gain);
+                if (_mixerChannels[channelNumber] is IInputable)
+                {
+                    var inputChannel = _mixerChannels[channelNumber] as IInputable;
+                    if(inputChannel.SrcType == SrcTypeEnum.Hw)
+                        _settings.Controller.SetGainLed(ch.controllerChannelNumber, inputChannel.Gain);
+                    else
+                        _settings.Controller.SetGainLed(ch.controllerChannelNumber, 0);
+                }
+                else
+                    _settings.Controller.SetGainLed(ch.controllerChannelNumber, 0);
+
                 _settings.Controller.WriteTextToChannelLCD(ch.controllerChannelNumber, _mixerChannels[channelNumber].Name);
                 _settings.Controller.SetMuteLed(ch.controllerChannelNumber, _mixerChannels[channelNumber].IsMute);
                 _settings.Controller.SetSoloLed(ch.controllerChannelNumber, _mixerChannels[channelNumber].IsSolo);
@@ -519,8 +568,8 @@ namespace UI24RController
                 }
                 else //phantom
                 {
-                    if (_mixerChannels[channelNumber] is IPhantomable)
-                        _settings.Controller.SetRecLed(ch.controllerChannelNumber, (_mixerChannels[channelNumber] as IPhantomable).IsPhantom);
+                    if (_mixerChannels[channelNumber] is IInputable)
+                        _settings.Controller.SetRecLed(ch.controllerChannelNumber, (_mixerChannels[channelNumber] as IInputable).IsPhantom);
                     else
                         _settings.Controller.SetRecLed(ch.controllerChannelNumber, false);
                 }
@@ -604,12 +653,33 @@ namespace UI24RController
                             }
                             break;
                         case MessageTypeEnum.phantom:
-                            if (_mixerChannels[ui24Message.ChannelNumber] is IPhantomable && _settings.ChannelRecButtonBehavior == BridgeSettings.ChannelRecButtonBehaviorEnum.Phantom)
+                            if (_mixerChannels[ui24Message.ChannelNumber] is IInputable && _settings.ChannelRecButtonBehavior == BridgeSettings.ChannelRecButtonBehaviorEnum.Phantom)
                             {
-                                (_mixerChannels[ui24Message.ChannelNumber] as IPhantomable).IsPhantom = ui24Message.LogicValue;
+                                (_mixerChannels[ui24Message.ChannelNumber] as IInputable).IsPhantom = ui24Message.LogicValue;
                                 if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8)
                                 {
                                     _settings.Controller.SetRecLed(controllerChannelNumber, ui24Message.LogicValue);
+                                }
+                            }
+                            break;
+                        case MessageTypeEnum.source:
+                            if(_mixerChannels[ui24Message.ChannelNumber] is IInputable)
+                            {
+                                var inputableChannel = _mixerChannels[ui24Message.ChannelNumber] as IInputable;
+                                if (ui24Message.IntValue < 0)
+                                {
+                                    inputableChannel.SrcType = SrcTypeEnum.None;
+                                    inputableChannel.SrcNumber = 20;
+                                }
+                                else if (ui24Message.IntValue > 99)
+                                {
+                                    inputableChannel.SrcType = SrcTypeEnum.Line;
+                                    inputableChannel.SrcNumber = ui24Message.IntValue - 100;
+                                }
+                                else
+                                {
+                                    inputableChannel.SrcType = SrcTypeEnum.Hw;
+                                    inputableChannel.SrcNumber = ui24Message.IntValue;
                                 }
                             }
                             break;

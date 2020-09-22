@@ -18,7 +18,7 @@ namespace UI24RController
 
     public enum MessageTypeEnum
     {
-        mix, gain, mute, solo, name, mtkrec, stereoIndex, mtk, isRecording, auxFaderValue, fxFaderValue, currentState, phantom, uknown
+        mix, gain, mute, solo, name, mtkrec, stereoIndex, mtk, isRecording, auxFaderValue, fxFaderValue, currentState, phantom, source, uknown
     }
 
     public class UI24Message
@@ -73,6 +73,8 @@ namespace UI24RController
 
         public UI24Message(string message)
         {
+            //if (message.Contains("src"))
+            //    Console.WriteLine(message);
 
             IsValid = false;
             SystemVarType = SystemVarTypeEnum.Uknown;
@@ -145,7 +147,7 @@ namespace UI24RController
                         IsValid = true;
                         break;
                     case MessageTypeEnum.phantom:
-                        if(this.ChannelType != ChannelTypeEnum.HW)
+                        if (this.ChannelType != ChannelTypeEnum.HW)
                         {
                             IsValid = false;
                             break;
@@ -157,6 +159,31 @@ namespace UI24RController
                             LogicValue = false;
                         IsValid = true;
                         break;
+
+                    case MessageTypeEnum.source:
+                        IsValid = false;
+                        var srcVals = messageParts[2].Split('.');
+                        if (srcVals[0] == "none")
+                        {
+                            this.IntValue = -1;
+                            IsValid = true;
+                        }
+                        else if (srcVals.Length > 1)
+                        {
+                            if (int.TryParse(srcVals[1], out intValue))
+                            {
+                                this.IntValue = intValue;
+                                if (srcVals[0] == "hw")
+                                    IsValid = true;
+                                else if (srcVals[0] == "li")
+                                {
+                                    this.IntValue = this.IntValue + 100;
+                                    IsValid = true;
+                                }
+                            }
+                        }
+                        break;
+
                     case MessageTypeEnum.stereoIndex:
                         if (int.TryParse(messageParts[2], out intValue))
                         {
@@ -266,6 +293,8 @@ namespace UI24RController
                     return MessageTypeEnum.gain;
                 case "phantom":
                     return MessageTypeEnum.phantom;
+                case "src":
+                    return MessageTypeEnum.source;
                 case "mute":
                     return MessageTypeEnum.mute;
                 case "solo":
