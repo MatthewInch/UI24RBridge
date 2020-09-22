@@ -25,6 +25,11 @@ namespace UI24RController
         Fx1, Fx2, Fx3, Fx4
     }
 
+    public enum SrcTypeEnum
+    {
+        Hw, Line, None
+    }
+
     public static class EnumExtension
     {
         public static int AuxToInt(this SelectedLayoutEnum layout)
@@ -105,7 +110,7 @@ namespace UI24RController
                  layout == SelectedLayoutEnum.Aux7 ||
                  layout == SelectedLayoutEnum.Aux8;
         }
-        
+
         public static SelectedLayoutEnum ToFx(this int fx)
         {
             SelectedLayoutEnum result = SelectedLayoutEnum.Fx1;
@@ -123,7 +128,7 @@ namespace UI24RController
                 case 3:
                     result = SelectedLayoutEnum.Fx4;
                     break;
-               
+
 
             }
             return result;
@@ -135,6 +140,32 @@ namespace UI24RController
                  layout == SelectedLayoutEnum.Fx2 ||
                  layout == SelectedLayoutEnum.Fx3 ||
                  layout == SelectedLayoutEnum.Fx4;
+        }
+
+
+        public static SrcTypeEnum StringToSrcType(this string srcStr)
+        {
+            srcStr = srcStr.ToLower();
+            switch (srcStr)
+            {
+                case "hw":
+                    return SrcTypeEnum.Hw;
+                case "li":
+                    return SrcTypeEnum.Line;
+            }
+            return SrcTypeEnum.None;
+        }
+
+        public static string SrcTypeToString(this SrcTypeEnum srcType)
+        {
+            switch (srcType)
+            {
+                case SrcTypeEnum.Hw:
+                    return "hw";
+                case SrcTypeEnum.Line:
+                    return "li";
+            }
+            return "none";
         }
 
         public static SelectedLayoutEnum ToLayoutEnum(this ButtonsEnum button)

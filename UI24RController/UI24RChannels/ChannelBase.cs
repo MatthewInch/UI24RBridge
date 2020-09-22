@@ -35,8 +35,6 @@ namespace UI24RController.UI24RChannels
         public Dictionary<SelectedLayoutEnum, double> AuxSendValues { get; set; }
         protected string channelTypeID { get; set; }
 
-        public double Gain { get; set; }
-
         public ChannelBase(int channelNumber)
         {
             ChannelFaderValue = 0;
