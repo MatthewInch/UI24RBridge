@@ -20,8 +20,8 @@ Switch between layers with Fader Bank << and >> buttons\
 If there isn't any global view group in the mixer the Bridge use the channel in this order:
     - input 1-8;
     - input 9-16;
-    - input 17-22, Line in;
-    - Player, FX 1-4;
+    - input 17-24;
+    - Line in, Player, FX 1-4;
     - SUB 1-6; AUX 1-2
     - AUX 3-10;
  - The faders work on every type of channels
