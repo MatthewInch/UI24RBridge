@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Commons.Music.Midi.RtMidi;
 using System.Threading;
 using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 
 namespace UI24RController.MIDIController
 {
@@ -51,8 +52,10 @@ namespace UI24RController.MIDIController
 
         public event EventHandler<MessageEventArgs> MessageReceived;
         public event EventHandler<FaderEventArgs> FaderEvent;
-        public event EventHandler<EventArgs> PresetUp;
-        public event EventHandler<EventArgs> PresetDown;
+        public event EventHandler<EventArgs> LayerUp;
+        public event EventHandler<EventArgs> LayerDown;
+        public event EventHandler<EventArgs> BankUp;
+        public event EventHandler<EventArgs> BankDown;
         public event EventHandler<GainEventArgs> GainEvent;
         public event EventHandler<ChannelEventArgs> SelectChannelEvent;
         public event EventHandler<EventArgs> SaveEvent;
@@ -70,6 +73,7 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> StopEvent;
         public event EventHandler<EventArgs> PlayEvent;
         public event EventHandler<EventArgs> RecEvent;
+        public event EventHandler<EventArgs> ScrubEvent;
         public event EventHandler<EventArgs> ConnectionErrorEvent;
         public event EventHandler<FunctionEventArgs> AuxButtonEvent;
         public event EventHandler<FunctionEventArgs> FxButtonEvent;
@@ -145,23 +149,36 @@ namespace UI24RController.MIDIController
             PrevEvent?.Invoke(this, new EventArgs());
         }
 
+
+        protected void OnScrubEvent()
+        {
+            ScrubEvent?.Invoke(this, new EventArgs());
+        }
+
         protected void OnAuxButtonEvent(int functionNumber,bool isPress)
         {
             AuxButtonEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
         }
-
         protected void OnFxButtonEvent(int functionNumber, bool isPress)
         {
             FxButtonEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
         }
 
-        protected void OnPresetUp()
+        protected void OnLayerUp()
         {
-            PresetUp?.Invoke(this, new EventArgs());
+            LayerUp?.Invoke(this, new EventArgs());
         }
-        protected void OnPresetDown()
+        protected void OnLayerDown()
         {
-            PresetDown?.Invoke(this, new EventArgs());
+            LayerDown?.Invoke(this, new EventArgs());
+        }
+        protected void OnBankUp()
+        {
+            BankUp?.Invoke(this, new EventArgs());
+        }
+        protected void OnBankDown()
+        {
+            BankDown?.Invoke(this, new EventArgs());
         }
 
         public void Dispose()
@@ -217,9 +234,6 @@ namespace UI24RController.MIDIController
             }
             return false;
         }
-
-
-
         public bool ConnectOutputDevice(string deviceName)
         {
             try
@@ -252,7 +266,6 @@ namespace UI24RController.MIDIController
             }
             return false;
         }
-
         private void StartPingThread()
         {
             if (_pingThread == null || !_pingThread.IsAlive)
@@ -270,20 +283,17 @@ namespace UI24RController.MIDIController
                 _pingThread.Start();
 
         }
-
         public bool ReConnectDevice()
         {
            return ConnectInputDevice(_inputDeviceName) &&
             ConnectOutputDevice(_outputDeviceName);
         }
 
-
         public string[] GetInputDeviceNames()
         {
             var access = MidiAccessManager.Default;
             return access.Inputs.Select(port => port.Name).ToArray();
         }
-
         public string[] GetOutputDeviceNames()
         {
             var access = MidiAccessManager.Default;
@@ -309,7 +319,6 @@ namespace UI24RController.MIDIController
                 }
             }
         }
-
         private void ProcessMidiMessage(MidiReceivedEventArgs e)
         {
             var message = e.Data;
@@ -335,11 +344,19 @@ namespace UI24RController.MIDIController
                 }
                 else if (message.MIDIEqual(0x90, 0x2f, 0x7f)) //fader bank right press
                 {
-                    OnPresetUp();
+                    OnBankUp();
                 }
                 else if (message.MIDIEqual(0x90, 0x2e, 0x7f)) //fader bank left press
                 {
-                    OnPresetDown();
+                    OnBankDown();
+                }
+                else if (message.MIDIEqual(0x90, 0x31, 0x7f)) //fader channel right press
+                {
+                    OnLayerUp();
+                }
+                else if (message.MIDIEqual(0x90, 0x30, 0x7f)) //fader channel left press
+                {
+                    OnLayerDown();
                 }
                 else if (message[1] >= 0x10 && message[1] <= 0x17 && message[2] == 0x7f) //channel mute button
                 {
@@ -389,6 +406,10 @@ namespace UI24RController.MIDIController
                 else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlayNext], 0x7f)) //Stop button
                 {
                     OnNextEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Scrub], 0x7f)) //Scrub button
+                {
+                    OnScrubEvent();
                 }
                 else if (message[0]== 0x90 && message[1]>=_buttonsID[ButtonsEnum.Aux1] && message[1] <= _buttonsID[ButtonsEnum.Aux8]) //F1-F8 press
                 {
@@ -470,7 +491,6 @@ namespace UI24RController.MIDIController
             }
             return false;
         }
-
         public void SetSelectLed(int channelNumber, bool turnOn)
         {
             //turn off all select led and on in the current channel (channel 8 is 0x32 the main channel)
@@ -479,7 +499,6 @@ namespace UI24RController.MIDIController
                 Send(new byte[] { 0x90, (byte)(i==8? 0x32 : 0x18 + i), (byte)((i==channelNumber && turnOn)? 0x7f : 0x00) }, 0, 3, 0);
             }
         }
-
         public void SetMuteLed(int channelNumber, bool turnOn)
         {
             if (channelNumber < 8)
@@ -494,7 +513,6 @@ namespace UI24RController.MIDIController
                 Send(new byte[] { 0x90, (byte)(0x08 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
             }
         }
-
         public void SetRecLed(int channelNumber, bool turnOn)
         {
             if (channelNumber < 8)
@@ -502,18 +520,23 @@ namespace UI24RController.MIDIController
                 Send(new byte[] { 0x90, (byte)(0x00 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
             }
         }
+        public void SetLed(ButtonsEnum buttonName, bool turnOn)
+        {
+            Send(new byte[] { 0x90, _buttonsID[buttonName], (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+        }
 
         public void WriteTextToChannelLCD(int channelNumber, string text)
         {
             if (channelNumber < 8)
             {
+                text = Regex.Replace(text, @"[^\u0020-\u007E]", string.Empty);
+
                 var position = channelNumber * 7;
                 var message = ASCIIEncoding.ASCII.GetBytes((text + "       ").Substring(0, 7));
                 byte[] sysex = (new byte[] { 0xf0, 0, 0, 0x66, 0x14, 0x12, (byte)position }).Concat(message).Concat(new byte[] { 0xf7 }).ToArray();
                 Send(sysex, 0, sysex.Length, 0);
             }
         }
-
         public void WriteTextToLCD( string text)
         {
                 var message = ASCIIEncoding.ASCII.GetBytes((text + "                                                        ").Substring(0, 50));
@@ -521,9 +544,52 @@ namespace UI24RController.MIDIController
                 Send(sysex, 0, sysex.Length, 0);
         }
 
-        public void SetLed(ButtonsEnum buttonName, bool turnOn)
+        private byte convertStringToDisplayBytes(string str, int poz = 0)
         {
-            Send(new byte[] { 0x90, _buttonsID[buttonName], (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+            byte[] asciiBytes = ASCIIEncoding.ASCII.GetBytes(str);
+            if (poz >= asciiBytes.Length)
+                poz = asciiBytes.Length - 1;
+
+            if (asciiBytes[poz] >= 0x40 && asciiBytes[poz] <= 0x60)
+                return (byte)(asciiBytes[poz] - 0x40);
+            else if (asciiBytes[poz] >= 0x21 && asciiBytes[poz] <= 0x3F)
+                return asciiBytes[poz];
+
+            return 0x20;
+        }
+        public void WriteTextToMainDisplay(string text, int position, int maxChar = 1)
+        {
+            if (position < 0 || position > 11) position = 0;
+            if (maxChar + position > 12) maxChar = 12 - position;
+            text = (text + "             ").ToUpper();
+            for (int i=0; i < maxChar; ++i)
+            {
+                byte[] sysex = (new byte[] { 0xB0, Convert.ToByte(position+64+i), convertStringToDisplayBytes(text, maxChar-i-1) });
+                Send(sysex, 0, sysex.Length, 0);
+            }
+
+        }
+        public void WriteTextToAssignmentDisplay(string text)
+        {
+            WriteTextToMainDisplay(text, 10, 2);
+        }
+        public void WriteTextToBarsDisplay(string text)
+        {
+            WriteTextToMainDisplay(text, 7, 3);
+        }
+        public void WriteTextToBeatsDisplay(string text)
+        {
+            WriteTextToMainDisplay(text, 5, 2);
+
+        }
+        public void WriteTextToSubDivisionDisplay(string text)
+        {
+            WriteTextToMainDisplay(text, 3, 2);
+
+        }
+        public void WriteTextToTicksDisplay(string text)
+        {
+            WriteTextToMainDisplay(text, 0, 3);
         }
 
         public void WriteTextToLCD(string text, int delay)
@@ -542,7 +608,6 @@ namespace UI24RController.MIDIController
             }).Start();
 
         }
-
         public void WriteChannelMeter(int channelNumber, byte value)
         {
             if (channelNumber < 8)
