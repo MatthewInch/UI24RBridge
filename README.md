@@ -3,8 +3,12 @@ Bridge between the UI24R and a MIDI controller.\
 This is a beta project. It tested only in windows, a Behringer BCF2000 and a Behringer X-Touch midi controller.
 
 You can download the latest release for
-- **Windows**: https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/win-x86-core.zip
-- **Linux**: https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/linux-x64.zip
+- **Windows 32bit core**: https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/win-x86-core.rar
+- **Windows 32bit**: https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/win-x86.rar
+- **Windows 64bit**: https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/win-x64.rar
+- **Linux 32bit**: https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/linux-x86.rar
+- **Linux 64bit**: https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/linux-x64.rar
+- **MacOS**: https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/MacOS.rar
  The Linux binary wasn't tested.
 
 Implemented the Mackie Control protocol (It can work with any DAW controller that can use in MC mode)\
