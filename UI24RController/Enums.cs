@@ -9,6 +9,7 @@ namespace UI24RController
     {
         PlayPrev, PlayNext,
         Play, Rec, Stop,
+        Scrub,
         Aux1, Aux2, Aux3, Aux4, Aux5, Aux6, Aux7, Aux8,
         Fx1, Fx2, Fx3, Fx4
     }
@@ -34,69 +35,51 @@ namespace UI24RController
     {
         public static int AuxToInt(this SelectedLayoutEnum layout)
         {
-            int result = 0;
             switch (layout)
             {
                 case SelectedLayoutEnum.Aux1:
-                    result = 0;
-                    break;
+                    return 0;
                 case SelectedLayoutEnum.Aux2:
-                    result = 1;
-                    break;
+                    return 1;
                 case SelectedLayoutEnum.Aux3:
-                    result = 2;
-                    break;
+                    return 2;
                 case SelectedLayoutEnum.Aux4:
-                    result = 3;
-                    break;
+                    return 3;
                 case SelectedLayoutEnum.Aux5:
-                    result = 4;
-                    break;
+                    return 4;
                 case SelectedLayoutEnum.Aux6:
-                    result = 5;
-                    break;
+                    return 5;
                 case SelectedLayoutEnum.Aux7:
-                    result = 6;
-                    break;
+                    return 6;
                 case SelectedLayoutEnum.Aux8:
-                    result = 7;
-                    break;
+                default:
+                    return 7;
 
             }
-            return result;
         }
 
         public static SelectedLayoutEnum ToAux(this int aux)
         {
-            SelectedLayoutEnum result = SelectedLayoutEnum.Aux1;
             switch (aux)
             {
                 case 0:
-                    result = SelectedLayoutEnum.Aux1;
-                    break;
+                    return SelectedLayoutEnum.Aux1;
                 case 1:
-                    result = SelectedLayoutEnum.Aux2;
-                    break;
+                    return SelectedLayoutEnum.Aux2;
                 case 2:
-                    result = SelectedLayoutEnum.Aux3;
-                    break;
+                    return SelectedLayoutEnum.Aux3;
                 case 3:
-                    result = SelectedLayoutEnum.Aux4;
-                    break;
+                    return SelectedLayoutEnum.Aux4;
                 case 4:
-                    result = SelectedLayoutEnum.Aux5;
-                    break;
+                    return SelectedLayoutEnum.Aux5;
                 case 5:
-                    result = SelectedLayoutEnum.Aux6;
-                    break;
+                    return SelectedLayoutEnum.Aux6;
                 case 6:
-                    result = SelectedLayoutEnum.Aux7;
-                    break;
+                    return SelectedLayoutEnum.Aux7;
                 case 7:
-                    result = SelectedLayoutEnum.Aux8;
-                    break;
+                default:
+                    return SelectedLayoutEnum.Aux8;
             }
-            return result;
         }
 
         public static bool IsAux(this SelectedLayoutEnum layout)
@@ -111,27 +94,38 @@ namespace UI24RController
                  layout == SelectedLayoutEnum.Aux8;
         }
 
+        public static int FxToInt(this SelectedLayoutEnum layout)
+        {
+            switch (layout)
+            {
+                case SelectedLayoutEnum.Fx1:
+                    return 0;
+                case SelectedLayoutEnum.Fx2:
+                    return 1;
+                case SelectedLayoutEnum.Fx3:
+                    return 2;
+                case SelectedLayoutEnum.Fx4:
+                default:
+                    return 3;
+            }
+        }
+
         public static SelectedLayoutEnum ToFx(this int fx)
         {
-            SelectedLayoutEnum result = SelectedLayoutEnum.Fx1;
             switch (fx)
             {
                 case 0:
-                    result = SelectedLayoutEnum.Fx1;
-                    break;
+                    return SelectedLayoutEnum.Fx1;
                 case 1:
-                    result = SelectedLayoutEnum.Fx2;
-                    break;
+                    return SelectedLayoutEnum.Fx2;
                 case 2:
-                    result = SelectedLayoutEnum.Fx3;
-                    break;
+                    return SelectedLayoutEnum.Fx3;
                 case 3:
-                    result = SelectedLayoutEnum.Fx4;
-                    break;
+                default:
+                    return SelectedLayoutEnum.Fx4;
 
 
             }
-            return result;
         }
 
         public static bool IsFx(this SelectedLayoutEnum layout)
@@ -152,8 +146,9 @@ namespace UI24RController
                     return SrcTypeEnum.Hw;
                 case "li":
                     return SrcTypeEnum.Line;
+                default:
+                    return SrcTypeEnum.None;
             }
-            return SrcTypeEnum.None;
         }
 
         public static string SrcTypeToString(this SrcTypeEnum srcType)
@@ -164,85 +159,65 @@ namespace UI24RController
                     return "hw";
                 case SrcTypeEnum.Line:
                     return "li";
+                default:
+                    return "none";
             }
-            return "none";
         }
 
         public static SelectedLayoutEnum ToLayoutEnum(this ButtonsEnum button)
         {
-            SelectedLayoutEnum layout = SelectedLayoutEnum.Aux1;
             switch (button)
             {
                 case ButtonsEnum.Aux1:
-                    layout = SelectedLayoutEnum.Aux1;
-                    break;
+                    return SelectedLayoutEnum.Aux1;
                 case ButtonsEnum.Aux2:
-                    layout = SelectedLayoutEnum.Aux3;
-                    break;
+                    return SelectedLayoutEnum.Aux3;
                 case ButtonsEnum.Aux3:
-                    layout = SelectedLayoutEnum.Aux3;
-                    break;
+                    return SelectedLayoutEnum.Aux3;
                 case ButtonsEnum.Aux4:
-                    layout = SelectedLayoutEnum.Aux4;
-                    break;
+                    return SelectedLayoutEnum.Aux4;
                 case ButtonsEnum.Aux5:
-                    layout = SelectedLayoutEnum.Aux5;
-                    break;
+                    return SelectedLayoutEnum.Aux5;
                 case ButtonsEnum.Aux6:
-                    layout = SelectedLayoutEnum.Aux6;
-                    break;
+                    return SelectedLayoutEnum.Aux6;
                 case ButtonsEnum.Aux7:
-                    layout = SelectedLayoutEnum.Aux7;
-                    break;
+                    return SelectedLayoutEnum.Aux7;
                 case ButtonsEnum.Aux8:
-                    layout = SelectedLayoutEnum.Aux8;
-                    break;
+                default:
+                    return SelectedLayoutEnum.Aux8;
             }
-            return layout;
         }
         public static ButtonsEnum ToButtonsEnum(this SelectedLayoutEnum layout)
         {
-            ButtonsEnum button = ButtonsEnum.Aux1;
             switch (layout)
             {
                 case SelectedLayoutEnum.Aux1:
-                    button = ButtonsEnum.Aux1;
-                    break;
+                    return ButtonsEnum.Aux1;
                 case SelectedLayoutEnum.Aux2:
-                    button = ButtonsEnum.Aux2;
-                    break;
+                    return ButtonsEnum.Aux2;
                 case SelectedLayoutEnum.Aux3:
-                    button = ButtonsEnum.Aux3;
-                    break;
+                    return ButtonsEnum.Aux3;
                 case SelectedLayoutEnum.Aux4:
-                    button = ButtonsEnum.Aux4;
-                    break;
+                    return ButtonsEnum.Aux4;
                 case SelectedLayoutEnum.Aux5:
-                    button = ButtonsEnum.Aux5;
-                    break;
+                    return ButtonsEnum.Aux5;
                 case SelectedLayoutEnum.Aux6:
-                    button = ButtonsEnum.Aux6;
-                    break;
+                    return ButtonsEnum.Aux6;
                 case SelectedLayoutEnum.Aux7:
-                    button = ButtonsEnum.Aux7;
-                    break;
+                    return ButtonsEnum.Aux7;
                 case SelectedLayoutEnum.Aux8:
-                    button = ButtonsEnum.Aux8;
-                    break;
+                    return ButtonsEnum.Aux8;
                 case SelectedLayoutEnum.Fx1:
-                    button = ButtonsEnum.Fx1;
-                    break;
+                    return ButtonsEnum.Fx1;
                 case SelectedLayoutEnum.Fx2:
-                    button = ButtonsEnum.Fx2;
-                    break;
+                    return ButtonsEnum.Fx2;
                 case SelectedLayoutEnum.Fx3:
-                    button = ButtonsEnum.Fx3;
-                    break;
+                    return ButtonsEnum.Fx3;
                 case SelectedLayoutEnum.Fx4:
-                    button = ButtonsEnum.Fx4;
-                    break;
+                    return ButtonsEnum.Fx4;
+                default:
+                    return ButtonsEnum.Aux1;
             }
-            return button;
         }
     }
 }

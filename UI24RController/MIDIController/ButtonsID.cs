@@ -33,6 +33,7 @@ namespace UI24RController.MIDIController
             _buttonsDictionary.Add(ButtonsEnum.Play, 0x5e);
             _buttonsDictionary.Add(ButtonsEnum.Rec, 0x5f);
             _buttonsDictionary.Add(ButtonsEnum.Stop, 0x5d);
+            _buttonsDictionary.Add(ButtonsEnum.Scrub, 0x65);
             _buttonsDictionary.Add(ButtonsEnum.Aux1, 0x36); //use for aux1
             _buttonsDictionary.Add(ButtonsEnum.Aux2, 0x37);
             _buttonsDictionary.Add(ButtonsEnum.Aux3, 0x38);

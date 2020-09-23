@@ -28,8 +28,10 @@ public interface IMIDIController
     event EventHandler<ChannelEventArgs> RecChannelEvent;
 
     #region Button Events
-    event EventHandler<EventArgs> PresetUp;
-    event EventHandler<EventArgs> PresetDown;
+    event EventHandler<EventArgs> LayerUp;
+    event EventHandler<EventArgs> LayerDown;
+    event EventHandler<EventArgs> BankUp;
+    event EventHandler<EventArgs> BankDown;
 
     event EventHandler<EventArgs> SaveEvent;
     event EventHandler<EventArgs> UndoEvent;
@@ -47,6 +49,8 @@ public interface IMIDIController
     event EventHandler<EventArgs> StopEvent;
     event EventHandler<EventArgs> PlayEvent;
     event EventHandler<EventArgs> RecEvent;
+
+    event EventHandler<EventArgs> ScrubEvent;
 
     event EventHandler<FunctionEventArgs> AuxButtonEvent;
     event EventHandler<FunctionEventArgs> FxButtonEvent;
@@ -67,6 +71,13 @@ public interface IMIDIController
     public void WriteTextToChannelLCD(int channelNumber, string text);
     public void WriteTextToLCD(string text);
     public void WriteTextToLCD(string text, int delay);
+
+    public void WriteTextToAssignmentDisplay(string text);
+    public void WriteTextToMainDisplay(string text, int position, int maxChar = 1);
+    public void WriteTextToBarsDisplay(string text);
+    public void WriteTextToBeatsDisplay(string text);
+    public void WriteTextToSubDivisionDisplay(string text);
+    public void WriteTextToTicksDisplay(string text);
 
     void WriteChannelMeter(int channelNumber, byte value);
     void TurnOffClipLed(int channelNumber);
