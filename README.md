@@ -1,6 +1,6 @@
 # UI24RBridge
 Bridge between the UI24R and a MIDI controller.\
-This is a beta project. It tested only in windows, a Behringer BCF2000 and a Behringer X-Touch midi controller.
+This is a beta project. It tested only in Windows, with Behringer BCF2000 and with Behringer X-Touch midi controller.
 
 You can download the latest release for
 - [Windows 32bit core](https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/win-x86-core.rar)
@@ -8,23 +8,24 @@ You can download the latest release for
 - [Windows 64bit](https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/win-x64.rar)
 - [Linux 32bit](https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/linux-x86.rar)
 - [Linux 64bit](https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/linux-x64.rar)
-- [MacOS](https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/MacOS.rar)\
- The Linux and MacOS binaries wasn't tested.
+- [MacOS](https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/MacOS.rar)
 
-Implemented the Mackie Control protocol (It can work with any DAW controller that can use in MC mode)\
+The Linux and MacOS binaries wasn't tested.
+
+Implemented the Mackie Control protocol (It can work with any DAW controller that can use in MC mode).\
 The earlier protocol has not been removed but the new functions only implemented in MC mode.
 
 
 
 ### The Bridge functionalities:
- - Use 2 groups with 6 layers of faders for each bank\
+ - Use 2 groups with 6 layers of faders for each bank
 	- Bank I
 		- Layer 1: Input 1-8
 		- Layer 2: Input 9-16
 		- Layer 3: Input 17-24
 		- Layer 4: Line in, Player, FX 1-4
 		- Layer 5: SUB 1-6; AUX 1-2
-		- Layer 6: AUX 3-10;
+		- Layer 6: AUX 3-10
 	- Bank V (configurable with Global View Groups in mixer app)
 		- Layer 1: VIEW 1 (if set)
 		- Layer 2: VIEW 2 (if set)
@@ -38,20 +39,24 @@ The earlier protocol has not been removed but the new functions only implemented
 		- Layer 3: User defined
 		- Layer 4: User defined
 		- Layer 5: User defined
-		- Layer 6: User defined \
-You have to select 8 channels per view group at least otherwise the view group will be ignored.\
-Switch between Banks with Fader Bank << and >> buttons\
-Switch between Layers in current Bank with Channel Bank << and >> buttons\
+		- Layer 6: User defined
+	- You have to select 8 channels per view group at least otherwise the view group will be ignored
+	- Switch between Banks with Fader Bank << and >> buttons
+	- Switch between Layers in current Bank with Channel Bank << and >> buttons
  - The faders work on every type of channels
  - The knobs set the gain on the input channels
  - Select, Solo, Mute buttons work on every channel
- - Buttons F1 - F8 switch to AUX1-8 sends
+ - Buttons F1-F8 switch to AUX1-8 sends
  - Button Switch, Option, Control and Alt switch to FX1-4 sends
  - Control Media player with <<, >>, Stop, Play buttons
  - Start Recording with Rec button
  - Scrub button to save Layer Bank U
 
-
+### Future functions
+ - User configurable Layers in bank U with Rotary wheel
+ - Mute Groups, Mute All, Mute FX
+ - Tap tempo
+ - Pan, HPF, EQ, Dyn
 
 
 ### Configuration
