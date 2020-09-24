@@ -10,6 +10,7 @@ namespace UI24RController.UI24RChannels
         public Mixer()
         {
             initLayers();
+            TapInit();
         }
 
         #region ViewGroup
@@ -190,7 +191,66 @@ namespace UI24RController.UI24RChannels
         }
         #endregion
 
+        #region Tap Tempo
 
+        private DateTime _lastTick;
+        private List<int> _tempo;
+
+
+        private void TapInit()
+        {
+            _lastTick = default;
+            _tempo = new List<int>();
+        }
+
+        public int TapTempo()
+        {
+            //store tempo from last Tick
+            var newTick = DateTime.Now;
+
+            //if first Tick
+            if (_lastTick == null)
+            {
+                _lastTick = newTick;
+                return -1;
+            }
+
+            double timeDiff = (newTick - _lastTick).TotalSeconds;
+
+            //if tick after more than 5s, clear ticks
+            if (timeDiff > 5)
+            {
+                _tempo.Clear();
+                _lastTick = newTick;
+                return -1;
+            }
+
+            //new tempo
+            int newTempo = (int)(60 / timeDiff);
+            _lastTick = newTick;
+
+            //if too slow (min tempo set to 20 BPM)
+            if (newTempo < 20)
+                return -1;
+
+            //add new tempo to list
+            _tempo.Add(newTempo);
+            if (_tempo.Count > 3)
+                _tempo.RemoveAt(0);
+
+            //compute new tempo
+            int sum = 0;
+            for (int i = 0; i < _tempo.Count; ++i)
+                sum += _tempo[i];
+            return sum /_tempo.Count;
+        }
+
+        public string GetStartMTKRecordMessage(int fx, int tempo)
+        {
+            return "3:::SETD^f." + fx.ToString() + ".bpm^" + tempo.ToString();
+        }
+
+        #endregion
         public bool IsMultitrackRecordingRun { get; set; }
         public bool IsTwoTrackRecordingRun { get; set; }
 

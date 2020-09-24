@@ -28,6 +28,15 @@ namespace UI24RController.MIDIController
         {
             _buttonsDictionary = new Dictionary<ButtonsEnum, byte>();
             //It will be configurable 
+            _buttonsDictionary.Add(ButtonsEnum.Track, 0x28);
+            _buttonsDictionary.Add(ButtonsEnum.Pan, 0x2a);
+            _buttonsDictionary.Add(ButtonsEnum.Eq, 0x2c);
+            _buttonsDictionary.Add(ButtonsEnum.Send, 0x29);
+            _buttonsDictionary.Add(ButtonsEnum.PlugIn, 0x2b);
+            _buttonsDictionary.Add(ButtonsEnum.Instr, 0x2d);
+            _buttonsDictionary.Add(ButtonsEnum.Display, 0x34);
+            _buttonsDictionary.Add(ButtonsEnum.Smtpe, 0x35);
+
             _buttonsDictionary.Add(ButtonsEnum.PlayPrev, 0x5b);
             _buttonsDictionary.Add(ButtonsEnum.PlayNext, 0x5c);
             _buttonsDictionary.Add(ButtonsEnum.Play, 0x5e);

@@ -51,11 +51,11 @@ The earlier protocol has not been removed but the new functions only implemented
  - Control Media player with <<, >>, Stop, Play buttons
  - Start Recording with Rec button
  - Scrub button to save Layer Bank U
+ - SMTPE/Beats Button to Tap Tempo
 
 ### Future functions
  - User configurable Layers in bank U with Rotary wheel
  - Mute Groups, Mute All, Mute FX
- - Tap tempo
  - Pan, HPF, EQ, Dyn
 
 

@@ -52,6 +52,19 @@ namespace UI24RController.MIDIController
 
         public event EventHandler<MessageEventArgs> MessageReceived;
         public event EventHandler<FaderEventArgs> FaderEvent;
+
+        public event EventHandler<EventArgs> TrackEvent;
+        public event EventHandler<EventArgs> PanEvent;
+        public event EventHandler<EventArgs> EqEvent;
+        public event EventHandler<EventArgs> SendEvent;
+        public event EventHandler<EventArgs> PlugInEvent;
+        public event EventHandler<EventArgs> InstrEvent;
+
+        public event EventHandler<EventArgs> DisplayBtnEvent;
+        public event EventHandler<EventArgs> SmtpeBeatsBtnEvent;
+
+
+
         public event EventHandler<EventArgs> LayerUp;
         public event EventHandler<EventArgs> LayerDown;
         public event EventHandler<EventArgs> BankUp;
@@ -87,6 +100,11 @@ namespace UI24RController.MIDIController
                 faderValues.TryAdd(i, new FaderState());
                 _clipLeds.TryAdd(i, DateTime.MinValue);
             }
+
+            //initialize Controller - all leds off
+            //TODO: Search for right SysEx command, this one not working
+            //byte[] sysex = new byte[] { 0xf0, 0, 0, 0x66, 0x14, 0x61, 0xf7 };
+            //Send(sysex, 0, sysex.Length, 0);
         }
         protected void OnMessageReceived(string message)
         {
@@ -153,6 +171,39 @@ namespace UI24RController.MIDIController
         protected void OnScrubEvent()
         {
             ScrubEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnTrackEvent()
+        {
+            TrackEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnPanEvent()
+        {
+            PanEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnEqEvent()
+        {
+            EqEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnSendEvent()
+        {
+            SendEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnPlugInEvent()
+        {
+            PlugInEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnInstrEvent()
+        {
+            InstrEvent?.Invoke(this, new EventArgs());
+        }
+
+        protected void OnDisplayBtnEvent()
+        {
+            DisplayBtnEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnSmtpeBeatsBtnEvent()
+        {
+            SmtpeBeatsBtnEvent?.Invoke(this, new EventArgs());
         }
 
         protected void OnAuxButtonEvent(int functionNumber,bool isPress)
@@ -410,6 +461,38 @@ namespace UI24RController.MIDIController
                 else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Scrub], 0x7f)) //Scrub button
                 {
                     OnScrubEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Track], 0x7f)) //Track button
+                {
+                    OnTrackEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Pan], 0x7f)) //Pan button
+                {
+                    OnPanEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Eq], 0x7f)) //Eq button
+                {
+                    OnEqEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Send], 0x7f)) //Send button
+                {
+                    OnSendEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlugIn], 0x7f)) //PlugIn button
+                {
+                    OnPlugInEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Instr], 0x7f)) //Instr button
+                {
+                    OnInstrEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Display], 0x7f)) //Display button
+                {
+                    OnDisplayBtnEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Smtpe], 0x7f)) //Smtpe button
+                {
+                    OnSmtpeBeatsBtnEvent();
                 }
                 else if (message[0]== 0x90 && message[1]>=_buttonsID[ButtonsEnum.Aux1] && message[1] <= _buttonsID[ButtonsEnum.Aux8]) //F1-F8 press
                 {

@@ -7,6 +7,7 @@ namespace UI24RController
 {
     public enum ButtonsEnum
     {
+        Track, Pan, Eq, Send, PlugIn, Instr, Display, Smtpe,
         PlayPrev, PlayNext,
         Play, Rec, Stop,
         Scrub,

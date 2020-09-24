@@ -28,6 +28,18 @@ public interface IMIDIController
     event EventHandler<ChannelEventArgs> RecChannelEvent;
 
     #region Button Events
+    event EventHandler<EventArgs> TrackEvent;
+    event EventHandler<EventArgs> PanEvent;
+    event EventHandler<EventArgs> EqEvent;
+    event EventHandler<EventArgs> SendEvent;
+    event EventHandler<EventArgs> PlugInEvent;
+    event EventHandler<EventArgs> InstrEvent;
+
+    event EventHandler<EventArgs> DisplayBtnEvent;
+    event EventHandler<EventArgs> SmtpeBeatsBtnEvent;
+
+
+
     event EventHandler<EventArgs> LayerUp;
     event EventHandler<EventArgs> LayerDown;
     event EventHandler<EventArgs> BankUp;
