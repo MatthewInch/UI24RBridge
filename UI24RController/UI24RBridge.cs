@@ -74,7 +74,8 @@ namespace UI24RController
             _settings.Controller.StopEvent += _midiController_StopEvent;
             _settings.Controller.NextEvent += _midiController_NextEvent;
             _settings.Controller.PrevEvent += _midiController_PrevEvent;
-            _settings.Controller.ScrubEvent += _midiController_ScrubEvent;
+            _settings.Controller.ScrubEvent += _midiController_SaveEvent;
+            _settings.Controller.SmtpeBeatsBtnEvent += _midiController_TapTempoEvent;
             _settings.Controller.WriteTextToLCD("");
             _settings.Controller.ConnectionErrorEvent += _midiController_ConnectionErrorEvent;
             _settings.Controller.AuxButtonEvent += _midiController_AuxButtonEvent;
@@ -91,6 +92,7 @@ namespace UI24RController
             _client.ErrorReconnectTimeout = new TimeSpan(0,0,10);
             SendMessage("Connecting to UI24R....", false);
             _client.Start();
+
             _settings.Controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
             _settings.Controller.WriteTextToBarsDisplay("   ");
         }
@@ -464,11 +466,21 @@ namespace UI24RController
                 }
             }
         }
-        private void _midiController_ScrubEvent(object sender, EventArgs e) //Save view groups
+        private void _midiController_SaveEvent(object sender, EventArgs e) //Save view groups
         {
             string jsonString;
             jsonString = JsonSerializer.Serialize(_mixer.getUserLayerToArray());
             File.WriteAllText(CONFIGFILE_VIEW_GROUP, jsonString);
+        }
+        private void _midiController_TapTempoEvent(object sender, EventArgs e)
+        {
+            int tempo = _mixer.TapTempo();
+            if (tempo > 0)
+            {
+                for (int fxNum = 0; fxNum < 4; ++fxNum)
+                    _client.Send(_mixer.GetStartMTKRecordMessage(fxNum, tempo));
+                _settings.Controller.WriteTextToTicksDisplay(tempo.ToString().PadLeft(3, ' '));
+            }
         }
         #endregion
 
@@ -700,7 +712,10 @@ namespace UI24RController
                             }
                             break;
                         case MessageTypeEnum.currentState:
-                                _settings.Controller.SetLed(ButtonsEnum.Play, ui24Message.LogicValue);
+                            _settings.Controller.SetLed(ButtonsEnum.Play, ui24Message.LogicValue);
+                            break;
+                        case MessageTypeEnum.bpm:
+                            _settings.Controller.WriteTextToTicksDisplay(ui24Message.FaderValue.ToString().PadLeft(3, ' '));
                             break;
                         case MessageTypeEnum.auxFaderValue:
                             _mixerChannels[ui24Message.ChannelNumber].AuxSendValues[ui24Message.IntValue.ToAux()] = ui24Message.FaderValue;
