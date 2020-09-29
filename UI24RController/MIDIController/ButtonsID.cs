@@ -37,6 +37,12 @@ namespace UI24RController.MIDIController
             _buttonsDictionary.Add(ButtonsEnum.Display, 0x34);
             _buttonsDictionary.Add(ButtonsEnum.Smtpe, 0x35);
 
+
+            _buttonsDictionary.Add(ButtonsEnum.Save, 0x50);
+            _buttonsDictionary.Add(ButtonsEnum.Undo, 0x51);
+            _buttonsDictionary.Add(ButtonsEnum.Cancel, 0x52);
+            _buttonsDictionary.Add(ButtonsEnum.Enter, 0x53);
+
             _buttonsDictionary.Add(ButtonsEnum.PlayPrev, 0x5b);
             _buttonsDictionary.Add(ButtonsEnum.PlayNext, 0x5c);
             _buttonsDictionary.Add(ButtonsEnum.Play, 0x5e);

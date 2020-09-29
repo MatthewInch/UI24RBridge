@@ -69,6 +69,7 @@ namespace UI24RController
             _settings.Controller.SelectChannelEvent += _midiController_SelectChannelEvent;
             _settings.Controller.RecChannelEvent += _midiController_RecChannelEvent;
 //            _settings.Controller.SaveEvent += _midiController_SaveEvent;
+            _settings.Controller.CancelEvent += _midiController_ClearMute;
             _settings.Controller.RecEvent += _midiController_RecEvent;
             _settings.Controller.PlayEvent += _midiController_PlayEvent;
             _settings.Controller.StopEvent += _midiController_StopEvent;
@@ -349,13 +350,13 @@ namespace UI24RController
                 {
                     _selectedLayout = e.FunctionButton.ToAux();
                     _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
-                    _settings.Controller.WriteTextToBarsDisplay("   ");
+                    _settings.Controller.WriteTextToBarsDisplay("AX" + (_selectedLayout.AuxToInt() + 1).ToString());
                 }
                 else
                 {
                     _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = SelectedLayoutEnum.Channels;
-                    _settings.Controller.WriteTextToBarsDisplay("AX" + (_selectedLayout.AuxToInt() + 1).ToString());
+                    _settings.Controller.WriteTextToBarsDisplay("   ");
                 }
             }
             else
@@ -387,13 +388,13 @@ namespace UI24RController
                 {
                     _selectedLayout = e.FunctionButton.ToFx();
                     _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
-                    _settings.Controller.WriteTextToBarsDisplay("   ");
+                    _settings.Controller.WriteTextToBarsDisplay("FX" + (_selectedLayout.FxToInt() + 1).ToString());
                 }
                 else
                 {
                     _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = SelectedLayoutEnum.Channels;
-                    _settings.Controller.WriteTextToBarsDisplay("FX" + (_selectedLayout.FxToInt() + 1).ToString());
+                    _settings.Controller.WriteTextToBarsDisplay("   ");
                 }
             }
             else
@@ -481,6 +482,12 @@ namespace UI24RController
                     _client.Send(_mixer.GetStartMTKRecordMessage(fxNum, tempo));
                 _settings.Controller.WriteTextToTicksDisplay(tempo.ToString().PadLeft(3, ' '));
             }
+        }
+
+        private void _midiController_ClearMute(object sender, EventArgs e)
+        {
+            _mixer.ClearMute();
+            _client.Send(_mixer.GetMuteGroupsMessage());
         }
         #endregion
 
