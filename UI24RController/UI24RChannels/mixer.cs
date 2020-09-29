@@ -10,10 +10,11 @@ namespace UI24RController.UI24RChannels
         public Mixer()
         {
             initLayers();
+            initMuteGroups();
             TapInit();
         }
 
-        #region ViewGroup
+        #region Layers
         private List<int[]> _layers = new List<int[]>();
         private int _selectedLayer;
         private int _selectedBank;
@@ -64,7 +65,7 @@ namespace UI24RController.UI24RChannels
             for (int i = 0; i < input.Length && i < _numLayersPerBank; ++i)
                 if (input[i].Length >= _numFaders - 1)
                     for (int j = 0; j < _numFaders - 1; ++j)
-                        _layers[i+2*_numLayersPerBank][j] = input[i][j];
+                        _layers[i + 2 * _numLayersPerBank][j] = input[i][j];
         }
         public int[][] getUserLayerToArray()
         {
@@ -123,13 +124,13 @@ namespace UI24RController.UI24RChannels
             while (_layers[_selectedLayer][0] < 0)
             {
                 _selectedLayer = (_numLayersPerBank * _numBanks + _selectedLayer - 1) % (_numLayersPerBank * _numBanks);
-                if (_selectedLayer % _numLayersPerBank == _numLayersPerBank-1 && initialLayer >= 0)
+                if (_selectedLayer % _numLayersPerBank == _numLayersPerBank - 1 && initialLayer >= 0)
                 {
                     _selectedLayer = _selectedBank * _numLayersPerBank;
                     initialLayer = -1;
                 }
             }
-                
+
             //update bank if needed
             _selectedBank = _selectedLayer / _numLayersPerBank;
         }
@@ -160,7 +161,7 @@ namespace UI24RController.UI24RChannels
 
         public char getBankChar(int bank)
         {
-            switch(bank)
+            switch (bank)
             {
                 case 0:
                     return 'I'; // Initial Layer
@@ -173,7 +174,7 @@ namespace UI24RController.UI24RChannels
         }
         public string getCurrentLayerString()
         {
-            return getBankChar(_selectedBank).ToString() + ((_selectedLayer%_numLayersPerBank)+1).ToString();
+            return getBankChar(_selectedBank).ToString() + ((_selectedLayer % _numLayersPerBank) + 1).ToString();
         }
 
         public int[] getCurrentLayer()
@@ -189,6 +190,54 @@ namespace UI24RController.UI24RChannels
             if (ch < 0) ch = 0;
             return getCurrentLayer()[ch];
         }
+        #endregion
+
+        #region Mute Group
+        public UInt32 _muteMask;
+        private const int muteAllFxBit = 22;
+        private const int muteAllBit = 23;
+
+        private void initMuteGroups()
+        {
+            _muteMask = 0;
+        }
+        public string GetMuteGroupsMessage()
+        {
+            return "3:::SETD^mgmask^" + _muteMask.ToString();
+        }
+        public void ClearMute()
+        {
+            _muteMask = 0;
+        }
+        public bool ToogleMuteGroup(int groupNumber)
+        {
+            _muteMask ^= (UInt32)1 << groupNumber;
+            return ((_muteMask >> groupNumber) & 1) == (UInt32)1;
+        }
+        public bool ToogleMuteAllFx()
+        {
+            return ToogleMuteGroup(muteAllFxBit);
+        }
+        public bool ToogleMuteAll()
+        {
+            return ToogleMuteGroup(muteAllBit);
+        }
+        public void SetMuteGroup(int groupNumber, bool value)
+        {
+            _muteMask |= (UInt32)(value ? 1 : 0) << groupNumber;
+        }
+        public void SetMuteAllFx(bool value)
+        {
+            SetMuteGroup(muteAllFxBit, value);
+        }
+        public void SetMuteAll(bool value)
+        {
+            SetMuteGroup(muteAllBit, value);
+        }
+
+
+
+
         #endregion
 
         #region Tap Tempo
@@ -251,6 +300,8 @@ namespace UI24RController.UI24RChannels
         }
 
         #endregion
+
+        #region Media and Record
         public bool IsMultitrackRecordingRun { get; set; }
         public bool IsTwoTrackRecordingRun { get; set; }
 
@@ -290,6 +341,7 @@ namespace UI24RController.UI24RChannels
         {
             return "3:::MEDIA_PREV";
         }
+        #endregion
 
     }
 }

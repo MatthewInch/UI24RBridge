@@ -69,24 +69,29 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> LayerDown;
         public event EventHandler<EventArgs> BankUp;
         public event EventHandler<EventArgs> BankDown;
+
         public event EventHandler<GainEventArgs> GainEvent;
         public event EventHandler<ChannelEventArgs> SelectChannelEvent;
+        public event EventHandler<ChannelEventArgs> MuteChannelEvent;
+        public event EventHandler<ChannelEventArgs> SoloChannelEvent;
+        public event EventHandler<ChannelEventArgs> RecChannelEvent;
+
         public event EventHandler<EventArgs> SaveEvent;
         public event EventHandler<EventArgs> UndoEvent;
         public event EventHandler<EventArgs> CancelEvent;
         public event EventHandler<EventArgs> EnterEvent;
+
         public event EventHandler<EventArgs> UpEvent;
         public event EventHandler<EventArgs> DownEvent;
         public event EventHandler<EventArgs> LeftEvent;
         public event EventHandler<EventArgs> RightEvent;
         public event EventHandler<EventArgs> CenterEvent;
-        public event EventHandler<ChannelEventArgs> MuteChannelEvent;
-        public event EventHandler<ChannelEventArgs> SoloChannelEvent;
-        public event EventHandler<ChannelEventArgs> RecChannelEvent;
+
         public event EventHandler<EventArgs> StopEvent;
         public event EventHandler<EventArgs> PlayEvent;
         public event EventHandler<EventArgs> RecEvent;
         public event EventHandler<EventArgs> ScrubEvent;
+
         public event EventHandler<EventArgs> ConnectionErrorEvent;
         public event EventHandler<FunctionEventArgs> AuxButtonEvent;
         public event EventHandler<FunctionEventArgs> FxButtonEvent;
@@ -143,17 +148,27 @@ namespace UI24RController.MIDIController
         {
             SaveEvent?.Invoke(this, new EventArgs());
         }
+        protected void OnCancelEvent()
+        {
+            CancelEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnUndoEvent()
+        {
+            UndoEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnEnterEvent()
+        {
+            EnterEvent?.Invoke(this, new EventArgs());
+        }
 
         protected void OnRecEvent()
         {
             RecEvent?.Invoke(this, new EventArgs());
         }
-
         protected void OnStopEvent()
         {
             StopEvent?.Invoke(this, new EventArgs());
         }
-
         protected void OnPlayEvent()
         {
             PlayEvent?.Invoke(this, new EventArgs());
@@ -434,9 +449,21 @@ namespace UI24RController.MIDIController
                     byte channelNumber = (byte)(message[1] - 0x18);
                     OnSelectEvent(8);
                 }
-                else if (message.MIDIEqual(0x90, 0x50, 0x7f)) //Save button
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Save], 0x7f)) //Save button
                 {
                     OnSaveEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Undo], 0x7f)) //Save button
+                {
+                    OnUndoEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Cancel], 0x7f)) //Save button
+                {
+                    OnCancelEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Enter], 0x7f)) //Save button
+                {
+                    OnEnterEvent();
                 }
                 else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Rec], 0x7f)) //Rec button
                 {
