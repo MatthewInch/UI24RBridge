@@ -95,6 +95,7 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> ConnectionErrorEvent;
         public event EventHandler<FunctionEventArgs> AuxButtonEvent;
         public event EventHandler<FunctionEventArgs> FxButtonEvent;
+        public event EventHandler<FunctionEventArgs> MuteGroupButtonEvent;
         public event EventHandler<EventArgs> PrevEvent;
         public event EventHandler<EventArgs> NextEvent;
 
@@ -228,6 +229,10 @@ namespace UI24RController.MIDIController
         protected void OnFxButtonEvent(int functionNumber, bool isPress)
         {
             FxButtonEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
+        }
+        protected void OnMuteGroupButtonEvent(int functionNumber, bool isPress)
+        {
+            MuteGroupButtonEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
         }
 
         protected void OnLayerUp()
@@ -529,6 +534,11 @@ namespace UI24RController.MIDIController
                 {
                     var fxNum = ButtonsID.Instance.GetFxButton(message[1]).fxNum;
                     OnFxButtonEvent(fxNum, message[2] == 0x7f);
+                }
+                else if ((message[0] == 0x90) && ButtonsID.Instance.GetMuteGroupsButton(message[1]).isMuteGroupButton)
+                {
+                    var muteNum = ButtonsID.Instance.GetMuteGroupsButton(message[1]).muteGroupNum;
+                    OnMuteGroupButtonEvent(muteNum, message[2] == 0x7f);
                 }
 
             }

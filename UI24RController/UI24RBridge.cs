@@ -69,6 +69,9 @@ namespace UI24RController
             _settings.Controller.SelectChannelEvent += _midiController_SelectChannelEvent;
             _settings.Controller.RecChannelEvent += _midiController_RecChannelEvent;
 //            _settings.Controller.SaveEvent += _midiController_SaveEvent;
+            _settings.Controller.MuteGroupButtonEvent += Controller_MuteGroupButtonEvent;
+            _settings.Controller.SaveEvent += _midiController_MuteAllEvent;
+            _settings.Controller.UndoEvent += _midiController_MuteAllFxEvent;
             _settings.Controller.CancelEvent += _midiController_ClearMute;
             _settings.Controller.RecEvent += _midiController_RecEvent;
             _settings.Controller.PlayEvent += _midiController_PlayEvent;
@@ -110,7 +113,7 @@ namespace UI24RController
                     Thread.Sleep(100);
                 }
 
-                SetControllerToCurrentViewGroup();
+                SetControllerToCurrentLayerAndSend();
                 SetStateLedsOnController();
                 SendMessage("Midi controller reconnected.", false);
             }).Start();
@@ -279,25 +282,25 @@ namespace UI24RController
         private void _midiController_LayerDown(object sender, EventArgs e)
         {
             _mixer.setLayerDown();
-            SetControllerToCurrentViewGroup();
+            SetControllerToCurrentLayerAndSend();
             _settings.Controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
         }
         private void _midiController_LayerUp(object sender, EventArgs e)
         {
             _mixer.setLayerUp();
-            SetControllerToCurrentViewGroup();
+            SetControllerToCurrentLayerAndSend();
             _settings.Controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
         }
         private void _midiController_BankDown(object sender, EventArgs e)
         {
             _mixer.setBankDown();
-            SetControllerToCurrentViewGroup();
+            SetControllerToCurrentLayerAndSend();
             _settings.Controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
         }
         private void _midiController_BankUp(object sender, EventArgs e)
         {
             _mixer.setBankUp();
-            SetControllerToCurrentViewGroup();
+            SetControllerToCurrentLayerAndSend();
             _settings.Controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
         }
 
@@ -378,7 +381,7 @@ namespace UI24RController
                     }
                 }
             }
-            SetControllerToCurrentViewGroup();
+            SetControllerToCurrentLayerAndSend();
         }
         private void Controller_FXButtonEvent(object sender, FunctionEventArgs e)
         {
@@ -416,7 +419,37 @@ namespace UI24RController
                     }
                 }
             }
-            SetControllerToCurrentViewGroup();
+            SetControllerToCurrentLayerAndSend();
+        }
+        private void Controller_MuteGroupButtonEvent(object sender, FunctionEventArgs e)
+        {
+            if (e.IsPress)
+            {
+                _mixer.ToggleMuteGroup(e.FunctionButton);
+                _client.Send(_mixer.GetMuteGroupsMessage());
+            }
+            SetControllerMuteButtonsForCurrentLayer();
+        }
+        private void _midiController_MuteAllFxEvent(object sender, EventArgs e)
+        {
+            _mixer.ToggleMuteAllFx();
+            SetControllerMuteButtonsForCurrentLayer();
+        }
+        private void _midiController_MuteAllEvent(object sender, EventArgs e)
+        {
+            _mixer.ToggleMuteAll();
+            SetControllerMuteButtonsForCurrentLayer();
+        }
+        private void _midiController_ClearMute(object sender, EventArgs e)
+        {
+            _mixer.ClearMute();
+            SetControllerMuteButtonsForCurrentLayer();
+        }
+        private void SetControllerMuteButtonsForCurrentLayer()
+        {
+            _client.Send(_mixer.GetMuteGroupsMessage());
+            SetMuteGroupsLeds();
+            SetControllerToCurrentLayerAndSend(); //TODO: only mute buttons update
         }
 
 
@@ -484,11 +517,7 @@ namespace UI24RController
             }
         }
 
-        private void _midiController_ClearMute(object sender, EventArgs e)
-        {
-            _mixer.ClearMute();
-            _client.Send(_mixer.GetMuteGroupsMessage());
-        }
+        
         #endregion
 
         private void InitializeChannels()
@@ -533,7 +562,7 @@ namespace UI24RController
                 _client.Send("3:::ALIVE");
             }
         }
-        private void SetControllerToCurrentViewGroup()
+        private void SetControllerToCurrentLayerAndSend()
         {
             var channels =  _mixer.getCurrentLayer().Select((item, i) => new { Channel = item, controllerChannelNumber = i });
             _settings.Controller.SetSelectLed(0, false); //turn off all
@@ -738,6 +767,11 @@ namespace UI24RController
                                 _settings.Controller.SetFader(controllerChannelNumber, ui24Message.FaderValue);
                             }
                             break;
+                        case MessageTypeEnum.globalMGMask:
+                            _mixer._muteMask = (UInt32)ui24Message.IntValue;
+                            SetMuteGroupsLeds();
+
+                            break;
                     }
                 }
                 else if (m.StartsWith("SETS^vg.")) //first global view group (e.g:"SETS^vg.0^[0,1,2,3,4,5,6,17,18,19,20,22,23,38,39,40,41,42,43,44,45,48,49,21]")
@@ -793,6 +827,16 @@ namespace UI24RController
                 }
 
             }
+        }
+        private void SetMuteGroupsLeds()
+        {
+            UInt32 mask = _mixer._muteMask;
+            for (int i = 0; i < 6; ++i)
+            {
+                _settings.Controller.SetLed(ButtonsEnum.MuteGroup1 + i, ((mask >> i) & 1) == 1);
+            }
+            _settings.Controller.SetLed(ButtonsEnum.Save, ((mask >> Mixer._muteAllBit) & 1) == 1);
+            _settings.Controller.SetLed(ButtonsEnum.Undo, ((mask >> Mixer._muteAllFxBit) & 1) == 1);
         }
         protected void SendMessage(string message, bool isDebug = true)
         {

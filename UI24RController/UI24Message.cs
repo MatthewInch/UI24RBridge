@@ -18,7 +18,10 @@ namespace UI24RController
 
     public enum MessageTypeEnum
     {
-        mix, gain, mute, solo, name, mtkrec, stereoIndex, mtk, isRecording, auxFaderValue, fxFaderValue, currentState, phantom, source, bpm, uknown
+        mix, gain, mute, solo, name, stereoIndex, mtk, phantom, source, mgMask,
+        auxFaderValue, fxFaderValue,
+        globalMGMask,
+        isRecording, currentState, mtkrec, bpm, uknown
     }
 
     public class UI24Message
@@ -73,7 +76,7 @@ namespace UI24RController
 
         public UI24Message(string message)
         {
-            //if (message.Contains("bpm"))
+            //if (message.Contains("mgmask"))
             //    Console.WriteLine(message);
 
             IsValid = false;
@@ -96,6 +99,10 @@ namespace UI24RController
                 {
                     this.MessageType = GetMessageType(messageTypes[2]);
                     int.TryParse(messageTypes[1], out channelNumber);
+                }
+                else if (ChannelType == ChannelTypeEnum.Uknown && messageTypes[0] == "mgmask")
+                {
+                    this.MessageType = MessageTypeEnum.globalMGMask;
                 }
                 else
                 {
@@ -229,6 +236,13 @@ namespace UI24RController
                             IsValid = true;
                         }
                         break;
+                    case MessageTypeEnum.globalMGMask:
+                        if (int.TryParse(messageParts[2], out intValue))
+                        {
+                            IntValue = intValue;
+                            IsValid = true;
+                        }
+                        break;
                     case MessageTypeEnum.auxFaderValue:
                         if (messageTypes.Length > 4) //SETD^i.0.aux.0.value^val 
                         {
@@ -322,6 +336,8 @@ namespace UI24RController
                     return MessageTypeEnum.bpm;
                 case "currentState":
                     return MessageTypeEnum.currentState;
+                case "mgmask":
+                    return MessageTypeEnum.mgMask;
                 default: // "i":
                     return MessageTypeEnum.uknown;
             }

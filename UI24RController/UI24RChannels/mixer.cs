@@ -194,8 +194,8 @@ namespace UI24RController.UI24RChannels
 
         #region Mute Group
         public UInt32 _muteMask;
-        private const int muteAllFxBit = 22;
-        private const int muteAllBit = 23;
+        public const int _muteAllFxBit = 22;
+        public const int _muteAllBit = 23;
 
         private void initMuteGroups()
         {
@@ -209,18 +209,18 @@ namespace UI24RController.UI24RChannels
         {
             _muteMask = 0;
         }
-        public bool ToogleMuteGroup(int groupNumber)
+        public bool ToggleMuteGroup(int groupNumber)
         {
             _muteMask ^= (UInt32)1 << groupNumber;
             return ((_muteMask >> groupNumber) & 1) == (UInt32)1;
         }
-        public bool ToogleMuteAllFx()
+        public bool ToggleMuteAllFx()
         {
-            return ToogleMuteGroup(muteAllFxBit);
+            return ToggleMuteGroup(_muteAllFxBit);
         }
-        public bool ToogleMuteAll()
+        public bool ToggleMuteAll()
         {
-            return ToogleMuteGroup(muteAllBit);
+            return ToggleMuteGroup(_muteAllBit);
         }
         public void SetMuteGroup(int groupNumber, bool value)
         {
@@ -228,11 +228,11 @@ namespace UI24RController.UI24RChannels
         }
         public void SetMuteAllFx(bool value)
         {
-            SetMuteGroup(muteAllFxBit, value);
+            SetMuteGroup(_muteAllFxBit, value);
         }
         public void SetMuteAll(bool value)
         {
-            SetMuteGroup(muteAllBit, value);
+            SetMuteGroup(_muteAllBit, value);
         }
 
 
