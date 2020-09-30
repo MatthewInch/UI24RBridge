@@ -66,6 +66,7 @@ public interface IMIDIController
 
     event EventHandler<FunctionEventArgs> AuxButtonEvent;
     event EventHandler<FunctionEventArgs> FxButtonEvent;
+    event EventHandler<FunctionEventArgs> MuteGroupButtonEvent;
 
     #endregion
 

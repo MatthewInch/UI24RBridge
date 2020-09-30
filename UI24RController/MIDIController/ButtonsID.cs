@@ -38,6 +38,13 @@ namespace UI24RController.MIDIController
             _buttonsDictionary.Add(ButtonsEnum.Smtpe, 0x35);
 
 
+            _buttonsDictionary.Add(ButtonsEnum.MuteGroup1, 0x4A);
+            _buttonsDictionary.Add(ButtonsEnum.MuteGroup2, 0x4B);
+            _buttonsDictionary.Add(ButtonsEnum.MuteGroup3, 0x4C);
+            _buttonsDictionary.Add(ButtonsEnum.MuteGroup4, 0x4D);
+            _buttonsDictionary.Add(ButtonsEnum.MuteGroup5, 0x4E);
+            _buttonsDictionary.Add(ButtonsEnum.MuteGroup6, 0x4F);
+
             _buttonsDictionary.Add(ButtonsEnum.Save, 0x50);
             _buttonsDictionary.Add(ButtonsEnum.Undo, 0x51);
             _buttonsDictionary.Add(ButtonsEnum.Cancel, 0x52);
@@ -80,6 +87,34 @@ namespace UI24RController.MIDIController
             else if (value == _buttonsDictionary[ButtonsEnum.Fx4])
             {
                 return (true, 3);
+            }
+            return (false, 0);
+        }
+        public (bool isMuteGroupButton, int muteGroupNum) GetMuteGroupsButton(byte value)
+        {
+            if (value == _buttonsDictionary[ButtonsEnum.MuteGroup1])
+            {
+                return (true, 0);
+            }
+            else if (value == _buttonsDictionary[ButtonsEnum.MuteGroup2])
+            {
+                return (true, 1);
+            }
+            else if (value == _buttonsDictionary[ButtonsEnum.MuteGroup3])
+            {
+                return (true, 2);
+            }
+            else if (value == _buttonsDictionary[ButtonsEnum.MuteGroup4])
+            {
+                return (true, 3);
+            }
+            else if (value == _buttonsDictionary[ButtonsEnum.MuteGroup5])
+            {
+                return (true, 4);
+            }
+            else if (value == _buttonsDictionary[ButtonsEnum.MuteGroup6])
+            {
+                return (true, 5);
             }
             return (false, 0);
         }
