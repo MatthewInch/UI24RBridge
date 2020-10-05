@@ -243,6 +243,13 @@ namespace UI24RController
                             IsValid = true;
                         }
                         break;
+                    case MessageTypeEnum.mgMask:
+                        if (int.TryParse(messageParts[2], out intValue))
+                        {
+                            IntValue = intValue;
+                            IsValid = true;
+                        }
+                        break;
                     case MessageTypeEnum.auxFaderValue:
                         if (messageTypes.Length > 4) //SETD^i.0.aux.0.value^val 
                         {

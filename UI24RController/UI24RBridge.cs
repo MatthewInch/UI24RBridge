@@ -675,6 +675,14 @@ namespace UI24RController
                                 _settings.Controller.SetMuteLed(controllerChannelNumber, ui24Message.LogicValue);
                             }
                             break;
+                        case MessageTypeEnum.mgMask:
+                            _mixerChannels[ui24Message.ChannelNumber].MuteGroupMask = (UInt32)ui24Message.IntValue;
+                            if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8)
+                            {
+                                //TODO: FIX
+                                //_settings.Controller.SetMuteLed(controllerChannelNumber, ui24Message.LogicValue);
+                            }
+                            break;
                         case MessageTypeEnum.solo:
                             _mixerChannels[ui24Message.ChannelNumber].IsSolo = ui24Message.LogicValue;
                             if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8)
@@ -768,9 +776,9 @@ namespace UI24RController
                             }
                             break;
                         case MessageTypeEnum.globalMGMask:
-                            _mixer._muteMask = (UInt32)ui24Message.IntValue;
+                            _mixer.MuteMask = (UInt32)ui24Message.IntValue;
+                            SetControllerMuteButtonsForCurrentLayer();
                             SetMuteGroupsLeds();
-
                             break;
                     }
                 }
@@ -830,7 +838,7 @@ namespace UI24RController
         }
         private void SetMuteGroupsLeds()
         {
-            UInt32 mask = _mixer._muteMask;
+            UInt32 mask = _mixer.MuteMask;
             for (int i = 0; i < 6; ++i)
             {
                 _settings.Controller.SetLed(ButtonsEnum.MuteGroup1 + i, ((mask >> i) & 1) == 1);
