@@ -12,7 +12,7 @@ namespace UI24RController.UI24RChannels
         /// </summary>
         public double ChannelFaderValue { get; set; }
         protected string _name = "";
-        public virtual string Name { 
+        public virtual string Name {
             get
             {
                 return _name;
@@ -24,12 +24,36 @@ namespace UI24RController.UI24RChannels
                     _name = GetDefaultName();
                 }
                 else _name = value;
-            } 
+            }
         }
 
         public int ChannelNumber { get; internal set; }
         public bool IsSelected { get; set; }
-        public bool IsMute { get; set; }
+        protected bool _muteBtn;
+        public bool IsMute
+        {
+            get
+            {
+                return _muteBtn | ((_muteGroupMask & GlobalMuteGroup) > 0);
+            }
+            set
+            {
+                _muteBtn = value;
+            }
+        }
+        protected UInt32 _muteGroupMask;
+        protected UInt32 _muteGroupMaskDefault;
+        public static UInt32 GlobalMuteGroup {get; set;}
+        public UInt32 MuteGroupMask { 
+            get
+            {
+                return _muteGroupMask;
+            }
+            set
+            {
+                _muteGroupMask = value | _muteGroupMaskDefault;
+            }
+        }
         public bool IsSolo { get; set; }
         public virtual int ChannelNumberInMixer => ChannelNumber;
         public Dictionary<SelectedLayoutEnum, double> AuxSendValues { get; set; }
@@ -41,6 +65,9 @@ namespace UI24RController.UI24RChannels
             ChannelNumber = channelNumber;
             IsSelected = false;
             IsMute = false;
+            _muteGroupMask = 0;
+            _muteGroupMaskDefault = 1 << Mixer._muteAllBit;
+            GlobalMuteGroup = 0;
             IsSolo = false;
             Name = GetDefaultName();
             AuxSendValues = new Dictionary<SelectedLayoutEnum, double>() 

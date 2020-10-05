@@ -193,26 +193,38 @@ namespace UI24RController.UI24RChannels
         #endregion
 
         #region Mute Group
-        public UInt32 _muteMask;
+
+        private UInt32 _muteMask;
+        public UInt32 MuteMask { 
+            get
+            {
+                return _muteMask;
+            }
+            set
+            {
+                ChannelBase.GlobalMuteGroup = value;
+                _muteMask = value;
+            }
+        }
         public const int _muteAllFxBit = 22;
         public const int _muteAllBit = 23;
 
         private void initMuteGroups()
         {
-            _muteMask = 0;
+            MuteMask = 0;
         }
         public string GetMuteGroupsMessage()
         {
-            return "3:::SETD^mgmask^" + _muteMask.ToString();
+            return "3:::SETD^mgmask^" + MuteMask.ToString();
         }
         public void ClearMute()
         {
-            _muteMask = 0;
+            MuteMask = 0;
         }
         public bool ToggleMuteGroup(int groupNumber)
         {
-            _muteMask ^= (UInt32)1 << groupNumber;
-            return ((_muteMask >> groupNumber) & 1) == (UInt32)1;
+            MuteMask ^= (UInt32)1 << groupNumber;
+            return ((MuteMask >> groupNumber) & 1) == (UInt32)1;
         }
         public bool ToggleMuteAllFx()
         {
@@ -224,7 +236,7 @@ namespace UI24RController.UI24RChannels
         }
         public void SetMuteGroup(int groupNumber, bool value)
         {
-            _muteMask |= (UInt32)(value ? 1 : 0) << groupNumber;
+            MuteMask |= (UInt32)(value ? 1 : 0) << groupNumber;
         }
         public void SetMuteAllFx(bool value)
         {
