@@ -25,10 +25,6 @@ namespace UI24RController.UI24RChannels
         {
             return $"3:::BMSG^SYNC^{syncID}^-1";
         }
-        public override string MuteMessage()
-        {
-            return $"3:::SETD^m.{this.ChannelNumber}.mute^{(this.IsMute ? 1 : 0)}";
-        }
         public override string SoloMessage()
         {
             return $"3:::SETD^m.{this.ChannelNumber}.solo^{(this.IsSolo ? 1 : 0)}";

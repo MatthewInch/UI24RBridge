@@ -26,10 +26,6 @@ namespace UI24RController.UI24RChannels
         {
             return $"3:::SETD^p.{this.ChannelNumber}.mix^{this.ChannelFaderValue.ToString().Replace(',', '.')}";
         }
-        public override string MuteMessage()
-        {
-            return $"3:::SETD^p.{this.ChannelNumber}.mute^{(this.IsMute ? 1 : 0)}";
-        }
         public override string SoloMessage()
         {
             return $"3:::SETD^p.{this.ChannelNumber}.solo^{(this.IsSolo ? 1 : 0)}";
