@@ -34,17 +34,23 @@ namespace UI24RController.UI24RChannels
         {
             get
             {
-                return _muteBtn | ((_muteGroupMask & GlobalMuteGroup) > 0);
+                Console.WriteLine("ForceUnmute " + _forceUnMute + " Mute " + _muteBtn);
+                return ( _muteBtn | ((_muteGroupMask & GlobalMuteGroup) > 0) ) & !_forceUnMute ;
             }
             set
             {
-                _muteBtn = value;
+                if ((_muteGroupMask & GlobalMuteGroup) > 0)
+                    _forceUnMute = !value;
+                else
+                    _muteBtn = value;
             }
         }
         protected UInt32 _muteGroupMask;
         protected UInt32 _muteGroupMaskDefault;
-        public static UInt32 GlobalMuteGroup {get; set;}
-        public UInt32 MuteGroupMask { 
+        protected bool _forceUnMute;
+        public static UInt32 GlobalMuteGroup {get; set; }
+        public UInt32 MuteGroupMask
+        {
             get
             {
                 return _muteGroupMask;
@@ -52,6 +58,17 @@ namespace UI24RController.UI24RChannels
             set
             {
                 _muteGroupMask = value | _muteGroupMaskDefault;
+            }
+        }
+        public bool ForceUnMute
+        {
+            get
+            {
+                return _forceUnMute;
+            }
+            set
+            {
+                _forceUnMute = value;
             }
         }
         public bool IsSolo { get; set; }
@@ -66,6 +83,7 @@ namespace UI24RController.UI24RChannels
             IsSelected = false;
             IsMute = false;
             _muteGroupMask = 0;
+            _forceUnMute = false;
             _muteGroupMaskDefault = 1 << Mixer._muteAllBit;
             GlobalMuteGroup = 0;
             IsSolo = false;
@@ -115,9 +133,16 @@ namespace UI24RController.UI24RChannels
         {
             return $"3:::BMSG^SYNC^{syncID}^{this.ChannelNumberInMixer}";
         }
-        public virtual string MuteMessage()
+        public string MuteMessage()
         {
-            return $"3:::SETD^i.{this.ChannelNumber}.mute^{(this.IsMute? 1: 0)}";
+            if ((_muteGroupMask & GlobalMuteGroup) > 0)
+                return ForceUnMuteMessage();
+            else
+                return $"3:::SETD^{channelTypeID}.{this.ChannelNumber}.mute^{(this.IsMute ? 1 : 0)}";
+        }
+        public string ForceUnMuteMessage()
+        {
+            return $"3:::SETD^{channelTypeID}.{this.ChannelNumber}.forceunmute^{(this._forceUnMute ? 1 : 0)}";
         }
         public virtual string SoloMessage()
         {

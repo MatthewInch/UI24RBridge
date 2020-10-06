@@ -18,7 +18,7 @@ namespace UI24RController
 
     public enum MessageTypeEnum
     {
-        mix, gain, mute, solo, name, stereoIndex, mtk, phantom, source, mgMask,
+        mix, gain, mute,forceunmute, solo, name, stereoIndex, mtk, phantom, source, mgMask,
         auxFaderValue, fxFaderValue,
         globalMGMask,
         isRecording, currentState, mtkrec, bpm, uknown
@@ -133,6 +133,13 @@ namespace UI24RController
                         IsValid = true;
                         break;
                     case MessageTypeEnum.mute:
+                        if (messageParts[2] == "1")
+                            LogicValue = true;
+                        else
+                            LogicValue = false;
+                        IsValid = true;
+                        break;
+                    case MessageTypeEnum.forceunmute:
                         if (messageParts[2] == "1")
                             LogicValue = true;
                         else
@@ -325,6 +332,8 @@ namespace UI24RController
                     return MessageTypeEnum.source;
                 case "mute":
                     return MessageTypeEnum.mute;
+                case "forceunmute":
+                    return MessageTypeEnum.forceunmute;
                 case "solo":
                     return MessageTypeEnum.solo;
                 case "mtkrec":

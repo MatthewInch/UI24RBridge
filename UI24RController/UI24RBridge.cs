@@ -426,9 +426,9 @@ namespace UI24RController
             if (e.IsPress)
             {
                 _mixer.ToggleMuteGroup(e.FunctionButton);
-                _client.Send(_mixer.GetMuteGroupsMessage());
+                //_client.Send(_mixer.GetMuteGroupsMessage());
+                SetControllerMuteButtonsForCurrentLayer();
             }
-            SetControllerMuteButtonsForCurrentLayer();
         }
         private void _midiController_MuteAllFxEvent(object sender, EventArgs e)
         {
@@ -443,13 +443,34 @@ namespace UI24RController
         private void _midiController_ClearMute(object sender, EventArgs e)
         {
             _mixer.ClearMute();
+            foreach (var ch in _mixerChannels)
+            {
+                ch.IsMute = false;
+                ch.ForceUnMute = false;
+            }
             SetControllerMuteButtonsForCurrentLayer();
         }
+
         private void SetControllerMuteButtonsForCurrentLayer()
         {
             _client.Send(_mixer.GetMuteGroupsMessage());
+            foreach (var ch in _mixerChannels)
+                if (ch.ForceUnMute == true)
+                {
+                    ch.ForceUnMute = false;
+                    _client.Send(ch.ForceUnMuteMessage());
+                    if (ch.IsMute == true)
+                    {
+                        ch.IsMute = false;
+                        _client.Send(ch.MuteMessage());
+                    }
+                }
             SetMuteGroupsLeds();
-            SetControllerToCurrentLayerAndSend(); //TODO: only mute buttons update
+            var channels = _mixer.getCurrentLayer().Select((item, i) => new { Channel = item, controllerChannelNumber = i });
+            foreach (var ch in channels)
+            {
+                _settings.Controller.SetMuteLed(ch.controllerChannelNumber, _mixerChannels[ch.Channel].IsMute);
+            }
         }
 
 
@@ -675,12 +696,18 @@ namespace UI24RController
                                 _settings.Controller.SetMuteLed(controllerChannelNumber, ui24Message.LogicValue);
                             }
                             break;
+                        case MessageTypeEnum.forceunmute:
+                            _mixerChannels[ui24Message.ChannelNumber].ForceUnMute = ui24Message.LogicValue;
+                            if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8)
+                            {
+                                _settings.Controller.SetMuteLed(controllerChannelNumber, _mixerChannels[ui24Message.ChannelNumber].IsMute);
+                            }
+                            break;
                         case MessageTypeEnum.mgMask:
                             _mixerChannels[ui24Message.ChannelNumber].MuteGroupMask = (UInt32)ui24Message.IntValue;
                             if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8)
                             {
-                                //TODO: FIX
-                                //_settings.Controller.SetMuteLed(controllerChannelNumber, ui24Message.LogicValue);
+                                SetControllerMuteButtonsForCurrentLayer();
                             }
                             break;
                         case MessageTypeEnum.solo:

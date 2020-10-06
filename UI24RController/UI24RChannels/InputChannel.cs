@@ -47,10 +47,6 @@ namespace UI24RController.UI24RChannels
                 return $"3:::SETD^{this.SrcType.SrcTypeToString()}.{this.SrcNumber}.phantom^{(this.IsPhantom ? 1 : 0)}";
             return "";
         }
-        public override string MuteMessage()
-        {
-            return $"3:::SETD^i.{this.ChannelNumber}.mute^{(this.IsMute ? 1 : 0)}";
-        }
         public override string SoloMessage()
         {
             return $"3:::SETD^i.{this.ChannelNumber}.solo^{(this.IsSolo ? 1 : 0)}";
