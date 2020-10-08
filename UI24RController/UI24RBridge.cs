@@ -73,6 +73,7 @@ namespace UI24RController
             _settings.Controller.SaveEvent += _midiController_MuteAllEvent;
             _settings.Controller.UndoEvent += _midiController_MuteAllFxEvent;
             _settings.Controller.CancelEvent += _midiController_ClearMute;
+            _settings.Controller.EnterEvent += _midiController_ClearSolo;
             _settings.Controller.RecEvent += _midiController_RecEvent;
             _settings.Controller.PlayEvent += _midiController_PlayEvent;
             _settings.Controller.StopEvent += _midiController_StopEvent;
@@ -230,6 +231,7 @@ namespace UI24RController
                     }
                 }
             }
+            SetControllerMuteButtonsForCurrentLayer();
         }
         private void _midiController_SelectChannelEvent(object sender, MIDIController.ChannelEventArgs e)
         {
@@ -426,7 +428,6 @@ namespace UI24RController
             if (e.IsPress)
             {
                 _mixer.ToggleMuteGroup(e.FunctionButton);
-                //_client.Send(_mixer.GetMuteGroupsMessage());
                 SetControllerMuteButtonsForCurrentLayer();
             }
         }
@@ -445,10 +446,30 @@ namespace UI24RController
             _mixer.ClearMute();
             foreach (var ch in _mixerChannels)
             {
-                ch.IsMute = false;
+                if (ch.IsMute == true)
+                {
+                    ch.IsMute = false;
+                    _client.Send(ch.MuteMessage());
+                }
                 ch.ForceUnMute = false;
             }
             SetControllerMuteButtonsForCurrentLayer();
+        }
+        private void _midiController_ClearSolo(object sender, EventArgs e)
+        {
+            foreach (var ch in _mixerChannels)
+            {
+                if (ch.IsSolo == true)
+                {
+                    ch.IsSolo = false;
+                    _client.Send(ch.SoloMessage());
+                }
+            }
+            var channels = _mixer.getCurrentLayer().Select((item, i) => new { Channel = item, controllerChannelNumber = i });
+            foreach (var ch in channels)
+            {
+                _settings.Controller.SetSoloLed(ch.controllerChannelNumber, _mixerChannels[ch.Channel].IsSolo);
+            }
         }
 
         private void SetControllerMuteButtonsForCurrentLayer()
@@ -695,6 +716,14 @@ namespace UI24RController
                             {
                                 _settings.Controller.SetMuteLed(controllerChannelNumber, ui24Message.LogicValue);
                             }
+                            break;
+                        case MessageTypeEnum.vca:
+                            if(ui24Message.IntValue >= 0 && ui24Message.IntValue < 6)
+                            {
+                                _mixerChannels[ui24Message.ChannelNumber].VCA = 1 << ui24Message.IntValue;
+                                break;
+                            }
+                            _mixerChannels[ui24Message.ChannelNumber].VCA = 0;
                             break;
                         case MessageTypeEnum.forceunmute:
                             _mixerChannels[ui24Message.ChannelNumber].ForceUnMute = ui24Message.LogicValue;

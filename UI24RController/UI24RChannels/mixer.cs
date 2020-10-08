@@ -39,6 +39,13 @@ namespace UI24RController.UI24RChannels
                 channelLayer[_numFaders - 1] = 54;
                 _layers.Add(channelLayer);
             }
+            //some rearangements in default layers
+            for (int j = 0; j < 8; ++j)
+                _layers[4][j] = 38 + j;
+            _layers[5][0] = 46;
+            _layers[5][1] = 47;
+            for (int j = 0; j < 6; ++j)
+                _layers[5][j+2] = 48 + j;
 
             //initialize View group layers
             for (int i = 0; i < _numLayersPerBank; ++i)
