@@ -24,8 +24,8 @@ The earlier protocol has not been removed but the new functions only implemented
 		- Layer 2: Input 9-16
 		- Layer 3: Input 17-24
 		- Layer 4: Line in, Player, FX 1-4
-		- Layer 5: SUB 1-6; AUX 1-2
-		- Layer 6: AUX 3-10
+		- Layer 5: AUX 1-8
+		- Layer 6: AUX 9-10; VCA 1-6
 	- Bank V (configurable with Global View Groups in mixer app)
 		- Layer 1: VIEW 1 (if set)
 		- Layer 2: VIEW 2 (if set)
@@ -52,10 +52,14 @@ The earlier protocol has not been removed but the new functions only implemented
  - Start Recording with Rec button
  - Scrub button to save Layer Bank U
  - SMTPE/Beats Button to Tap Tempo
+ - Automation buttons (Read/Off, Write, Trim, Touch, Latch, Group) to control Mute Groups
+ - Save button to Mute All
+ - Undo button to Mute FX
+ - Cancel button to Clear Mute
+ - Enter button to Clear Solo
 
 ### Future functions
  - User configurable Layers in bank U with Rotary wheel
- - Mute Groups, Mute All, Mute FX
  - Pan, HPF, EQ, Dyn
 
 

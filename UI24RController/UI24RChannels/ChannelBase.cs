@@ -29,26 +29,33 @@ namespace UI24RController.UI24RChannels
 
         public int ChannelNumber { get; internal set; }
         public bool IsSelected { get; set; }
+        public int VCA { get; set; }
         protected bool _muteBtn;
         public bool IsMute
         {
             get
             {
-                Console.WriteLine("ForceUnmute " + _forceUnMute + " Mute " + _muteBtn);
-                return ( _muteBtn | ((_muteGroupMask & GlobalMuteGroup) > 0) ) & !_forceUnMute ;
+                return ( _muteBtn | ((_muteGroupMask & GlobalMuteGroup) > 0) | ((VCA & VCAMuteMask) > 0)) & !_forceUnMute ;
             }
             set
             {
-                if ((_muteGroupMask & GlobalMuteGroup) > 0)
+                if ( ((_muteGroupMask & GlobalMuteGroup) > 0) )
                     _forceUnMute = !value;
                 else
                     _muteBtn = value;
+                VCAMuteSetter();
             }
         }
+
+        public virtual void VCAMuteSetter()
+        {
+        }
+
         protected UInt32 _muteGroupMask;
         protected UInt32 _muteGroupMaskDefault;
         protected bool _forceUnMute;
-        public static UInt32 GlobalMuteGroup {get; set; }
+        public static UInt32 GlobalMuteGroup { get; set; }
+        public static int VCAMuteMask { get; set; }
         public UInt32 MuteGroupMask
         {
             get
@@ -104,6 +111,7 @@ namespace UI24RController.UI24RChannels
                 {SelectedLayoutEnum.Fx4, 0 },
             };
             channelTypeID = "i";
+            VCAMuteMask = 0;
         }
 
         protected virtual string GetDefaultName()

@@ -25,5 +25,13 @@ namespace UI24RController.UI24RChannels
         {
             return $"3:::SETD^v.{this.ChannelNumber}.solo^{(this.IsSolo ? 1 : 0)}";
         }
+
+        public override void VCAMuteSetter()
+        {
+            if (this.IsMute)
+                ChannelBase.VCAMuteMask |= 1 << this.ChannelNumber;
+            else
+                ChannelBase.VCAMuteMask &= ~(1 << this.ChannelNumber);
+        }
     }
 }
