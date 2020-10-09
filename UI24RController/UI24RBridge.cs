@@ -716,6 +716,7 @@ namespace UI24RController
                             {
                                 _settings.Controller.SetMuteLed(controllerChannelNumber, ui24Message.LogicValue);
                             }
+                            SetControllerMuteButtonsForCurrentLayer();
                             break;
                         case MessageTypeEnum.vca:
                             if(ui24Message.IntValue >= 0 && ui24Message.IntValue < 6)

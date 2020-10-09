@@ -10,6 +10,37 @@ namespace UI24RController.UI24RChannels
         /// <summary>
         /// Between 0 and 1.0
         /// </summary>
+        /// 
+        public ChannelBase(int channelNumber)
+        {
+            ChannelFaderValue = 0;
+            ChannelNumber = channelNumber;
+            IsSelected = false;
+            IsMute = false;
+            _muteGroupMask = 0;
+            _forceUnMute = false;
+            _muteGroupMaskDefault = 1 << Mixer._muteAllBit;
+            GlobalMuteGroup = 0;
+            IsSolo = false;
+            Name = GetDefaultName();
+            AuxSendValues = new Dictionary<SelectedLayoutEnum, double>()
+            {
+                {SelectedLayoutEnum.Aux1, 0 },
+                {SelectedLayoutEnum.Aux2, 0 },
+                {SelectedLayoutEnum.Aux3, 0 },
+                {SelectedLayoutEnum.Aux4, 0 },
+                {SelectedLayoutEnum.Aux5, 0 },
+                {SelectedLayoutEnum.Aux6, 0 },
+                {SelectedLayoutEnum.Aux7, 0 },
+                {SelectedLayoutEnum.Aux8, 0 },
+                {SelectedLayoutEnum.Fx1, 0 },
+                {SelectedLayoutEnum.Fx2, 0 },
+                {SelectedLayoutEnum.Fx3, 0 },
+                {SelectedLayoutEnum.Fx4, 0 },
+            };
+            channelTypeID = "i";
+            VCAMuteMask = 0;
+        }
         public double ChannelFaderValue { get; set; }
         protected string _name = "";
         public virtual string Name {
@@ -39,7 +70,7 @@ namespace UI24RController.UI24RChannels
             }
             set
             {
-                if ( ((_muteGroupMask & GlobalMuteGroup) > 0) )
+                if ( ((_muteGroupMask & GlobalMuteGroup) > 0) | ((VCA & VCAMuteMask) > 0))
                     _forceUnMute = !value;
                 else
                     _muteBtn = value;
@@ -83,37 +114,6 @@ namespace UI24RController.UI24RChannels
         public Dictionary<SelectedLayoutEnum, double> AuxSendValues { get; set; }
         protected string channelTypeID { get; set; }
 
-        public ChannelBase(int channelNumber)
-        {
-            ChannelFaderValue = 0;
-            ChannelNumber = channelNumber;
-            IsSelected = false;
-            IsMute = false;
-            _muteGroupMask = 0;
-            _forceUnMute = false;
-            _muteGroupMaskDefault = 1 << Mixer._muteAllBit;
-            GlobalMuteGroup = 0;
-            IsSolo = false;
-            Name = GetDefaultName();
-            AuxSendValues = new Dictionary<SelectedLayoutEnum, double>() 
-            {
-                {SelectedLayoutEnum.Aux1, 0 },
-                {SelectedLayoutEnum.Aux2, 0 },
-                {SelectedLayoutEnum.Aux3, 0 },
-                {SelectedLayoutEnum.Aux4, 0 },
-                {SelectedLayoutEnum.Aux5, 0 },
-                {SelectedLayoutEnum.Aux6, 0 },
-                {SelectedLayoutEnum.Aux7, 0 },
-                {SelectedLayoutEnum.Aux8, 0 },
-                {SelectedLayoutEnum.Fx1, 0 },
-                {SelectedLayoutEnum.Fx2, 0 },
-                {SelectedLayoutEnum.Fx3, 0 },
-                {SelectedLayoutEnum.Fx4, 0 },
-            };
-            channelTypeID = "i";
-            VCAMuteMask = 0;
-        }
-
         protected virtual string GetDefaultName()
         {
             return "CH";
@@ -143,10 +143,11 @@ namespace UI24RController.UI24RChannels
         }
         public string MuteMessage()
         {
-            if ((_muteGroupMask & GlobalMuteGroup) > 0)
+            if ((_muteGroupMask & GlobalMuteGroup) > 0 | ((VCA & VCAMuteMask) > 0))
                 return ForceUnMuteMessage();
             else
                 return $"3:::SETD^{channelTypeID}.{this.ChannelNumber}.mute^{(this.IsMute ? 1 : 0)}";
+
         }
         public string ForceUnMuteMessage()
         {
