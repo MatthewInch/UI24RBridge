@@ -51,7 +51,16 @@ namespace UI24RController.MIDIController
         public bool IsConnectionErrorOccured { get => _isConnectionErrorOccured; }
 
         public event EventHandler<MessageEventArgs> MessageReceived;
+        public event EventHandler<EventArgs> ConnectionErrorEvent;
+
+        #region Button Events
         public event EventHandler<FaderEventArgs> FaderEvent;
+        public event EventHandler<KnobEventArgs> KnobEvent;
+        public event EventHandler<WheelEventArgs> WheelEvent;
+        public event EventHandler<ChannelEventArgs> SelectChannelEvent;
+        public event EventHandler<ChannelEventArgs> MuteChannelEvent;
+        public event EventHandler<ChannelEventArgs> SoloChannelEvent;
+        public event EventHandler<ChannelEventArgs> RecChannelEvent;
 
         public event EventHandler<EventArgs> TrackEvent;
         public event EventHandler<EventArgs> PanEvent;
@@ -63,23 +72,33 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> DisplayBtnEvent;
         public event EventHandler<EventArgs> SmtpeBeatsBtnEvent;
 
-
-
-        public event EventHandler<EventArgs> LayerUp;
-        public event EventHandler<EventArgs> LayerDown;
-        public event EventHandler<EventArgs> BankUp;
-        public event EventHandler<EventArgs> BankDown;
-
-        public event EventHandler<GainEventArgs> GainEvent;
-        public event EventHandler<ChannelEventArgs> SelectChannelEvent;
-        public event EventHandler<ChannelEventArgs> MuteChannelEvent;
-        public event EventHandler<ChannelEventArgs> SoloChannelEvent;
-        public event EventHandler<ChannelEventArgs> RecChannelEvent;
+        public event EventHandler<FunctionEventArgs> AuxButtonEvent;       //F1-F8
+        public event EventHandler<FunctionEventArgs> FxButtonEvent;        //Modify buttons
+        public event EventHandler<FunctionEventArgs> MuteGroupButtonEvent; //Automation buttons
 
         public event EventHandler<EventArgs> SaveEvent;
         public event EventHandler<EventArgs> UndoEvent;
         public event EventHandler<EventArgs> CancelEvent;
         public event EventHandler<EventArgs> EnterEvent;
+
+        public event EventHandler<EventArgs> MarkerEvent;
+        public event EventHandler<EventArgs> NudgeEvent;
+        public event EventHandler<EventArgs> CycleEvent;
+        public event EventHandler<EventArgs> DropEvent;
+        public event EventHandler<EventArgs> ReplaceEvent;
+        public event EventHandler<FunctionEventArgs> ClickEvent;
+        public event EventHandler<EventArgs> SoloEvent;
+
+        public event EventHandler<EventArgs> PrevEvent;
+        public event EventHandler<EventArgs> NextEvent;
+        public event EventHandler<EventArgs> StopEvent;
+        public event EventHandler<EventArgs> PlayEvent;
+        public event EventHandler<EventArgs> RecEvent;
+
+        public event EventHandler<EventArgs> LayerUp;
+        public event EventHandler<EventArgs> LayerDown;
+        public event EventHandler<EventArgs> BankUp;
+        public event EventHandler<EventArgs> BankDown;
 
         public event EventHandler<EventArgs> UpEvent;
         public event EventHandler<EventArgs> DownEvent;
@@ -87,17 +106,9 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> RightEvent;
         public event EventHandler<EventArgs> CenterEvent;
 
-        public event EventHandler<EventArgs> StopEvent;
-        public event EventHandler<EventArgs> PlayEvent;
-        public event EventHandler<EventArgs> RecEvent;
         public event EventHandler<EventArgs> ScrubEvent;
 
-        public event EventHandler<EventArgs> ConnectionErrorEvent;
-        public event EventHandler<FunctionEventArgs> AuxButtonEvent;
-        public event EventHandler<FunctionEventArgs> FxButtonEvent;
-        public event EventHandler<FunctionEventArgs> MuteGroupButtonEvent;
-        public event EventHandler<EventArgs> PrevEvent;
-        public event EventHandler<EventArgs> NextEvent;
+        #endregion
 
         public MC()
         {
@@ -117,77 +128,36 @@ namespace UI24RController.MIDIController
             MessageReceived?.Invoke(this, new MessageEventArgs(message));
         }
 
+        protected void OnKnobEvent(int channelNumber, int knobDirection)
+        {
+            KnobEvent?.Invoke(this, new KnobEventArgs(channelNumber, knobDirection));
+        }
+        protected void OnWheelEvent(int wheelDirection)
+        {
+            WheelEvent?.Invoke(this, new WheelEventArgs(wheelDirection));
+        }
         protected void OnFaderEvent(int channelNumber, double faderValue)
         {
             FaderEvent?.Invoke(this, new FaderEventArgs(channelNumber, faderValue));
         }
 
-        protected void OnGainEvent(int channelNumber, int gainDirection)
-        {
-            GainEvent?.Invoke(this, new GainEventArgs(channelNumber, gainDirection));
-        }
-
-        protected void OnSelectEvent(int channelNumber)
-        {
-            SelectChannelEvent?.Invoke(this, new ChannelEventArgs(channelNumber));
-        }
-        protected void OnMuteEvent(int channelNumber)
-        {
-            MuteChannelEvent?.Invoke(this, new ChannelEventArgs(channelNumber));
-        }
-
-        protected void OnSoloEvent(int channelNumber)
-        {
-            SoloChannelEvent?.Invoke(this, new ChannelEventArgs(channelNumber));
-        }
-        protected void OnRecEvent(int channelNumber)
+        protected void OnChannelRecEvent(int channelNumber)
         {
             RecChannelEvent?.Invoke(this, new ChannelEventArgs(channelNumber));
         }
-
-        protected void OnSaveEvent()
+        protected void OnChannelSoloEvent(int channelNumber)
         {
-            SaveEvent?.Invoke(this, new EventArgs());
+            SoloChannelEvent?.Invoke(this, new ChannelEventArgs(channelNumber));
         }
-        protected void OnCancelEvent()
+        protected void OnChannelMuteEvent(int channelNumber)
         {
-            CancelEvent?.Invoke(this, new EventArgs());
+            MuteChannelEvent?.Invoke(this, new ChannelEventArgs(channelNumber));
         }
-        protected void OnUndoEvent()
+        protected void OnChannelSelectEvent(int channelNumber)
         {
-            UndoEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnEnterEvent()
-        {
-            EnterEvent?.Invoke(this, new EventArgs());
+            SelectChannelEvent?.Invoke(this, new ChannelEventArgs(channelNumber));
         }
 
-        protected void OnRecEvent()
-        {
-            RecEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnStopEvent()
-        {
-            StopEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnPlayEvent()
-        {
-            PlayEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnNextEvent()
-        {
-            NextEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnPrevEvent()
-        {
-            PrevEvent?.Invoke(this, new EventArgs());
-        }
-
-
-        protected void OnScrubEvent()
-        {
-            ScrubEvent?.Invoke(this, new EventArgs());
-        }
         protected void OnTrackEvent()
         {
             TrackEvent?.Invoke(this, new EventArgs());
@@ -222,7 +192,7 @@ namespace UI24RController.MIDIController
             SmtpeBeatsBtnEvent?.Invoke(this, new EventArgs());
         }
 
-        protected void OnAuxButtonEvent(int functionNumber,bool isPress)
+        protected void OnAuxButtonEvent(int functionNumber, bool isPress)
         {
             AuxButtonEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
         }
@@ -233,6 +203,73 @@ namespace UI24RController.MIDIController
         protected void OnMuteGroupButtonEvent(int functionNumber, bool isPress)
         {
             MuteGroupButtonEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
+        }
+
+        protected void OnSaveEvent()
+        {
+            SaveEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnCancelEvent()
+        {
+            CancelEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnUndoEvent()
+        {
+            UndoEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnEnterEvent()
+        {
+            EnterEvent?.Invoke(this, new EventArgs());
+        }
+
+        protected void OnMarkerEvent()
+        {
+            MarkerEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnNudgeEvent()
+        {
+            NudgeEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnCycleEvent()
+        {
+            CycleEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnDropEvent()
+        {
+            DropEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnReplaceEvent()
+        {
+            ReplaceEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnClickEvent(int functionNumber, bool isPress)
+        {
+            ClickEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
+        }
+        protected void OnSoloEvent()
+        {
+            SoloEvent?.Invoke(this, new EventArgs());
+        }
+
+        protected void OnNextEvent()
+        {
+            NextEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnPrevEvent()
+        {
+            PrevEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnRecEvent()
+        {
+            RecEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnStopEvent()
+        {
+            StopEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnPlayEvent()
+        {
+            PlayEvent?.Invoke(this, new EventArgs());
         }
 
         protected void OnLayerUp()
@@ -250,6 +287,36 @@ namespace UI24RController.MIDIController
         protected void OnBankDown()
         {
             BankDown?.Invoke(this, new EventArgs());
+        }
+
+        protected void OnUpEvent()
+        {
+            UpEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnDownEvent()
+        {
+            DownEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnLeftEvent()
+        {
+            LeftEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnRightEvent()
+        {
+            RightEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnCenterEvent()
+        {
+            CenterEvent?.Invoke(this, new EventArgs());
+        }
+
+        protected void OnWheelEvent(int channelNumber, int wheelDirection)
+        {
+            WheelEvent?.Invoke(this, new WheelEventArgs(wheelDirection));
+        }
+        protected void OnScrubEvent()
+        {
+            ScrubEvent?.Invoke(this, new EventArgs());
         }
 
         public void Dispose()
@@ -413,119 +480,177 @@ namespace UI24RController.MIDIController
                         faderValues[channelNumber].IsTouched = true;
                     }
                 }
-                else if (message.MIDIEqual(0x90, 0x2f, 0x7f)) //fader bank right press
-                {
-                    OnBankUp();
-                }
-                else if (message.MIDIEqual(0x90, 0x2e, 0x7f)) //fader bank left press
-                {
-                    OnBankDown();
-                }
-                else if (message.MIDIEqual(0x90, 0x31, 0x7f)) //fader channel right press
-                {
-                    OnLayerUp();
-                }
-                else if (message.MIDIEqual(0x90, 0x30, 0x7f)) //fader channel left press
-                {
-                    OnLayerDown();
-                }
+
                 else if (message[1] >= 0x10 && message[1] <= 0x17 && message[2] == 0x7f) //channel mute button
                 {
                     byte channelNumber = (byte)(message[1] - 0x10);
-                    OnMuteEvent(channelNumber);
+                    OnChannelMuteEvent(channelNumber);
                 }
                 else if (message[1] >= 0x08 && message[1] <= 0x0f && message[2] == 0x7f) //channel solo button
                 {
                     byte channelNumber = (byte)(message[1] - 0x08);
-                    OnSoloEvent(channelNumber);
+                    OnChannelSoloEvent(channelNumber);
                 }
                 else if (message[1] >= 0x00 && message[1] <= 0x07 && message[2] == 0x7f) //channel rec button
                 {
                     byte channelNumber = (byte)(message[1]);
-                    OnRecEvent(channelNumber);
+                    OnChannelRecEvent(channelNumber);
                 }
                 else if  (message[1] >= 0x18 && message[1] <= 0x1f && message[2] == 0x7f) //channel select button
                 {
                     byte channelNumber = (byte)(message[1] - 0x18);
-                    OnSelectEvent(channelNumber);
+                    OnChannelSelectEvent(channelNumber);
                 }
                 else if (message.MIDIEqual(0x90, 0x32, 0x7f)) //main select button
                 {
                     byte channelNumber = (byte)(message[1] - 0x18);
-                    OnSelectEvent(8);
+                    OnChannelSelectEvent(8);
                 }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Save], 0x7f)) //Save button
-                {
-                    OnSaveEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Undo], 0x7f)) //Save button
-                {
-                    OnUndoEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Cancel], 0x7f)) //Save button
-                {
-                    OnCancelEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Enter], 0x7f)) //Save button
-                {
-                    OnEnterEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Rec], 0x7f)) //Rec button
-                {
-                    OnRecEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Stop], 0x7f)) //Stop button
-                {
-                    OnStopEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Play], 0x7f)) //Stop button
-                {
-                    OnPlayEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlayPrev], 0x7f)) //Stop button
-                {
-                    OnPrevEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlayNext], 0x7f)) //Stop button
-                {
-                    OnNextEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Scrub], 0x7f)) //Scrub button
-                {
-                    OnScrubEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Track], 0x7f)) //Track button
+
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Track], 0x7f))
                 {
                     OnTrackEvent();
                 }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Pan], 0x7f)) //Pan button
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Pan], 0x7f))
                 {
                     OnPanEvent();
                 }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Eq], 0x7f)) //Eq button
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Eq], 0x7f))
                 {
                     OnEqEvent();
                 }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Send], 0x7f)) //Send button
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Send], 0x7f))
                 {
                     OnSendEvent();
                 }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlugIn], 0x7f)) //PlugIn button
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlugIn], 0x7f))
                 {
                     OnPlugInEvent();
                 }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Instr], 0x7f)) //Instr button
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Instr], 0x7f))
                 {
                     OnInstrEvent();
                 }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Display], 0x7f)) //Display button
+
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Display], 0x7f))
                 {
                     OnDisplayBtnEvent();
                 }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Smtpe], 0x7f)) //Smtpe button
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Smtpe], 0x7f))
                 {
                     OnSmtpeBeatsBtnEvent();
                 }
+
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Save], 0x7f))
+                {
+                    OnSaveEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Undo], 0x7f))
+                {
+                    OnUndoEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Cancel], 0x7f))
+                {
+                    OnCancelEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Enter], 0x7f))
+                {
+                    OnEnterEvent();
+                }
+
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Marker], 0x7f))
+                {
+                    OnMarkerEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Nudge], 0x7f))
+                {
+                    OnNudgeEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Cycle], 0x7f))
+                {
+                    OnCycleEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Drop], 0x7f))
+                {
+                    OnDropEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Replace], 0x7f))
+                {
+                    OnReplaceEvent();
+                }
+                else if ((message[0] == 0x90) && message[1] == _buttonsID[ButtonsEnum.Click])
+                {
+                    OnClickEvent(0, message[2] == 0x7f);
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Solo], 0x7f))
+                {
+                    OnSoloEvent();
+                }
+
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlayPrev], 0x7f))
+                {
+                    OnPrevEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlayNext], 0x7f))
+                {
+                    OnNextEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Stop], 0x7f))
+                {
+                    OnStopEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Play], 0x7f))
+                {
+                    OnPlayEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Rec], 0x7f))
+                {
+                    OnRecEvent();
+                }
+
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.FaderBankUp], 0x7f))
+                {
+                    OnBankUp();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.FaderBankDown], 0x7f))
+                {
+                    OnBankDown();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.ChannelUp], 0x7f))
+                {
+                    OnLayerUp();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.ChannelDown], 0x7f))
+                {
+                    OnLayerDown();
+                }
+
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Up], 0x7f))
+                {
+                    OnUpEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Down], 0x7f))
+                {
+                    OnDownEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Left], 0x7f))
+                {
+                    OnLeftEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Right], 0x7f))
+                {
+                    OnRightEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Center], 0x7f))
+                {
+                    OnCenterEvent();
+                }
+
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Scrub], 0x7f))
+                {
+                    OnScrubEvent();
+                }
+
                 else if (message[0]== 0x90 && message[1]>=_buttonsID[ButtonsEnum.Aux1] && message[1] <= _buttonsID[ButtonsEnum.Aux8]) //F1-F8 press
                 {
                     OnAuxButtonEvent(message[1] - _buttonsID[ButtonsEnum.Aux1], message[2] == 0x7f);
@@ -566,14 +691,21 @@ namespace UI24RController.MIDIController
                     }).Start();
                 }
 
-            } 
-            else if(message[0] == 0xb0 && (message[1] >= 0x10 && message[1] <= 0x17)) //channel knobb turning
+            }
+            else if (message[0] == 0xb0 && (message[1] >= 0x10 && message[1] <= 0x17)) //channel knobb turning
             {
                 byte channelNumber = (byte)(message[1] - 0x10);
                 if (message[2] >= 0x01 && message[2] <= 0x03)
-                    OnGainEvent(channelNumber, message[2]);
+                    OnKnobEvent(channelNumber, message[2]);
                 if (message[2] >= 0x41 && message[2] <= 0x43)
-                    OnGainEvent(channelNumber, -1*(message[2]&0x03));
+                    OnKnobEvent(channelNumber, -1 * (message[2] & 0x03));
+            }
+            else if (message[0] == 0xb0 && message[1] == 0x3c ) //jog wheel turning
+            {
+                if (message[2] >= 0x01 && message[2] <= 0x03)
+                    OnWheelEvent(0, message[2]);
+                if (message[2] >= 0x41 && message[2] <= 0x43)
+                    OnWheelEvent(0, -1 * (message[2] & 0x03));
             }
         }
 

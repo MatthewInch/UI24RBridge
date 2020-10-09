@@ -21,6 +21,8 @@ namespace UI24RController.UI24RChannels
         private int _numLayersPerBank;
         private int _numBanks;
         private int _numFaders;
+        public bool UserLayerEdit { get; set; }
+        public int UserLayerEditNewChannel { get; set; }
 
         private void initLayers()
         {
@@ -29,6 +31,8 @@ namespace UI24RController.UI24RChannels
             _selectedLayer = 0;
             _selectedBank = 0;
             _numFaders = 9;
+            UserLayerEdit = false;
+            UserLayerEditNewChannel = -1;
 
             //Inititalize Initial Layers
             for (int i = 0; i < _numLayersPerBank; ++i)
@@ -165,7 +169,16 @@ namespace UI24RController.UI24RChannels
             _selectedLayer = _selectedBank * _numLayersPerBank;
             skipUnusedLayerDown();
         }
-
+        public bool goToUserBank()
+        {
+            bool updated = false;
+            while (_selectedBank < 2)
+            {
+                setBankUp();
+                updated = true;
+            }
+            return updated;
+        }
         public char getBankChar(int bank)
         {
             switch (bank)
