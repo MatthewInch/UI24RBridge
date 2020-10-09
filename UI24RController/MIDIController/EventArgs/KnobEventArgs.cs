@@ -4,17 +4,17 @@ using System.Text;
 
 namespace UI24RController.MIDIController
 {
-    public class GainEventArgs : EventArgs
+    public class KnobEventArgs : EventArgs
     {
-        public GainEventArgs(int channelNumber, int gainDirection): base()
+        public KnobEventArgs(int channelNumber, int knobDirection): base()
         {
             ChannelNumber = channelNumber;
-            GainDirection = gainDirection;
+            KnobDirection = knobDirection;
         }
         public int ChannelNumber { get; internal set; }
         /// <summary>
         /// it can be 1 or -1 (increese or decreese)
         /// </summary>
-        public int GainDirection { get; internal set; }
+        public int KnobDirection { get; internal set; }
     }
 }

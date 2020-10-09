@@ -19,15 +19,17 @@ public interface IMIDIController
 
     #endregion
 
-    event EventHandler<FaderEventArgs> FaderEvent;
     event EventHandler<MessageEventArgs> MessageReceived;
-    event EventHandler<GainEventArgs> GainEvent;
+
+    #region Button Events
+    event EventHandler<FaderEventArgs> FaderEvent;
+    event EventHandler<KnobEventArgs> KnobEvent;
+    event EventHandler<WheelEventArgs> WheelEvent;
     event EventHandler<ChannelEventArgs> SelectChannelEvent;
     event EventHandler<ChannelEventArgs> MuteChannelEvent;
     event EventHandler<ChannelEventArgs> SoloChannelEvent;
     event EventHandler<ChannelEventArgs> RecChannelEvent;
 
-    #region Button Events
     event EventHandler<EventArgs> TrackEvent;
     event EventHandler<EventArgs> PanEvent;
     event EventHandler<EventArgs> EqEvent;
@@ -38,23 +40,22 @@ public interface IMIDIController
     event EventHandler<EventArgs> DisplayBtnEvent;
     event EventHandler<EventArgs> SmtpeBeatsBtnEvent;
 
-
-
-    event EventHandler<EventArgs> LayerUp;
-    event EventHandler<EventArgs> LayerDown;
-    event EventHandler<EventArgs> BankUp;
-    event EventHandler<EventArgs> BankDown;
+    event EventHandler<FunctionEventArgs> AuxButtonEvent;       //F1-F8
+    event EventHandler<FunctionEventArgs> FxButtonEvent;        //Modify buttons
+    event EventHandler<FunctionEventArgs> MuteGroupButtonEvent; //Automation buttons
 
     event EventHandler<EventArgs> SaveEvent;
     event EventHandler<EventArgs> UndoEvent;
     event EventHandler<EventArgs> CancelEvent;
     event EventHandler<EventArgs> EnterEvent;
 
-    event EventHandler<EventArgs> UpEvent;
-    event EventHandler<EventArgs> DownEvent;
-    event EventHandler<EventArgs> LeftEvent;
-    event EventHandler<EventArgs> RightEvent;
-    event EventHandler<EventArgs> CenterEvent;
+    event EventHandler<EventArgs> MarkerEvent;
+    event EventHandler<EventArgs> NudgeEvent;
+    event EventHandler<EventArgs> CycleEvent;
+    event EventHandler<EventArgs> DropEvent;
+    event EventHandler<EventArgs> ReplaceEvent;
+    event EventHandler<FunctionEventArgs> ClickEvent;
+    event EventHandler<EventArgs> SoloEvent;
 
     event EventHandler<EventArgs> PrevEvent;
     event EventHandler<EventArgs> NextEvent;
@@ -62,11 +63,18 @@ public interface IMIDIController
     event EventHandler<EventArgs> PlayEvent;
     event EventHandler<EventArgs> RecEvent;
 
-    event EventHandler<EventArgs> ScrubEvent;
+    event EventHandler<EventArgs> LayerUp;
+    event EventHandler<EventArgs> LayerDown;
+    event EventHandler<EventArgs> BankUp;
+    event EventHandler<EventArgs> BankDown;
 
-    event EventHandler<FunctionEventArgs> AuxButtonEvent;
-    event EventHandler<FunctionEventArgs> FxButtonEvent;
-    event EventHandler<FunctionEventArgs> MuteGroupButtonEvent;
+    event EventHandler<EventArgs> UpEvent;
+    event EventHandler<EventArgs> DownEvent;
+    event EventHandler<EventArgs> LeftEvent;
+    event EventHandler<EventArgs> RightEvent;
+    event EventHandler<EventArgs> CenterEvent;
+
+    event EventHandler<EventArgs> ScrubEvent;
 
     #endregion
 

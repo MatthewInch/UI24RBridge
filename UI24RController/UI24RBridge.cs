@@ -34,7 +34,7 @@ namespace UI24RController
         /// </summary>
         protected Mixer _mixer = new Mixer();
 
-        //0-23: input channels
+        //0-23: Input channels
         //24-25: Linie In L/R
         //26-27: Player L/R
         //28-31: FX channels
@@ -63,12 +63,11 @@ namespace UI24RController
             _settings.Controller.BankDown += _midiController_BankDown;
             _settings.Controller.LayerUp += _midiController_LayerUp;
             _settings.Controller.LayerDown += _midiController_LayerDown;
-            _settings.Controller.GainEvent += _midiController_GainEvent;
+            _settings.Controller.KnobEvent += _midiController_KnobEvent;
             _settings.Controller.MuteChannelEvent += _midiController_MuteChannelEvent;
             _settings.Controller.SoloChannelEvent += _midiController_SoloChannelEvent;
             _settings.Controller.SelectChannelEvent += _midiController_SelectChannelEvent;
             _settings.Controller.RecChannelEvent += _midiController_RecChannelEvent;
-//            _settings.Controller.SaveEvent += _midiController_SaveEvent;
             _settings.Controller.MuteGroupButtonEvent += Controller_MuteGroupButtonEvent;
             _settings.Controller.SaveEvent += _midiController_MuteAllEvent;
             _settings.Controller.UndoEvent += _midiController_MuteAllFxEvent;
@@ -79,7 +78,9 @@ namespace UI24RController
             _settings.Controller.StopEvent += _midiController_StopEvent;
             _settings.Controller.NextEvent += _midiController_NextEvent;
             _settings.Controller.PrevEvent += _midiController_PrevEvent;
-            _settings.Controller.ScrubEvent += _midiController_SaveEvent;
+            _settings.Controller.ClickEvent += _midiController_UserLayerEdit;
+            _settings.Controller.SoloEvent += _midiController_SaveEvent;
+            _settings.Controller.WheelEvent += _midiController_WheelEvent;
             _settings.Controller.SmtpeBeatsBtnEvent += _midiController_TapTempoEvent;
             _settings.Controller.WriteTextToLCD("");
             _settings.Controller.ConnectionErrorEvent += _midiController_ConnectionErrorEvent;
@@ -244,8 +245,9 @@ namespace UI24RController
             _selectedChannel = ch;
             _settings.Controller.SetSelectLed(e.ChannelNumber, true);
             _client.Send(_mixerChannels[ch].SelectChannelMessage(_settings.SyncID));
+            _mixer.UserLayerEditNewChannel = ch == 54 ? -1 : ch;
         }
-        private void _midiController_GainEvent(object sender, MIDIController.GainEventArgs e)
+        private void _midiController_KnobEvent(object sender, MIDIController.KnobEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber);
             if (_mixerChannels[ch] is IInputable)
@@ -253,7 +255,7 @@ namespace UI24RController
                 var currentChannel = _mixerChannels[ch] as IInputable;
                 if(currentChannel.SrcType == SrcTypeEnum.Hw)
                 {
-                    currentChannel.Gain = currentChannel.Gain + (1.0d / 100.0d) * e.GainDirection;
+                    currentChannel.Gain = currentChannel.Gain + (1.0d / 100.0d) * e.KnobDirection;
                     if (currentChannel.Gain > 1)
                         currentChannel.Gain = 1;
                     if (currentChannel.Gain < 0)
@@ -542,7 +544,59 @@ namespace UI24RController
                 }
             }
         }
-        private void _midiController_SaveEvent(object sender, EventArgs e) //Save view groups
+        private void _midiController_UserLayerEdit(object sender, FunctionEventArgs e)
+        {
+            _mixer.UserLayerEdit = e.IsPress;
+            _settings.Controller.SetLed(ButtonsEnum.Click, e.IsPress);
+            Console.WriteLine(e.IsPress);
+
+            if (e.IsPress)
+            {
+                if (_mixer.UserLayerEdit && _selectedChannel != 54)
+                {
+                    //Go to user layer if necessary
+                    if (_mixer.goToUserBank())
+                    {
+                        SetControllerToCurrentLayerAndSend();
+                        _settings.Controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
+                    }
+                    //Set Select to First channel if necessary
+                    bool isOnLayer = _mixer.getCurrentLayer().Where(x => x == _selectedChannel).Count() > 0;
+                    if (!isOnLayer)
+                    {
+                        _selectedChannel = _mixer.getCurrentLayer().FirstOrDefault();
+                        _mixerChannels[_selectedChannel].IsSelected = true;
+                        _settings.Controller.SetSelectLed(0, true);
+                        _mixer.UserLayerEditNewChannel = _selectedChannel;
+                    }
+                }
+            }
+            else
+            {
+
+            }
+
+
+        }
+        private void _midiController_WheelEvent(object sender, MIDIController.WheelEventArgs e)
+        {
+            if (_mixer.UserLayerEdit && _selectedChannel != 54)
+            { 
+                //selected layer must be at current layer
+                bool isOnLayer = _mixer.getCurrentLayer().Where(x => x == _selectedChannel).Count() > 0;
+                if (!isOnLayer)
+                {
+                    _selectedChannel = _mixer.getCurrentLayer().FirstOrDefault();
+                    _mixerChannels[_selectedChannel].IsSelected = true;
+                    _settings.Controller.SetSelectLed(0, true);
+                }
+                //find next channel not used on this layer
+                _mixer.UserLayerEditNewChannel = (_mixer.UserLayerEditNewChannel + e.WheelDirection + (_mixerChannels.Count() - 1)) % (_mixerChannels.Count() - 1);
+
+                Console.WriteLine(_mixer.UserLayerEditNewChannel);
+            }
+        }
+        private void _midiController_SaveEvent(object sender, EventArgs e)
         {
             string jsonString;
             jsonString = JsonSerializer.Serialize(_mixer.getUserLayerToArray());
@@ -862,11 +916,14 @@ namespace UI24RController
                         {
                             _mixerChannels[54].IsSelected = true;
                             _selectedChannel = 54;
+                            _mixer.UserLayerEditNewChannel = -1;
+
                         }
                         else
                         {
                             _mixerChannels[ch].IsSelected = true;
                             _selectedChannel = ch;
+                            _mixer.UserLayerEditNewChannel = ch;
                         }
                         var channelNumber = _mixer.getCurrentLayer().Select((item, i) => new { Channel = item, controllerChannelNumber = i })
                            .Where(c => c.Channel == _mixerChannels[_selectedChannel].ChannelNumberInMixer).FirstOrDefault();
