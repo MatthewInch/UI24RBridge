@@ -89,6 +89,31 @@ namespace UI24RController.UI24RChannels
             }
             return output;
         }
+        public void setNewUserChannelInCurrentBank(int controllerPosition)
+        {
+            if (controllerPosition >= 0 & controllerPosition < 8)
+                _layers[_selectedLayer][controllerPosition] = UserLayerEditNewChannel;
+        }
+        public void findNextAvailableChannelForUserLayer(int controllerPos, int dir)
+        {
+            bool goOneMoreChannel = true;
+
+            while(goOneMoreChannel)
+            {
+                goOneMoreChannel = false;
+                UserLayerEditNewChannel = (UserLayerEditNewChannel + dir + 54) % 54;
+
+                for (int i = 0; i < 8; ++i)
+                {
+                    if (i != controllerPos)
+                    {
+                        if (getCurrentLayer()[i] == UserLayerEditNewChannel)
+                            goOneMoreChannel = true;
+                    }
+                }
+            }
+
+        }
 
         public void setChannelToViewLayerAndPosition(int channel, int layer, int position)
         {

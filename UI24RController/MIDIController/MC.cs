@@ -72,6 +72,17 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> DisplayBtnEvent;
         public event EventHandler<EventArgs> SmtpeBeatsBtnEvent;
 
+        public event EventHandler<EventArgs> GlobalViewEvent;
+
+        public event EventHandler<EventArgs> MidiTracksEvent;
+        public event EventHandler<EventArgs> InputsEvent;
+        public event EventHandler<EventArgs> AudioTracksEvent;
+        public event EventHandler<EventArgs> AudioInstEvent;
+        public event EventHandler<EventArgs> AuxBtnEvent;
+        public event EventHandler<EventArgs> BusesBtnEvent;
+        public event EventHandler<EventArgs> OutputsEvent;
+        public event EventHandler<FunctionEventArgs> UserBtnEvent;
+
         public event EventHandler<FunctionEventArgs> AuxButtonEvent;       //F1-F8
         public event EventHandler<FunctionEventArgs> FxButtonEvent;        //Modify buttons
         public event EventHandler<FunctionEventArgs> MuteGroupButtonEvent; //Automation buttons
@@ -86,7 +97,7 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> CycleEvent;
         public event EventHandler<EventArgs> DropEvent;
         public event EventHandler<EventArgs> ReplaceEvent;
-        public event EventHandler<FunctionEventArgs> ClickEvent;
+        public event EventHandler<EventArgs> ClickEvent;
         public event EventHandler<EventArgs> SoloEvent;
 
         public event EventHandler<EventArgs> PrevEvent;
@@ -192,6 +203,45 @@ namespace UI24RController.MIDIController
             SmtpeBeatsBtnEvent?.Invoke(this, new EventArgs());
         }
 
+
+        protected void OnGlobalViewEvent()
+        {
+            GlobalViewEvent?.Invoke(this, new EventArgs());
+        }
+
+        protected void OnMidiTracksEvent()
+        {
+            MidiTracksEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnInputsEvent()
+        {
+            InputsEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnAudioTracksEvent()
+        {
+            AudioTracksEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnAudioInstEvent()
+        {
+            AudioInstEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnAuxBtnEvent()
+        {
+            AuxBtnEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnBusesBtnEvent()
+        {
+            BusesBtnEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnOutputsEvent()
+        {
+            OutputsEvent?.Invoke(this, new EventArgs());
+        }
+        protected void OnUserEvent(int functionNumber, bool isPress)
+        {
+            UserBtnEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
+        }
+
         protected void OnAuxButtonEvent(int functionNumber, bool isPress)
         {
             AuxButtonEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
@@ -242,9 +292,9 @@ namespace UI24RController.MIDIController
         {
             ReplaceEvent?.Invoke(this, new EventArgs());
         }
-        protected void OnClickEvent(int functionNumber, bool isPress)
+        protected void OnClickEvent()
         {
-            ClickEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
+            ClickEvent?.Invoke(this, new EventArgs());
         }
         protected void OnSoloEvent()
         {
@@ -541,6 +591,44 @@ namespace UI24RController.MIDIController
                     OnSmtpeBeatsBtnEvent();
                 }
 
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.GlobalView], 0x7f))
+                {
+                    OnGlobalViewEvent();
+                }
+
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.MidiTracks], 0x7f))
+                {
+                    OnMidiTracksEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Inputs], 0x7f))
+                {
+                    OnInputsEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.AudioTracks], 0x7f))
+                {
+                    OnAudioTracksEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.AudioInst], 0x7f))
+                {
+                    OnAudioInstEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.AuxBtn], 0x7f))
+                {
+                    OnAuxBtnEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.BusesBtn], 0x7f))
+                {
+                    OnBusesBtnEvent();
+                }
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Outputs], 0x7f))
+                {
+                    OnOutputsEvent();
+                }
+                else if ((message[0] == 0x90) && message[1] == _buttonsID[ButtonsEnum.User])
+                {
+                    OnUserEvent(0, message[2] == 0x7f);
+                }
+
                 else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Save], 0x7f))
                 {
                     OnSaveEvent();
@@ -578,9 +666,9 @@ namespace UI24RController.MIDIController
                 {
                     OnReplaceEvent();
                 }
-                else if ((message[0] == 0x90) && message[1] == _buttonsID[ButtonsEnum.Click])
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Click], 0x7f))
                 {
-                    OnClickEvent(0, message[2] == 0x7f);
+                    OnClickEvent();
                 }
                 else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Solo], 0x7f))
                 {
@@ -777,23 +865,47 @@ namespace UI24RController.MIDIController
             Send(new byte[] { 0x90, _buttonsID[buttonName], (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
         }
 
-        public void WriteTextToChannelLCD(int channelNumber, string text)
+        public void WriteTextToChannelLCD(int channelNumber, string text, int line = 0)
         {
             if (channelNumber < 8)
             {
                 text = Regex.Replace(text, @"[^\u0020-\u007E]", string.Empty);
 
-                var position = channelNumber * 7;
+                var position = channelNumber * 7 + line*56;
                 var message = ASCIIEncoding.ASCII.GetBytes((text + "       ").Substring(0, 7));
                 byte[] sysex = (new byte[] { 0xf0, 0, 0, 0x66, 0x14, 0x12, (byte)position }).Concat(message).Concat(new byte[] { 0xf7 }).ToArray();
                 Send(sysex, 0, sysex.Length, 0);
             }
         }
-        public void WriteTextToLCD( string text)
+        public void WriteTextToChannelLCDFirstLine(int channelNumber, string text)
+        {
+            WriteTextToChannelLCD(channelNumber, text, 0);
+        }
+        public void WriteTextToChannelLCDSecondLine(int channelNumber, string text)
+        {
+            WriteTextToChannelLCD(channelNumber, text, 1);
+        }
+        public void WriteTextToLCDSecondLine( string text)
         {
                 var message = ASCIIEncoding.ASCII.GetBytes((text + "                                                        ").Substring(0, 50));
                 byte[] sysex = (new byte[] { 0xf0, 0, 0, 0x66, 0x14, 0x12, 0x38 }).Concat(message).Concat(new byte[] { 0xf7 }).ToArray();
                 Send(sysex, 0, sysex.Length, 0);
+        }
+        public void WriteTextToLCDSecondLine(string text, int delay)
+        {
+            WriteTextToLCDSecondLine(text);
+            var guid = Guid.NewGuid();
+            _lcdTextSyncGuid = guid;
+            new Thread(() =>
+            {
+                Thread.Sleep(delay * 1000);
+                //if value change the other thread write back the last fader value
+                if (guid == _lcdTextSyncGuid)
+                {
+                    WriteTextToLCDSecondLine("");
+                }
+            }).Start();
+
         }
 
         private byte convertStringToDisplayBytes(string str, int poz = 0)
@@ -843,23 +955,6 @@ namespace UI24RController.MIDIController
         {
             WriteTextToMainDisplay(text, 0, 3);
         }
-
-        public void WriteTextToLCD(string text, int delay)
-        {
-            WriteTextToLCD(text);
-            var guid = Guid.NewGuid();
-            _lcdTextSyncGuid = guid;
-            new Thread(() =>
-            {
-                Thread.Sleep(delay*1000);
-                //if value change the other thread write back the last fader value
-                if (guid == _lcdTextSyncGuid)
-                {
-                    WriteTextToLCD("");
-                }
-            }).Start();
-
-        }
         public void WriteChannelMeter(int channelNumber, byte value)
         {
             if (channelNumber < 8)
@@ -893,6 +988,16 @@ namespace UI24RController.MIDIController
         public void TurnOffClipLed(int channelNumber)
         {
             Send(new byte[] { 0xd0, (byte)(channelNumber * 16 + 0x0f) }, 0, 2, 0);
+        }
+
+        public void InitializeController()
+        {
+            foreach (ButtonsEnum button in ButtonsEnum.GetValues(typeof(ButtonsEnum)))
+            {
+                SetLed(button, false);
+            }
+            WriteTextToMainDisplay("            ", 0, 12);
+            WriteTextToLCDSecondLine("");
         }
     }
 }

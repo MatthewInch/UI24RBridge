@@ -40,6 +40,17 @@ public interface IMIDIController
     event EventHandler<EventArgs> DisplayBtnEvent;
     event EventHandler<EventArgs> SmtpeBeatsBtnEvent;
 
+    event EventHandler<EventArgs> GlobalViewEvent;
+
+    event EventHandler<EventArgs> MidiTracksEvent;
+    event EventHandler<EventArgs> InputsEvent;
+    event EventHandler<EventArgs> AudioTracksEvent;
+    event EventHandler<EventArgs> AudioInstEvent;
+    event EventHandler<EventArgs> AuxBtnEvent;
+    event EventHandler<EventArgs> BusesBtnEvent;
+    event EventHandler<EventArgs> OutputsEvent;
+    event EventHandler<FunctionEventArgs> UserBtnEvent;
+
     event EventHandler<FunctionEventArgs> AuxButtonEvent;       //F1-F8
     event EventHandler<FunctionEventArgs> FxButtonEvent;        //Modify buttons
     event EventHandler<FunctionEventArgs> MuteGroupButtonEvent; //Automation buttons
@@ -54,7 +65,7 @@ public interface IMIDIController
     event EventHandler<EventArgs> CycleEvent;
     event EventHandler<EventArgs> DropEvent;
     event EventHandler<EventArgs> ReplaceEvent;
-    event EventHandler<FunctionEventArgs> ClickEvent;
+    event EventHandler<EventArgs> ClickEvent;
     event EventHandler<EventArgs> SoloEvent;
 
     event EventHandler<EventArgs> PrevEvent;
@@ -89,9 +100,11 @@ public interface IMIDIController
     void SetRecLed(int channelNumber, bool turnOn);
     void SetLed(ButtonsEnum buttonName, bool turnOn);
 
-    public void WriteTextToChannelLCD(int channelNumber, string text);
-    public void WriteTextToLCD(string text);
-    public void WriteTextToLCD(string text, int delay);
+    public void WriteTextToChannelLCD(int channelNumber, string text, int line);
+    public void WriteTextToChannelLCDFirstLine(int channelNumber, string text);
+    public void WriteTextToChannelLCDSecondLine(int channelNumber, string text);
+    public void WriteTextToLCDSecondLine(string text);
+    public void WriteTextToLCDSecondLine(string text, int delay);
 
     public void WriteTextToAssignmentDisplay(string text);
     public void WriteTextToMainDisplay(string text, int position, int maxChar = 1);
@@ -102,4 +115,6 @@ public interface IMIDIController
 
     void WriteChannelMeter(int channelNumber, byte value);
     void TurnOffClipLed(int channelNumber);
+
+    void InitializeController();
 }

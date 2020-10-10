@@ -1,6 +1,6 @@
 # UI24RBridge
 Bridge between the UI24R and a MIDI controller.\
-This is a beta project. It tested only in Windows, with Behringer BCF2000 and with Behringer X-Touch midi controller.
+This is a beta project. It tested only on Windows with Behringer X-Touch midi controller.
 
 You can download the latest release for
 - [Windows 32bit core](https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/win-x86-core.rar)
@@ -33,6 +33,7 @@ The earlier protocol has not been removed but the new functions only implemented
 		- Layer 4: VIEW 4 (if set)
 		- Layer 5: VIEW 5 (if set)
 		- Layer 6: VIEW 6 (if set)
+		- You have to select 8 channels per View group at least, otherwise the view group will be ignored
 	- Bank U (user defined layers, load from ViewGroups.json file, initially the same as Bank I)
 		- Layer 1: User defined
 		- Layer 2: User defined
@@ -40,26 +41,26 @@ The earlier protocol has not been removed but the new functions only implemented
 		- Layer 4: User defined
 		- Layer 5: User defined
 		- Layer 6: User defined
-	- You have to select 8 channels per view group at least otherwise the view group will be ignored
-	- Switch between Banks with Fader Bank << and >> buttons
-	- Switch between Layers in current Bank with Channel Bank << and >> buttons
- - The faders work on every type of channels
- - The knobs set the gain on the input channels
- - Select, Solo, Mute buttons work on every channel
- - Buttons F1-F8 switch to AUX1-8 sends
- - Button Switch, Option, Control and Alt switch to FX1-4 sends
- - Control Media player with <<, >>, Stop, Play buttons
- - Start Recording with Rec button
- - Scrub button to save Layer Bank U
- - SMTPE/Beats Button to Tap Tempo
- - Automation buttons (Read/Off, Write, Trim, Touch, Latch, Group) to control Mute Groups
- - Save button to Mute All
- - Undo button to Mute FX
- - Cancel button to Clear Mute
- - Enter button to Clear Solo
+		- If you want to edit user bank, select channel in user group, hold ***USER*** button and select new channel with JOG wheel while still holding ***USER*** button.
+	- Switch between Banks with ***Fader Bank <<*** and ***Fader Bank >>*** buttons
+	- Switch between Layers in current bank with ***Channel Bank <<*** and ***Channel Bank >>*** buttons
+ - The ***faders*** work on every type of channels
+ - The ***knobs*** set the gain on the input channels
+ - Channel ***Select***, ***Solo*** and ***Mute*** buttons work on every channel
+ - Channel ***Rec*** button sets either Mtk rec or Phantom 48V (selected in appsettings.json)
+ - Buttons ***F1-F8*** switch to AUX1-8 sends
+ - Button ***Switch***, ***Option***, ***Control*** and ***Alt*** switch to FX1-4 sends
+ - Control Media player with ***<<***, ***>>***, ***Stop***, ***Play*** buttons
+ - Start Recording with ***Rec*** button
+ - ***Global View*** button to save Layer Banks U
+ - ***SMTPE/Beats*** Button to Tap Tempo
+ - Automation buttons (***Read/Off***, ***Write***, ***Trim***, ***Touch***, ***Latch***, ***Group***) to control Mute Groups
+ - ***Save*** button to Mute All
+ - ***Undo*** button to Mute FX
+ - ***Cancel*** button to Clear Mute
+ - ***Enter*** button to Clear Solo
 
 ### Future functions
- - User configurable Layers in bank U with Rotary wheel
  - Pan, HPF, EQ, Dyn
 
 
@@ -82,8 +83,8 @@ In the settings file (**appsettings.json**):
     "MIDI-Output-Name": "X-Touch",\
     "Protocol": "MC",\
     "SyncID": "Abaliget",\
-    "DefaultRecButton": "2TrackAndMTK", //possible values: "onlyMTK", "only2Track", "2TrackAndMTK"; default is "2TrackAndMTK\
-    "DefaultChannelRecButton": "phantom", //possible values: "phantom","rec"; default is "rec\
+    "DefaultRecButton": "2TrackAndMTK", //possible values: "onlyMTK", "only2Track", "2TrackAndMTK"; default is "2TrackAndMTK"\
+    "DefaultChannelRecButton": "phantom", //possible values: "phantom","rec"; default is "rec"\
     "AuxButtonBehavior": "Lock", //possible values: "Release", "Lock"; Default is "Release"\
-    "DebugMessages": "true",\
+    "DebugMessages": "true"\
 }
