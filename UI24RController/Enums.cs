@@ -8,6 +8,7 @@ namespace UI24RController
     public enum ButtonsEnum
     {
         Track, Pan, Eq, Send, PlugIn, Instr, Display, Smtpe,
+        GlobalView, MidiTracks, Inputs, AudioTracks, AudioInst, AuxBtn, BusesBtn, Outputs, User,
         Aux1, Aux2, Aux3, Aux4, Aux5, Aux6, Aux7, Aux8,
         Fx1, Fx2, Fx3, Fx4,
         MuteGroup1, MuteGroup2, MuteGroup3, MuteGroup4, MuteGroup5, MuteGroup6,
