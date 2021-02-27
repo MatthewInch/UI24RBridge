@@ -739,9 +739,10 @@ namespace UI24RController.MIDIController
                     OnScrubEvent();
                 }
 
-                else if (message[0]== 0x90 && message[1]>=_buttonsID[ButtonsEnum.Aux1] && message[1] <= _buttonsID[ButtonsEnum.Aux8]) //F1-F8 press
+                else if (message[0]== 0x90 && ButtonsID.Instance.GetAuxButton(message[1]).isAux) //F1-F8 press
                 {
-                    OnAuxButtonEvent(message[1] - _buttonsID[ButtonsEnum.Aux1], message[2] == 0x7f);
+                    var auxNum = ButtonsID.Instance.GetAuxButton(message[1]).auxNum;
+                    OnAuxButtonEvent(auxNum, message[2] == 0x7f);
                 }
                 else if ((message[0] == 0x90) && ButtonsID.Instance.GetFxButton(message[1]).isFX)
                 {

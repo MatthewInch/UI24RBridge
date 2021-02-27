@@ -57,6 +57,7 @@ namespace UI24RController
             SendMessage("Start initialization...", false);
             InitializeChannels();
             InitializeViewGroupsFromConfig();
+            ButtonsID.Instance.ButtonsDictionary = settings.GetButtonsValues();
             SendMessage("Create controller events....", false);
             _settings.Controller.FaderEvent += _midiController_FaderEvent;
             _settings.Controller.BankUp += _midiController_BankUp;
