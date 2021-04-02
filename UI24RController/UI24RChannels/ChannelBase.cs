@@ -127,7 +127,7 @@ namespace UI24RController.UI24RChannels
 
         public virtual string SetFxValueMessage(SelectedLayoutEnum selectedLayout)
         {
-            int auxNumber = selectedLayout.AuxToInt();
+            int auxNumber = selectedLayout.FxToInt();
             return $"3:::SETD^{this.channelTypeID}.{this.ChannelNumber}.fx.{auxNumber}.value^{this.AuxSendValues[selectedLayout].ToString().Replace(',', '.')}";
         }
 

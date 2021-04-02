@@ -310,10 +310,10 @@ namespace UI24RController
         private void _midiController_FaderEvent(object sender, MIDIController.FaderEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber);
-            //if (_pressedFunctionButton == -1)
-            if (_selectedLayout == SelectedLayoutEnum.Channels)
-                {
-                    _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
+            //if (_pressedFunctionButton == -1) or it is a master fader
+            if ((_selectedLayout == SelectedLayoutEnum.Channels) || (_mixerChannels[ch] is MainChannel))
+            {
+                _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
                 _client.Send(_mixerChannels[ch].MixFaderMessage());
                 //if the channel is linked we have to set the other channel to the same value
                 if (_mixerChannels[ch] is IStereoLinkable)
