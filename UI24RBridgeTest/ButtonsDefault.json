@@ -60,6 +60,12 @@
     "Left": "0x62",
     "Right": "0x63",
     "Center": "0x64",
-    "Scrub": "0x65"
+    "Scrub": "0x65",
+
+    "Ch1Rec": "0x00",
+    "Ch1Solo": "0x08",
+    "Ch1Mute": "0x10",
+    "Ch1Select": "0x18"
+
   }
 }

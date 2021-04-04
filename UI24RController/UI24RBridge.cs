@@ -59,7 +59,15 @@ namespace UI24RController
             SendMessage("Start initialization...", false);
             InitializeChannels();
             InitializeViewGroupsFromConfig();
-            ButtonsID.Instance.ButtonsDictionary = settings.GetButtonsValues();
+            //get buttons value from settings file
+            var buttonSettingsFromFile = settings.GetButtonsValues(); 
+            //update initial values if in the settings file it overwrited
+            foreach (KeyValuePair<ButtonsEnum, byte> button in buttonSettingsFromFile)
+            {
+                ButtonsID.Instance.ButtonsDictionary[button.Key] = button.Value; 
+            }
+            
+             
             SendMessage("Create controller events....", false);
             _settings.Controller.FaderEvent += _midiController_FaderEvent;
             _settings.Controller.BankUp += _midiController_BankUp;

@@ -537,22 +537,22 @@ namespace UI24RController.MIDIController
                     }
                 }
 
-                else if (message[1] >= 0x10 && message[1] <= 0x17 && message[2] == 0x7f) //channel mute button
+                else if (message[1] >= _buttonsID[ButtonsEnum.Ch1Mute] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Mute] + 7) && message[2] == 0x7f) //channel mute button
                 {
                     byte channelNumber = (byte)(message[1] - 0x10);
                     OnChannelMuteEvent(channelNumber);
                 }
-                else if (message[1] >= 0x08 && message[1] <= 0x0f && message[2] == 0x7f) //channel solo button
+                else if (message[1] >= _buttonsID[ButtonsEnum.Ch1Solo] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Solo] + 7) && message[2] == 0x7f) //channel solo button
                 {
                     byte channelNumber = (byte)(message[1] - 0x08);
                     OnChannelSoloEvent(channelNumber);
                 }
-                else if (message[1] >= 0x00 && message[1] <= 0x07 && message[2] == 0x7f) //channel rec button
+                else if (message[1] >= _buttonsID[ButtonsEnum.Ch1Rec] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Rec] + 7) && message[2] == 0x7f) //channel rec button
                 {
                     byte channelNumber = (byte)(message[1]);
                     OnChannelRecEvent(channelNumber);
                 }
-                else if  (message[1] >= 0x18 && message[1] <= 0x1f && message[2] == 0x7f) //channel select button
+                else if  (message[1] >= _buttonsID[ButtonsEnum.Ch1Select] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Select] + 7) && message[2] == 0x7f) //channel select button
                 {
                     byte channelNumber = (byte)(message[1] - 0x18);
                     OnChannelSelectEvent(channelNumber);
@@ -999,10 +999,7 @@ namespace UI24RController.MIDIController
 
         public void InitializeController()
         {
-            foreach (ButtonsEnum button in ButtonsEnum.GetValues(typeof(ButtonsEnum)))
-            {
-                SetLed(button, false);
-            }
+
             WriteTextToMainDisplay("            ", 0, 12);
             WriteTextToLCDSecondLine("");
         }

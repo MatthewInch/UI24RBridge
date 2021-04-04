@@ -101,6 +101,13 @@ namespace UI24RController.MIDIController
             ButtonsDictionary.Add(ButtonsEnum.Center, 0x64);
 
             ButtonsDictionary.Add(ButtonsEnum.Scrub, 0x65);
+
+            ButtonsDictionary.Add(ButtonsEnum.Ch1Rec, 0x00);
+            ButtonsDictionary.Add(ButtonsEnum.Ch1Solo, 0x08);
+            ButtonsDictionary.Add(ButtonsEnum.Ch1Mute, 0x10);
+            ButtonsDictionary.Add(ButtonsEnum.Ch1Select, 0x18);
+            
+            //ButtonsDictionary.Add(ButtonsEnum.Ch1Knob, 0x18);
         }
 
         public Dictionary<ButtonsEnum, byte> GetButtonsDictionary()
