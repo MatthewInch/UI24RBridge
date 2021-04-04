@@ -49,6 +49,7 @@ namespace UI24RController.MIDIController
 
         protected ButtonsID _buttonsID = ButtonsID.Instance;
         public bool IsConnectionErrorOccured { get => _isConnectionErrorOccured; }
+        public bool IsConnected { get => _isConnected; }
 
         public event EventHandler<MessageEventArgs> MessageReceived;
         public event EventHandler<EventArgs> ConnectionErrorEvent;
@@ -369,9 +370,24 @@ namespace UI24RController.MIDIController
             ScrubEvent?.Invoke(this, new EventArgs());
         }
 
+        protected void OnConnectionErrorEvent()
+        {
+            if (ConnectionErrorEvent != null )
+            {
+                _isConnectionErrorOccured = true;
+                _isConnected = false;
+                ConnectionErrorEvent(this, new EventArgs());
+            }
+        }
+
         public void Dispose()
         {
             _isConnected = false;
+            if (_pingThread != null)
+            {
+                //stop the pinging thread
+                _isConnectionErrorOccured = true;
+            }
             if (_input != null)
             {
                 _input.Dispose();
@@ -382,11 +398,7 @@ namespace UI24RController.MIDIController
                 _output.Dispose();
                 _output = null;
             }
-            if (_pingThread != null)
-            {
-                //stop the pinging thread
-                _isConnectionErrorOccured = true;
-            }
+           
         }
 
         public  bool ConnectInputDevice(string deviceName)
@@ -398,7 +410,9 @@ namespace UI24RController.MIDIController
                 var deviceNumber = access.Inputs.Where(i => i.Name.ToUpper() == deviceName.ToUpper()).FirstOrDefault();
                 if (deviceNumber != null)
                 {
-                    _input = access.OpenInputAsync(deviceNumber.Id).Result;
+                    
+                    var input = access.OpenInputAsync(deviceNumber.Id).Result;
+                    _input = input;
                     _inputDeviceNumber = deviceNumber.Id;
                     _input.MessageReceived += (obj, e) =>
                     {
@@ -412,7 +426,7 @@ namespace UI24RController.MIDIController
                 }
                 else
                 {
-                    _isConnectionErrorOccured = true;
+                    //_isConnectionErrorOccured = true;
                     return false;
                 }
             }
@@ -431,8 +445,9 @@ namespace UI24RController.MIDIController
                 var deviceNumber = access.Outputs.Where(i => i.Name.ToUpper() == deviceName.ToUpper()).FirstOrDefault();
                 if (deviceNumber != null)
                 {
-                    _output = access.OpenOutputAsync(deviceNumber.Id).Result;
+                    var output = access.OpenOutputAsync(deviceNumber.Id).Result;
                     _outputDeviceNumber = Convert.ToInt32(deviceNumber.Id);
+                    _output = output;
                     _isConnected = true;
                     _isConnectionErrorOccured = false;
                     StartPingThread();
@@ -440,17 +455,12 @@ namespace UI24RController.MIDIController
                 }
                 else
                 {
-                    _isConnectionErrorOccured = true;
+                    //_isConnectionErrorOccured = true;
                 }
             }
             catch (Exception ex)
             {
                 OnMessageReceived($"Output device connection error. ({ex.Message})");
-                if (ConnectionErrorEvent != null && !_isConnectionErrorOccured)
-                {
-                    _isConnectionErrorOccured = true;
-                    ConnectionErrorEvent(this, new EventArgs());
-                }
             }
             return false;
         }
@@ -499,12 +509,8 @@ namespace UI24RController.MIDIController
                 }
             }
             catch 
-            { 
-                if (ConnectionErrorEvent != null && !_isConnectionErrorOccured)
-                {
-                    _isConnectionErrorOccured = true;
-                    ConnectionErrorEvent(this, new EventArgs());
-                }
+            {
+                OnConnectionErrorEvent();
             }
         }
         private void ProcessMidiMessage(MidiReceivedEventArgs e)
