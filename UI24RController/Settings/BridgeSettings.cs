@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using UI24RController.Settings.Helper;
 
 namespace UI24RController
 {
@@ -31,6 +35,7 @@ namespace UI24RController
         public RecButtonBehaviorEnum RecButtonBehavior { get; set; }
         public ChannelRecButtonBehaviorEnum ChannelRecButtonBehavior { get; set; }
         public AuxButtonBehaviorEnum AuxButtonBehavior { get; set; }
+        public string ButtonsValuesFileName { get; set; } 
 
         public BridgeSettings(string address, IMIDIController controller, Action<string, bool> messageWriter) 
             : this(address, controller, messageWriter, "SYNC_ID", RecButtonBehaviorEnum.TwoTrackAndMTK, ChannelRecButtonBehaviorEnum.Rec)
@@ -62,6 +67,19 @@ namespace UI24RController
             this.RecButtonBehavior = recButtonBehavior;
             this.ChannelRecButtonBehavior = channelRecButtonBehavior;
             this.AuxButtonBehavior = AuxButtonBehaviorEnum.Release;
+            this.ButtonsValuesFileName = "ButtonsDefault.json";
+        }
+        protected class DictionarySerializerClass
+        {
+            [JsonConverter(typeof(DictionaryTKeyEnumTValueConverter))]
+            public Dictionary<ButtonsEnum, byte> ButtonsDictionary { get; set; }
+        }
+        public Dictionary<ButtonsEnum, byte> GetButtonsValues()
+        {
+            var jsonText = File.ReadAllText(this.ButtonsValuesFileName);
+            var outObject = JsonSerializer.Deserialize(jsonText, typeof(DictionarySerializerClass));
+            Dictionary<ButtonsEnum, byte> result = (outObject as DictionarySerializerClass).ButtonsDictionary;
+            return result;
         }
 
     }

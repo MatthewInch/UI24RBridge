@@ -1,14 +1,46 @@
 ﻿using Commons.Music.Midi;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using UI24RController;
+using UI24RController.MIDIController;
+using UI24RController.Settings.Helper;
 
 namespace MidiTest
 {
     class Program
     {
         static void Main(string[] args)
+        {
+            //MidiConnectionTest();
+            SerializationTest();
+        }
+
+        protected class SerializerTest
+        {
+            [JsonConverter(typeof(DictionaryTKeyEnumTValueConverter))]
+            public Dictionary<ButtonsEnum, byte> ButtonsDictionary { get; set; }
+        }
+
+        private static void SerializationTest()
+        {
+            ButtonsID buttonsID = ButtonsID.Instance;
+
+            var dictionary = buttonsID.GetButtonsDictionary();
+            var test = new SerializerTest();
+            test.ButtonsDictionary = dictionary;
+
+            string json = JsonSerializer.Serialize(test);
+            File.WriteAllText("ButtonsConfig.json", json);
+
+            var testin = JsonSerializer.Deserialize(json, typeof(SerializerTest));
+        }
+
+        private static void MidiConnectionTest()
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
@@ -23,13 +55,13 @@ namespace MidiTest
 
             var access = MidiAccessManager.Default;
             var deviceNumber = access.Outputs.Where(i => i.Name.ToUpper() == midiOutputDevice.ToUpper()).FirstOrDefault();
-           
+
             var output = access.OpenOutputAsync(deviceNumber.Id).Result;
 
             deviceNumber = access.Inputs.Where(i => i.Name.ToUpper() == midiInputDevice.ToUpper()).FirstOrDefault();
             var input = access.OpenInputAsync(deviceNumber.Id).Result;
             input.MessageReceived += Input_MessageReceived;
-            
+
 
             var ch = Console.ReadKey();
             bool lastValue = false;
@@ -47,8 +79,8 @@ namespace MidiTest
                     isrunning = ch.KeyChar != ' ';
                 }
             }
-
         }
+
 
         private static void Input_MessageReceived(object sender, MidiReceivedEventArgs e)
         {

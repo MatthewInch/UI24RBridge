@@ -17,7 +17,9 @@ namespace UI24RController
         PlayPrev, PlayNext, Play, Rec, Stop,
         FaderBankUp, FaderBankDown, ChannelUp, ChannelDown,
         Up, Down, Left, Right, Center,
-        Scrub
+        Scrub,
+        //channel buttons
+        Ch1Rec,Ch1Solo,Ch1Mute,Ch1Select,Ch1Knob
     }
 
     public enum ViewTypeEnum

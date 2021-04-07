@@ -49,6 +49,7 @@ namespace UI24RController.MIDIController
 
         protected ButtonsID _buttonsID = ButtonsID.Instance;
         public bool IsConnectionErrorOccured { get => _isConnectionErrorOccured; }
+        public bool IsConnected { get => _isConnected; }
 
         public event EventHandler<MessageEventArgs> MessageReceived;
         public event EventHandler<EventArgs> ConnectionErrorEvent;
@@ -369,9 +370,24 @@ namespace UI24RController.MIDIController
             ScrubEvent?.Invoke(this, new EventArgs());
         }
 
+        protected void OnConnectionErrorEvent()
+        {
+            if (ConnectionErrorEvent != null )
+            {
+                _isConnectionErrorOccured = true;
+                _isConnected = false;
+                ConnectionErrorEvent(this, new EventArgs());
+            }
+        }
+
         public void Dispose()
         {
             _isConnected = false;
+            if (_pingThread != null)
+            {
+                //stop the pinging thread
+                _isConnectionErrorOccured = true;
+            }
             if (_input != null)
             {
                 _input.Dispose();
@@ -382,11 +398,7 @@ namespace UI24RController.MIDIController
                 _output.Dispose();
                 _output = null;
             }
-            if (_pingThread != null)
-            {
-                //stop the pinging thread
-                _isConnectionErrorOccured = true;
-            }
+           
         }
 
         public  bool ConnectInputDevice(string deviceName)
@@ -398,7 +410,9 @@ namespace UI24RController.MIDIController
                 var deviceNumber = access.Inputs.Where(i => i.Name.ToUpper() == deviceName.ToUpper()).FirstOrDefault();
                 if (deviceNumber != null)
                 {
-                    _input = access.OpenInputAsync(deviceNumber.Id).Result;
+                    
+                    var input = access.OpenInputAsync(deviceNumber.Id).Result;
+                    _input = input;
                     _inputDeviceNumber = deviceNumber.Id;
                     _input.MessageReceived += (obj, e) =>
                     {
@@ -412,7 +426,7 @@ namespace UI24RController.MIDIController
                 }
                 else
                 {
-                    _isConnectionErrorOccured = true;
+                    //_isConnectionErrorOccured = true;
                     return false;
                 }
             }
@@ -431,8 +445,9 @@ namespace UI24RController.MIDIController
                 var deviceNumber = access.Outputs.Where(i => i.Name.ToUpper() == deviceName.ToUpper()).FirstOrDefault();
                 if (deviceNumber != null)
                 {
-                    _output = access.OpenOutputAsync(deviceNumber.Id).Result;
+                    var output = access.OpenOutputAsync(deviceNumber.Id).Result;
                     _outputDeviceNumber = Convert.ToInt32(deviceNumber.Id);
+                    _output = output;
                     _isConnected = true;
                     _isConnectionErrorOccured = false;
                     StartPingThread();
@@ -440,17 +455,12 @@ namespace UI24RController.MIDIController
                 }
                 else
                 {
-                    _isConnectionErrorOccured = true;
+                    //_isConnectionErrorOccured = true;
                 }
             }
             catch (Exception ex)
             {
                 OnMessageReceived($"Output device connection error. ({ex.Message})");
-                if (ConnectionErrorEvent != null && !_isConnectionErrorOccured)
-                {
-                    _isConnectionErrorOccured = true;
-                    ConnectionErrorEvent(this, new EventArgs());
-                }
             }
             return false;
         }
@@ -499,12 +509,8 @@ namespace UI24RController.MIDIController
                 }
             }
             catch 
-            { 
-                if (ConnectionErrorEvent != null && !_isConnectionErrorOccured)
-                {
-                    _isConnectionErrorOccured = true;
-                    ConnectionErrorEvent(this, new EventArgs());
-                }
+            {
+                OnConnectionErrorEvent();
             }
         }
         private void ProcessMidiMessage(MidiReceivedEventArgs e)
@@ -531,22 +537,22 @@ namespace UI24RController.MIDIController
                     }
                 }
 
-                else if (message[1] >= 0x10 && message[1] <= 0x17 && message[2] == 0x7f) //channel mute button
+                else if (message[1] >= _buttonsID[ButtonsEnum.Ch1Mute] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Mute] + 7) && message[2] == 0x7f) //channel mute button
                 {
                     byte channelNumber = (byte)(message[1] - 0x10);
                     OnChannelMuteEvent(channelNumber);
                 }
-                else if (message[1] >= 0x08 && message[1] <= 0x0f && message[2] == 0x7f) //channel solo button
+                else if (message[1] >= _buttonsID[ButtonsEnum.Ch1Solo] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Solo] + 7) && message[2] == 0x7f) //channel solo button
                 {
                     byte channelNumber = (byte)(message[1] - 0x08);
                     OnChannelSoloEvent(channelNumber);
                 }
-                else if (message[1] >= 0x00 && message[1] <= 0x07 && message[2] == 0x7f) //channel rec button
+                else if (message[1] >= _buttonsID[ButtonsEnum.Ch1Rec] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Rec] + 7) && message[2] == 0x7f) //channel rec button
                 {
                     byte channelNumber = (byte)(message[1]);
                     OnChannelRecEvent(channelNumber);
                 }
-                else if  (message[1] >= 0x18 && message[1] <= 0x1f && message[2] == 0x7f) //channel select button
+                else if  (message[1] >= _buttonsID[ButtonsEnum.Ch1Select] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Select] + 7) && message[2] == 0x7f) //channel select button
                 {
                     byte channelNumber = (byte)(message[1] - 0x18);
                     OnChannelSelectEvent(channelNumber);
@@ -739,9 +745,10 @@ namespace UI24RController.MIDIController
                     OnScrubEvent();
                 }
 
-                else if (message[0]== 0x90 && message[1]>=_buttonsID[ButtonsEnum.Aux1] && message[1] <= _buttonsID[ButtonsEnum.Aux8]) //F1-F8 press
+                else if (message[0]== 0x90 && ButtonsID.Instance.GetAuxButton(message[1]).isAux) //F1-F8 press
                 {
-                    OnAuxButtonEvent(message[1] - _buttonsID[ButtonsEnum.Aux1], message[2] == 0x7f);
+                    var auxNum = ButtonsID.Instance.GetAuxButton(message[1]).auxNum;
+                    OnAuxButtonEvent(auxNum, message[2] == 0x7f);
                 }
                 else if ((message[0] == 0x90) && ButtonsID.Instance.GetFxButton(message[1]).isFX)
                 {
@@ -992,10 +999,7 @@ namespace UI24RController.MIDIController
 
         public void InitializeController()
         {
-            foreach (ButtonsEnum button in ButtonsEnum.GetValues(typeof(ButtonsEnum)))
-            {
-                SetLed(button, false);
-            }
+
             WriteTextToMainDisplay("            ", 0, 12);
             WriteTextToLCDSecondLine("");
         }

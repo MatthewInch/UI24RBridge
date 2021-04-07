@@ -27,6 +27,8 @@ namespace UI24RController
         protected int _selectedChannel = -1; //-1 = no selected channel
         //protected int _pressedFunctionButton = -1; //-1 = no pressed button
         protected SelectedLayoutEnum _selectedLayout = SelectedLayoutEnum.Channels;
+
+        protected bool _isReconnecting = false;
  
         /// <summary>
         /// Represent the UI24R mixer state
@@ -57,6 +59,15 @@ namespace UI24RController
             SendMessage("Start initialization...", false);
             InitializeChannels();
             InitializeViewGroupsFromConfig();
+            //get buttons value from settings file
+            var buttonSettingsFromFile = settings.GetButtonsValues(); 
+            //update initial values if in the settings file it overwrited
+            foreach (KeyValuePair<ButtonsEnum, byte> button in buttonSettingsFromFile)
+            {
+                ButtonsID.Instance.ButtonsDictionary[button.Key] = button.Value; 
+            }
+            
+             
             SendMessage("Create controller events....", false);
             _settings.Controller.FaderEvent += _midiController_FaderEvent;
             _settings.Controller.BankUp += _midiController_BankUp;
@@ -86,7 +97,7 @@ namespace UI24RController
             _settings.Controller.ConnectionErrorEvent += _midiController_ConnectionErrorEvent;
             _settings.Controller.AuxButtonEvent += _midiController_AuxButtonEvent;
             _settings.Controller.FxButtonEvent += Controller_FXButtonEvent;
-            if (_settings.Controller.IsConnectionErrorOccured)
+             if (!_settings.Controller.IsConnected)
             {
                 _midiController_ConnectionErrorEvent(this, null);
             }
@@ -107,17 +118,27 @@ namespace UI24RController
         {
             SendMessage("Midi controller connection error.", false);
             SendMessage("Try to reconnect....", false);
-            new Thread(() =>
+            if (!_isReconnecting)
             {
-                while (!_settings.Controller.ReConnectDevice())
+                new Thread(() =>
                 {
-                    Thread.Sleep(100);
-                }
+                    _isReconnecting = true;
+                    while (_isReconnecting && !_settings.Controller.ReConnectDevice())
+                    {
+                        Thread.Sleep(100);
+                    }
 
-                SetControllerToCurrentLayerAndSend();
-                SetStateLedsOnController();
-                SendMessage("Midi controller reconnected.", false);
-            }).Start();
+                    SetControllerToCurrentLayerAndSend();
+                    SetStateLedsOnController();
+
+                    SendMessage("Midi controller reconnected.", false);
+                    _isReconnecting = false;
+                }).Start();
+            }
+            else
+            {
+                SendMessage("Reconnection state is true...");
+            }
         }
         private void WebsocketReconnectionHappened(ReconnectionInfo info)
         {
@@ -285,34 +306,30 @@ namespace UI24RController
         {
             _mixer.setLayerDown();
             SetControllerToCurrentLayerAndSend();
-            _settings.Controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
         }
         private void _midiController_LayerUp(object sender, EventArgs e)
         {
             _mixer.setLayerUp();
             SetControllerToCurrentLayerAndSend();
-            _settings.Controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
         }
         private void _midiController_BankDown(object sender, EventArgs e)
         {
             _mixer.setBankDown();
             SetControllerToCurrentLayerAndSend();
-            _settings.Controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
         }
         private void _midiController_BankUp(object sender, EventArgs e)
         {
             _mixer.setBankUp();
             SetControllerToCurrentLayerAndSend();
-            _settings.Controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
         }
 
         private void _midiController_FaderEvent(object sender, MIDIController.FaderEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber);
-            //if (_pressedFunctionButton == -1)
-            if (_selectedLayout == SelectedLayoutEnum.Channels)
-                {
-                    _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
+            //if (_pressedFunctionButton == -1) or it is a master fader
+            if ((_selectedLayout == SelectedLayoutEnum.Channels) || (_mixerChannels[ch] is MainChannel))
+            {
+                _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
                 _client.Send(_mixerChannels[ch].MixFaderMessage());
                 //if the channel is linked we have to set the other channel to the same value
                 if (_mixerChannels[ch] is IStereoLinkable)
@@ -728,10 +745,23 @@ namespace UI24RController
             {
                 SetControllerChannelToCurrentLayerAndSend(ch.Channel, ch.controllerChannelNumber);
             }
+            _settings.Controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
         }
         private void SetStateLedsOnController()
         {
             _settings.Controller.SetLed(ButtonsEnum.Rec, _mixer.IsMultitrackRecordingRun || _mixer.IsTwoTrackRecordingRun);
+            SetMuteGroupsLeds();
+            if (_selectedLayout.IsAux())
+            {
+                _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
+                _settings.Controller.WriteTextToBarsDisplay("AX" + (_selectedLayout.AuxToInt() + 1).ToString());
+            } 
+            else if (_selectedLayout.IsFx())
+            {
+                _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
+                _settings.Controller.WriteTextToBarsDisplay("FX" + (_selectedLayout.FxToInt() + 1).ToString());
+            }
+                
         }
         protected (int, bool) GetControllerChannel(int ch)
         {

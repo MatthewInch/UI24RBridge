@@ -1,21 +1,12 @@
 # UI24RBridge
 Bridge between the UI24R and a MIDI controller.\
-This is a beta project. It tested only on Windows with Behringer X-Touch midi controller.
+This is a beta project. It tested only on Windows with Behringer X-Touch MIDI controller.
 
-You can download the latest release for
-- [Windows 32bit core](https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/win-x86-core.rar)
-- [Windows 32bit](https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/win-x86.rar)
-- [Windows 64bit](https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/win-x64.rar)
-- [Linux 32bit](https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/linux-x86.rar)
-- [Linux 64bit](https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/linux-x64.rar)
-- [MacOS](https://github.com/MatthewInch/UI24RBridge/blob/master/UI24RBridgeTest/Publish/MacOS.rar)
-
+You can download the [latest release here](https://github.com/MatthewInch/UI24RBridge/releases/latest).
 The Linux and MacOS binaries wasn't tested.
 
 Implemented the Mackie Control protocol (It can work with any DAW controller that can use in MC mode).\
 The earlier protocol has not been removed but the new functions only implemented in MC mode.
-
-
 
 ### The Bridge functionalities:
  - Use 2 groups with 6 layers of faders for each bank

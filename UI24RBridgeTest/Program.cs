@@ -24,6 +24,7 @@ namespace UI24RBridgeTest
             var recButtonBahavior = configuration["DefaultRecButton"];
             var channelRecButtonBahavior = configuration["DefaultChannelRecButton"];
             var auxButtonBehavior = configuration["AuxButtonBehavior"];
+            var buttonsValues = configuration["PrimaryButtons"];
             //var controller = new BehringerUniversalMIDI();
             var controller = MIDIControllerFactory.GetMidiController(protocol);
             
@@ -122,6 +123,10 @@ namespace UI24RBridgeTest
                             settings.AuxButtonBehavior = BridgeSettings.AuxButtonBehaviorEnum.Release;
                             break;
                     }
+                }
+                if (buttonsValues != null)
+                {
+                    settings.ButtonsValuesFileName = buttonsValues;
                 }
                 using (UI24RBridge bridge = new UI24RBridge(settings))
                 {

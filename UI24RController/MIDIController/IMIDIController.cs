@@ -14,6 +14,7 @@ public interface IMIDIController
     bool ReConnectDevice();
 
     bool IsConnectionErrorOccured { get; }
+    bool IsConnected { get; }
 
     event EventHandler<EventArgs> ConnectionErrorEvent;
 
