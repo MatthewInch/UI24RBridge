@@ -33,6 +33,7 @@ The earlier protocol has not been removed but the new functions only implemented
 		- Layer 5: User defined
 		- Layer 6: User defined
 		- If you want to edit user bank, select channel in user group, hold ***USER*** button and select new channel with JOG wheel while still holding ***USER*** button.
+		- Changes must be saved with ***Global View*** button, otherwise changes will be discarted on app restart
 	- Switch between Banks with ***Fader Bank <<*** and ***Fader Bank >>*** buttons
 	- Switch between Layers in current bank with ***Channel Bank <<*** and ***Channel Bank >>*** buttons
  - The ***faders*** work on every type of channels
