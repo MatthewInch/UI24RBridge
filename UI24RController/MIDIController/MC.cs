@@ -539,27 +539,26 @@ namespace UI24RController.MIDIController
 
                 else if (message[1] >= _buttonsID[ButtonsEnum.Ch1Mute] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Mute] + 7) && message[2] == 0x7f) //channel mute button
                 {
-                    byte channelNumber = (byte)(message[1] - 0x10);
+                    byte channelNumber = (byte)(message[1] - _buttonsID[ButtonsEnum.Ch1Mute]);
                     OnChannelMuteEvent(channelNumber);
                 }
                 else if (message[1] >= _buttonsID[ButtonsEnum.Ch1Solo] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Solo] + 7) && message[2] == 0x7f) //channel solo button
                 {
-                    byte channelNumber = (byte)(message[1] - 0x08);
+                    byte channelNumber = (byte)(message[1] - _buttonsID[ButtonsEnum.Ch1Solo]);
                     OnChannelSoloEvent(channelNumber);
                 }
                 else if (message[1] >= _buttonsID[ButtonsEnum.Ch1Rec] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Rec] + 7) && message[2] == 0x7f) //channel rec button
                 {
-                    byte channelNumber = (byte)(message[1]);
+                    byte channelNumber = (byte)(message[1]- _buttonsID[ButtonsEnum.Ch1Rec]);
                     OnChannelRecEvent(channelNumber);
                 }
                 else if  (message[1] >= _buttonsID[ButtonsEnum.Ch1Select] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Select] + 7) && message[2] == 0x7f) //channel select button
                 {
-                    byte channelNumber = (byte)(message[1] - 0x18);
+                    byte channelNumber = (byte)(message[1] - _buttonsID[ButtonsEnum.Ch1Select]);
                     OnChannelSelectEvent(channelNumber);
                 }
                 else if (message.MIDIEqual(0x90, 0x32, 0x7f)) //main select button
                 {
-                    byte channelNumber = (byte)(message[1] - 0x18);
                     OnChannelSelectEvent(8);
                 }
 
@@ -843,28 +842,28 @@ namespace UI24RController.MIDIController
             //turn off all select led and on in the current channel (channel 8 is 0x32 the main channel)
             for (byte i = 0; i < 9; i++)
             {
-                Send(new byte[] { 0x90, (byte)(i==8? 0x32 : 0x18 + i), (byte)((i==channelNumber && turnOn)? 0x7f : 0x00) }, 0, 3, 0);
+                Send(new byte[] { 0x90, (byte)(i==8? 0x32 : _buttonsID[ButtonsEnum.Ch1Select] + i), (byte)((i==channelNumber && turnOn)? 0x7f : 0x00) }, 0, 3, 0);
             }
         }
         public void SetMuteLed(int channelNumber, bool turnOn)
         {
             if (channelNumber < 8)
             {
-                Send(new byte[] { 0x90, (byte)(0x10 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+                Send(new byte[] { 0x90, (byte)(_buttonsID[ButtonsEnum.Ch1Mute] + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
             }
         }
         public void SetSoloLed(int channelNumber, bool turnOn)
         {
             if (channelNumber < 8)
             {
-                Send(new byte[] { 0x90, (byte)(0x08 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+                Send(new byte[] { 0x90, (byte)(_buttonsID[ButtonsEnum.Ch1Solo] + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
             }
         }
         public void SetRecLed(int channelNumber, bool turnOn)
         {
             if (channelNumber < 8)
             {
-                Send(new byte[] { 0x90, (byte)(0x00 + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+                Send(new byte[] { 0x90, (byte)(_buttonsID[ButtonsEnum.Ch1Rec] + channelNumber), (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
             }
         }
         public void SetLed(ButtonsEnum buttonName, bool turnOn)
