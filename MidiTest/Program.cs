@@ -1,46 +1,14 @@
 ﻿using Commons.Music.Midi;
 using Microsoft.Extensions.Configuration;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using UI24RController;
-using UI24RController.MIDIController;
-using UI24RController.Settings.Helper;
 
 namespace MidiTest
 {
     class Program
     {
         static void Main(string[] args)
-        {
-            //MidiConnectionTest();
-            SerializationTest();
-        }
-
-        protected class SerializerTest
-        {
-            [JsonConverter(typeof(DictionaryTKeyEnumTValueConverter))]
-            public Dictionary<ButtonsEnum, byte> ButtonsDictionary { get; set; }
-        }
-
-        private static void SerializationTest()
-        {
-            ButtonsID buttonsID = ButtonsID.Instance;
-
-            var dictionary = buttonsID.GetButtonsDictionary();
-            var test = new SerializerTest();
-            test.ButtonsDictionary = dictionary;
-
-            string json = JsonSerializer.Serialize(test);
-            File.WriteAllText("ButtonsConfig.json", json);
-
-            var testin = JsonSerializer.Deserialize(json, typeof(SerializerTest));
-        }
-
-        private static void MidiConnectionTest()
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
@@ -79,14 +47,14 @@ namespace MidiTest
                     isrunning = ch.KeyChar != ' ';
                 }
             }
-        }
 
+        }
 
         private static void Input_MessageReceived(object sender, MidiReceivedEventArgs e)
         {
             if (e.Data.Length > 2)
             {
-                //Console.WriteLine($"{e.Data[0].ToString("x2")} - {e.Data[1].ToString("x2")} - {e.Data[2].ToString("x2")}");
+                Console.WriteLine($"{e.Data[0].ToString("x2")} - {e.Data[1].ToString("x2")} - {e.Data[2].ToString("x2")}");
             }
         }
     }
