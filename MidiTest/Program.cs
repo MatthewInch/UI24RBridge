@@ -1,4 +1,4 @@
-﻿using Commons.Music.Midi;
+﻿using Melanchall.DryWetMidi.Devices;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
@@ -21,41 +21,60 @@ namespace MidiTest
             var syncID = configuration["SyncID"];
             var viewDebugMessage = configuration["DebugMessages"] == "true";
 
-            var access = MidiAccessManager.Default;
-            var deviceNumber = access.Outputs.Where(i => i.Name.ToUpper() == midiOutputDevice.ToUpper()).FirstOrDefault();
+            IInputDevice input = InputDevice.GetByName(midiInputDevice);
+            input.EventReceived += Input_EventReceived;
+            input.StartEventsListening();
 
-            var output = access.OpenOutputAsync(deviceNumber.Id).Result;
-
-            deviceNumber = access.Inputs.Where(i => i.Name.ToUpper() == midiInputDevice.ToUpper()).FirstOrDefault();
-            var input = access.OpenInputAsync(deviceNumber.Id).Result;
-            input.MessageReceived += Input_MessageReceived;
-
-
-            var ch = Console.ReadKey();
-            bool lastValue = false;
             bool isrunning = true;
-            byte modulus = 0;
             while (isrunning)
             {
                 if (Console.KeyAvailable)
                 {
-                    modulus = (byte)((modulus + 1) % 16);
-                    Console.Write($" {modulus}");
-                    output.Send(new byte[] { 0xD0, modulus }, 0, 2, 0);
-                    lastValue = !lastValue;
-                    ch = Console.ReadKey();
-                    isrunning = ch.KeyChar != ' ';
+                    isrunning = false;
                 }
             }
 
+
+            //var access = MidiAccessManager.Default;
+            //var deviceNumber = access.Outputs.Where(i => i.Name.ToUpper() == midiOutputDevice.ToUpper()).FirstOrDefault();
+
+            //var output = access.OpenOutputAsync(deviceNumber.Id).Result;
+
+            //deviceNumber = access.Inputs.Where(i => i.Name.ToUpper() == midiInputDevice.ToUpper()).FirstOrDefault();
+            //var input = access.OpenInputAsync(deviceNumber.Id).Result;
+            //input.MessageReceived += Input_MessageReceived;
+
+
+            //var ch = Console.ReadKey();
+            //bool lastValue = false;
+            //bool isrunning = true;
+            //byte modulus = 0;
+            //while (isrunning)
+            //{
+            //    if (Console.KeyAvailable)
+            //    {
+            //        modulus = (byte)((modulus + 1) % 16);
+            //        Console.Write($" {modulus}");
+            //        output.Send(new byte[] { 0xD0, modulus }, 0, 2, 0);
+            //        lastValue = !lastValue;
+            //        ch = Console.ReadKey();
+            //        isrunning = ch.KeyChar != ' ';
+            //    }
+            //}
+
         }
 
-        private static void Input_MessageReceived(object sender, MidiReceivedEventArgs e)
+        private static void Input_EventReceived(object sender, MidiEventReceivedEventArgs e)
         {
-            if (e.Data.Length > 2)
-            {
-                Console.WriteLine($"{e.Data[0].ToString("x2")} - {e.Data[1].ToString("x2")} - {e.Data[2].ToString("x2")}");
-            }
+            Console.WriteLine(e.Event);
         }
+
+        //private static void Input_MessageReceived(object sender, MidiReceivedEventArgs e)
+        //{
+        //    if (e.Data.Length > 2)
+        //    {
+        //        Console.WriteLine($"{e.Data[0].ToString("x2")} - {e.Data[1].ToString("x2")} - {e.Data[2].ToString("x2")}");
+        //    }
+        //}
     }
 }
