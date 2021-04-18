@@ -39,7 +39,7 @@ namespace UI24RController.MIDIController
         protected string _inputDeviceNumber;
         protected string _inputDeviceName;
         IMidiOutput _output = null;
-        protected int _outputDeviceNumber;
+        protected string _outputDeviceNumber;
         protected string _outputDeviceName;
         protected Guid _lcdTextSyncGuid = Guid.NewGuid();
         protected bool _isConnected = false;
@@ -446,7 +446,7 @@ namespace UI24RController.MIDIController
                 if (deviceNumber != null)
                 {
                     var output = access.OpenOutputAsync(deviceNumber.Id).Result;
-                    _outputDeviceNumber = Convert.ToInt32(deviceNumber.Id);
+                    _outputDeviceNumber = deviceNumber.Id;
                     _output = output;
                     _isConnected = true;
                     _isConnectionErrorOccured = false;
