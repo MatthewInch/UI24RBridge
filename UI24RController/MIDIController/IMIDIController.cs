@@ -117,5 +117,5 @@ public interface IMIDIController
     void WriteChannelMeter(int channelNumber, byte value);
     void TurnOffClipLed(int channelNumber);
 
-    void InitializeController();
+    void InitializeController(IControllerSettings settings=null);
 }

@@ -18,6 +18,12 @@ namespace UI24RBridgeTest
             var address = configuration["UI24R-Url"];
             var midiInputDevice = configuration["MIDI-Input-Name"];
             var midiOutputDevice = configuration["MIDI-Output-Name"];
+            var secondaryMidiInputDevice = configuration["MIDI-Input-Name-Second"];
+            var secondaryMidiOutputDevice = configuration["MIDI-Output-Name-Second"];
+            var primaryIsExtender = configuration["PrimaryIsExtender"] == "true";
+            var secondaryIsExtender = configuration["SecondaryIsExtender"] == "true";
+            var primaryChannelStart = configuration["PrimaryChannelStart"];
+            var secondaryChannelStart = configuration["SecondaryChannelStart"];
             var protocol = configuration["Protocol"];
             var syncID = configuration["SyncID"];
             var viewDebugMessage = configuration["DebugMessages"] == "true";
@@ -27,6 +33,11 @@ namespace UI24RBridgeTest
             var buttonsValues = configuration["PrimaryButtons"];
             //var controller = new BehringerUniversalMIDI();
             var controller = MIDIControllerFactory.GetMidiController(protocol);
+            IMIDIController controllerSecond = null;
+            if (secondaryMidiInputDevice != null)
+            {
+                controllerSecond = MIDIControllerFactory.GetMidiController(protocol);
+            }
             
             if (args.Length > 0)
                 WriteMIDIDeviceNames(controller);
@@ -57,6 +68,15 @@ namespace UI24RBridgeTest
                     Console.WriteLine("Connect output device...");
                     controller.ConnectOutputDevice(midiOutputDevice);
 
+                    if (secondaryMidiInputDevice != null && secondaryMidiOutputDevice != null)
+                    {
+
+                        Console.WriteLine("Connect secondary input device...");
+                        controllerSecond.ConnectInputDevice(secondaryMidiInputDevice);
+                        Console.WriteLine("Connect secondary output device...");
+                        controllerSecond.ConnectOutputDevice(secondaryMidiOutputDevice);
+                    }
+
                 }
 
                 Action<string, bool> messageWriter = (string messages, bool isDebugMessage) =>
@@ -81,9 +101,34 @@ namespace UI24RBridgeTest
                 Console.WriteLine("Start bridge...");
 
                 BridgeSettings settings = new BridgeSettings(address, controller, messageWriter);
+                BridgeSettings settingsSecondary = null;
+                if (controllerSecond != null)
+                {
+                    settingsSecondary = new BridgeSettings(address, controllerSecond, messageWriter);
+                    if (secondaryIsExtender)
+                    {
+                        settingsSecondary.ControllerIsExtender = true;
+                    }
+                    if (secondaryChannelStart != null)
+                    {
+                        settingsSecondary.ControllerStartChannel = secondaryChannelStart;
+                    }
+                }
+                if (primaryIsExtender)
+                {
+                    settings.ControllerIsExtender = true;
+                }
+               
+                if (primaryChannelStart != null)
+                {
+                    settings.ControllerStartChannel = primaryChannelStart;
+                }
+                
                 if (syncID != null)
                 {
                     settings.SyncID = syncID;
+                    if ( settingsSecondary != null)
+                        settingsSecondary.SyncID = syncID;
                 }
                 if (recButtonBahavior != null)
                 {
@@ -91,12 +136,18 @@ namespace UI24RBridgeTest
                     {
                         case "onlymtk":
                             settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.OnlyMTK;
+                            if (settingsSecondary != null)
+                                settingsSecondary.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.OnlyMTK;
                             break;
                         case "only2track":
                             settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.OnlyTwoTrack;
+                            if (settingsSecondary != null)
+                                settingsSecondary.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.OnlyTwoTrack;
                             break;
                         default:
                             settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.TwoTrackAndMTK;
+                            if (settingsSecondary != null)
+                                settingsSecondary.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.TwoTrackAndMTK;
                             break;
                     }
                 }
@@ -106,9 +157,13 @@ namespace UI24RBridgeTest
                     {
                         case "phantom":
                             settings.ChannelRecButtonBehavior = BridgeSettings.ChannelRecButtonBehaviorEnum.Phantom;
+                            if (settingsSecondary != null)
+                                settingsSecondary.ChannelRecButtonBehavior = BridgeSettings.ChannelRecButtonBehaviorEnum.Phantom;
                             break;
                         default:
                             settings.ChannelRecButtonBehavior = BridgeSettings.ChannelRecButtonBehaviorEnum.Rec;
+                            if (settingsSecondary != null)
+                                settingsSecondary.ChannelRecButtonBehavior = BridgeSettings.ChannelRecButtonBehaviorEnum.Rec;
                             break;
                     }
                 }
@@ -118,21 +173,57 @@ namespace UI24RBridgeTest
                     {
                         case "lock":
                             settings.AuxButtonBehavior = BridgeSettings.AuxButtonBehaviorEnum.Lock;
+                            if (settingsSecondary != null)
+                                settingsSecondary.AuxButtonBehavior = BridgeSettings.AuxButtonBehaviorEnum.Lock;
                             break;
                         default:
                             settings.AuxButtonBehavior = BridgeSettings.AuxButtonBehaviorEnum.Release;
+                            if (settingsSecondary != null)
+                                settingsSecondary.AuxButtonBehavior = BridgeSettings.AuxButtonBehaviorEnum.Release;
                             break;
                     }
                 }
                 if (buttonsValues != null)
                 {
                     settings.ButtonsValuesFileName = buttonsValues;
+                    if (settingsSecondary != null)
+                        settingsSecondary.ButtonsValuesFileName = buttonsValues;
                 }
-                using (UI24RBridge bridge = new UI24RBridge(settings))
+                UI24RBridge bridgeSecondary = null;
+                if (settingsSecondary != null)
                 {
-                    while (!Console.KeyAvailable)
+                    bridgeSecondary = new UI24RBridge(settingsSecondary);
+                }
+                Console.WriteLine("Press 'ESC' to exit.");
+                bool isExit = false;
+                using (UI24RBridge bridge = new UI24RBridge(settings, bridgeSecondary))
+                {
+                    while (!isExit)
                     {
+                        if (Console.KeyAvailable)
+                        {
+                            var pressedKey = Console.ReadKey();
+                            switch (pressedKey.Key)
+                            {
+                                case ConsoleKey.Escape:
+                                    isExit = true;
+                                    break;
+                                case ConsoleKey.M:
+                                    bridge._midiController_LayerUp(null, new EventArgs());
+                                    break;
+                                case ConsoleKey.N:
+                                    bridge._midiController_LayerDown(null, new EventArgs());
+                                    break;
+                                case ConsoleKey.K:
+                                    bridge._midiController_BankUp(null, new EventArgs());
+                                    break;
+                                case ConsoleKey.J:
+                                    bridge._midiController_BankDown(null, new EventArgs());
+                                    break;
+                            }
+                        }
                     }
+                    
                 }
             }
         }

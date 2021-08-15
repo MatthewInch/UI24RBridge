@@ -36,6 +36,8 @@ namespace UI24RController
         public ChannelRecButtonBehaviorEnum ChannelRecButtonBehavior { get; set; }
         public AuxButtonBehaviorEnum AuxButtonBehavior { get; set; }
         public string ButtonsValuesFileName { get; set; } 
+        public bool ControllerIsExtender { get; set; }
+        public string ControllerStartChannel { get; set; }
 
         public BridgeSettings(string address, IMIDIController controller, Action<string, bool> messageWriter) 
             : this(address, controller, messageWriter, "SYNC_ID", RecButtonBehaviorEnum.TwoTrackAndMTK, ChannelRecButtonBehaviorEnum.Rec)

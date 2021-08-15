@@ -63,8 +63,8 @@
     "Scrub": "0x65",
 
     "Ch1Rec": "0x00",
-    "Ch1Solo": "0x10",
-    "Ch1Mute": "0x08",
+    "Ch1Solo": "0x08",
+    "Ch1Mute": "0x10",
     "Ch1Select": "0x18"
 
   }

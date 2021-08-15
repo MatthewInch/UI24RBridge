@@ -23,6 +23,8 @@ namespace UI24RController
 
         protected BridgeSettings _settings;
         protected WebsocketClient _client;
+
+        protected UI24RBridge _secondaryBridge; //Represent the secondary controller that can be controlled by the current instance
    
         protected int _selectedChannel = -1; //-1 = no selected channel
         //protected int _pressedFunctionButton = -1; //-1 = no pressed button
@@ -43,6 +45,7 @@ namespace UI24RController
         //32-37: Subgroups
         //38-47: AUX 1-10
         //48-53: VCA 1-6
+        //54: Main
 
         /// <summary>
         /// Contains the channels of the mixer. the channel number like the view groups 0-23 input channels, 24-25 Line in etc.
@@ -50,10 +53,11 @@ namespace UI24RController
         protected List<ChannelBase> _mixerChannels;
 
 
+
         /// <summary>
         ///  Represent the bridge between the UI24R and a DAW controller
         /// </summary>
-        public UI24RBridge(BridgeSettings settings)
+        public UI24RBridge(BridgeSettings settings, UI24RBridge secondaryBridge = null)
         {
             this._settings = settings;
             SendMessage("Start initialization...", false);
@@ -66,8 +70,9 @@ namespace UI24RController
             {
                 ButtonsID.Instance.ButtonsDictionary[button.Key] = button.Value; 
             }
-            
-             
+
+            _secondaryBridge = secondaryBridge;
+
             SendMessage("Create controller events....", false);
             _settings.Controller.FaderEvent += _midiController_FaderEvent;
             _settings.Controller.BankUp += _midiController_BankUp;
@@ -101,7 +106,7 @@ namespace UI24RController
             {
                 _midiController_ConnectionErrorEvent(this, null);
             }
-            _settings.Controller.InitializeController();
+            _settings.Controller.InitializeController(new ControllerSettings(_settings.ControllerIsExtender));
             SendMessage("Start websocket connection...", false);
             _client = new WebsocketClient(new Uri(_settings.Address));
             _client.MessageReceived.Subscribe(msg => UI24RMessageReceived(msg));
@@ -111,6 +116,11 @@ namespace UI24RController
             SendMessage("Connecting to UI24R....", false);
             _client.Start();
             _settings.Controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
+            if (settings.ControllerStartChannel != null && settings.ControllerStartChannel == "1")
+            {
+                _mixer.setLayerUp();
+            }
+            
         }
 
 
@@ -302,25 +312,41 @@ namespace UI24RController
             }
         }
 
-        private void _midiController_LayerDown(object sender, EventArgs e)
+        public void _midiController_LayerDown(object sender, EventArgs e)
         {
             _mixer.setLayerDown();
             SetControllerToCurrentLayerAndSend();
+            if (_secondaryBridge != null)
+            {
+                _secondaryBridge._midiController_LayerDown(sender, e);
+            }
         }
-        private void _midiController_LayerUp(object sender, EventArgs e)
+        public void _midiController_LayerUp(object sender, EventArgs e)
         {
             _mixer.setLayerUp();
             SetControllerToCurrentLayerAndSend();
+            if (_secondaryBridge != null)
+            {
+                _secondaryBridge._midiController_LayerUp(sender, e);
+            }
         }
-        private void _midiController_BankDown(object sender, EventArgs e)
+        public void _midiController_BankDown(object sender, EventArgs e)
         {
             _mixer.setBankDown();
             SetControllerToCurrentLayerAndSend();
+            if (_secondaryBridge != null)
+            {
+                _secondaryBridge._midiController_BankDown(sender, e);
+            }
         }
-        private void _midiController_BankUp(object sender, EventArgs e)
+        public void _midiController_BankUp(object sender, EventArgs e)
         {
             _mixer.setBankUp();
             SetControllerToCurrentLayerAndSend();
+            if (_secondaryBridge != null)
+            {
+                _secondaryBridge._midiController_BankUp(sender, e);
+            }
         }
 
         private void _midiController_FaderEvent(object sender, MIDIController.FaderEventArgs e)
@@ -364,7 +390,7 @@ namespace UI24RController
             }
         }
 
-        private void _midiController_AuxButtonEvent(object sender, MIDIController.FunctionEventArgs e)
+        public void _midiController_AuxButtonEvent(object sender, MIDIController.FunctionEventArgs e)
         {
             if (_settings.AuxButtonBehavior == BridgeSettings.AuxButtonBehaviorEnum.Release)
             {
@@ -401,8 +427,12 @@ namespace UI24RController
                 }
             }
             SetControllerToCurrentLayerAndSend();
+            if (_secondaryBridge != null)
+            {
+                _secondaryBridge._midiController_AuxButtonEvent(sender, e);
+            }
         }
-        private void Controller_FXButtonEvent(object sender, FunctionEventArgs e)
+        public void Controller_FXButtonEvent(object sender, FunctionEventArgs e)
         {
             if (_settings.AuxButtonBehavior == BridgeSettings.AuxButtonBehaviorEnum.Release)
             {
@@ -439,6 +469,10 @@ namespace UI24RController
                 }
             }
             SetControllerToCurrentLayerAndSend();
+            if (_secondaryBridge != null)
+            {
+                _secondaryBridge.Controller_FXButtonEvent(sender, e);
+            }
         }
         private void Controller_MuteGroupButtonEvent(object sender, FunctionEventArgs e)
         {
@@ -1011,6 +1045,7 @@ namespace UI24RController
         }
         public void Dispose()
         {
+            _secondaryBridge?.Dispose();
             SendMessage("Disconnecting UI24R....", false);
             if (_client != null)
             {

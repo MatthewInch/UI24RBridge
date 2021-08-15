@@ -46,6 +46,7 @@ namespace UI24RController.MIDIController
         protected bool _isConnectionErrorOccured = false;
         protected Thread _pingThread;
         protected ConcurrentDictionary<int, DateTime> _clipLeds = new ConcurrentDictionary<int, DateTime>();
+        protected byte _lcdDisplayNumber = 0x14; //with X-touch extender this is 15
 
         protected ButtonsID _buttonsID = ButtonsID.Instance;
         public bool IsConnectionErrorOccured { get => _isConnectionErrorOccured; }
@@ -879,7 +880,7 @@ namespace UI24RController.MIDIController
 
                 var position = channelNumber * 7 + line*56;
                 var message = ASCIIEncoding.ASCII.GetBytes((text + "       ").Substring(0, 7));
-                byte[] sysex = (new byte[] { 0xf0, 0, 0, 0x66, 0x14, 0x12, (byte)position }).Concat(message).Concat(new byte[] { 0xf7 }).ToArray();
+                byte[] sysex = (new byte[] { 0xf0, 0, 0, 0x66, _lcdDisplayNumber, 0x12, (byte)position }).Concat(message).Concat(new byte[] { 0xf7 }).ToArray();
                 Send(sysex, 0, sysex.Length, 0);
             }
         }
@@ -894,7 +895,7 @@ namespace UI24RController.MIDIController
         public void WriteTextToLCDSecondLine( string text)
         {
                 var message = ASCIIEncoding.ASCII.GetBytes((text + "                                                        ").Substring(0, 50));
-                byte[] sysex = (new byte[] { 0xf0, 0, 0, 0x66, 0x14, 0x12, 0x38 }).Concat(message).Concat(new byte[] { 0xf7 }).ToArray();
+                byte[] sysex = (new byte[] { 0xf0, 0, 0, 0x66, _lcdDisplayNumber, 0x12, 0x38 }).Concat(message).Concat(new byte[] { 0xf7 }).ToArray();
                 Send(sysex, 0, sysex.Length, 0);
         }
         public void WriteTextToLCDSecondLine(string text, int delay)
@@ -996,9 +997,15 @@ namespace UI24RController.MIDIController
             Send(new byte[] { 0xd0, (byte)(channelNumber * 16 + 0x0f) }, 0, 2, 0);
         }
 
-        public void InitializeController()
+        public void InitializeController(IControllerSettings controllerSettings)
         {
-
+            if (controllerSettings != null)
+            {
+                if (controllerSettings.IsExtender)
+                {
+                    _lcdDisplayNumber = 0x15;
+                }
+            }
             WriteTextToMainDisplay("            ", 0, 12);
             WriteTextToLCDSecondLine("");
         }
