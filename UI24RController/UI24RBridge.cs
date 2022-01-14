@@ -343,6 +343,10 @@ namespace UI24RController
         {
             _mixer.setBankUp();
             SetControllerToCurrentLayerAndSend();
+            if (_settings.ControllerStartChannel != null && _settings.ControllerStartChannel == "1")
+            {
+                _mixer.setLayerUp();
+            }
             if (_secondaryBridge != null)
             {
                 _secondaryBridge._midiController_BankUp(sender, e);
