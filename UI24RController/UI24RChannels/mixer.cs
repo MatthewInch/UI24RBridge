@@ -24,12 +24,12 @@ namespace UI24RController.UI24RChannels
         public bool UserLayerEdit { get; set; }
         public int UserLayerEditNewChannel { get; set; }
 
-        private void initLayers()
+        private void initLayers(int startBank = 0)
         {
             _numLayersPerBank = 6;
             _numBanks = 3;
             _selectedLayer = 0;
-            _selectedBank = 0;
+            _selectedBank = startBank;
             _numFaders = 9;
             UserLayerEdit = false;
             UserLayerEditNewChannel = -1;
@@ -71,6 +71,13 @@ namespace UI24RController.UI24RChannels
             }
         }
 
+
+        public void setBank(int bankNumber)
+        {
+            _selectedBank = bankNumber % _numBanks;
+            _selectedLayer = _selectedBank * _numLayersPerBank;
+            skipUnusedLayerUp();
+        }
         public void setUserLayerFromArray(int[][] input)
         {
             for (int i = 0; i < input.Length && i < _numLayersPerBank; ++i)

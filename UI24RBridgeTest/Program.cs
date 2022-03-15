@@ -31,7 +31,8 @@ namespace UI24RBridgeTest
             var channelRecButtonBahavior = configuration["DefaultChannelRecButton"];
             var auxButtonBehavior = configuration["AuxButtonBehavior"];
             var buttonsValues = configuration["PrimaryButtons"];
-            //var controller = new BehringerUniversalMIDI();
+            var startBank = configuration["StartBank"];
+            
             var controller = MIDIControllerFactory.GetMidiController(protocol);
             IMIDIController controllerSecond = null;
             if (secondaryMidiInputDevice != null)
@@ -188,6 +189,12 @@ namespace UI24RBridgeTest
                     settings.ButtonsValuesFileName = buttonsValues;
                     if (settingsSecondary != null)
                         settingsSecondary.ButtonsValuesFileName = buttonsValues;
+                }
+                if (startBank != null)
+                {
+                    settings.StartBank = 0;
+                    if (startBank == "1") settings.StartBank = 1;
+                    if (startBank == "2") settings.StartBank = 2;
                 }
                 UI24RBridge bridgeSecondary = null;
                 if (settingsSecondary != null)

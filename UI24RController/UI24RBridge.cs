@@ -107,6 +107,7 @@ namespace UI24RController
                 _midiController_ConnectionErrorEvent(this, null);
             }
             _settings.Controller.InitializeController(new ControllerSettings(_settings.ControllerIsExtender));
+            _mixer.setBank(_settings.StartBank);
             SendMessage("Start websocket connection...", false);
             _client = new WebsocketClient(new Uri(_settings.Address));
             _client.MessageReceived.Subscribe(msg => UI24RMessageReceived(msg));
@@ -483,17 +484,20 @@ namespace UI24RController
             if (e.IsPress)
             {
                 _mixer.ToggleMuteGroup(e.FunctionButton);
+                SetClientMute();
                 SetControllerMuteButtonsForCurrentLayer();
             }
         }
         private void _midiController_MuteAllFxEvent(object sender, EventArgs e)
         {
             _mixer.ToggleMuteAllFx();
+            SetClientMute();
             SetControllerMuteButtonsForCurrentLayer();
         }
         private void _midiController_MuteAllEvent(object sender, EventArgs e)
         {
             _mixer.ToggleMuteAll();
+            SetClientMute();
             SetControllerMuteButtonsForCurrentLayer();
         }
         private void _midiController_ClearMute(object sender, EventArgs e)
@@ -508,6 +512,7 @@ namespace UI24RController
                 }
                 ch.ForceUnMute = false;
             }
+            SetClientMute();
             SetControllerMuteButtonsForCurrentLayer();
         }
         private void _midiController_ClearSolo(object sender, EventArgs e)
@@ -529,8 +534,21 @@ namespace UI24RController
 
         private void SetControllerMuteButtonsForCurrentLayer()
         {
+            //why do we set back the mute of the client? I've moved that block to an independent mehod
+            //SetClientMute();
+            SetMuteGroupsLeds();
+            var channels = _mixer.getCurrentLayer().Select((item, i) => new { Channel = item, controllerChannelNumber = i });
+            foreach (var ch in channels)
+            {
+                _settings.Controller.SetMuteLed(ch.controllerChannelNumber, _mixerChannels[ch.Channel].IsMute);
+            }
+        }
+
+        private void SetClientMute()
+        {
             _client.Send(_mixer.GetMuteGroupsMessage());
             foreach (var ch in _mixerChannels)
+            {
                 if (ch.ForceUnMute == true)
                 {
                     ch.ForceUnMute = false;
@@ -541,14 +559,8 @@ namespace UI24RController
                         _client.Send(ch.MuteMessage());
                     }
                 }
-            SetMuteGroupsLeds();
-            var channels = _mixer.getCurrentLayer().Select((item, i) => new { Channel = item, controllerChannelNumber = i });
-            foreach (var ch in channels)
-            {
-                _settings.Controller.SetMuteLed(ch.controllerChannelNumber, _mixerChannels[ch.Channel].IsMute);
             }
         }
-
 
         private void _midiController_PrevEvent(object sender, EventArgs e)
         {

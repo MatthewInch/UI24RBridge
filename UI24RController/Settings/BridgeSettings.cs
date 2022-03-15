@@ -27,6 +27,8 @@ namespace UI24RController
             Phantom
         }
 
+        
+
         //address, controller, messageWriter, syncID, defaultRecButtonIsMtk
         public string Address { get; set; }
         public IMIDIController Controller { get; set; }
@@ -38,6 +40,7 @@ namespace UI24RController
         public string ButtonsValuesFileName { get; set; } 
         public bool ControllerIsExtender { get; set; }
         public string ControllerStartChannel { get; set; }
+        public int StartBank { get; set; }
 
         public BridgeSettings(string address, IMIDIController controller, Action<string, bool> messageWriter) 
             : this(address, controller, messageWriter, "SYNC_ID", RecButtonBehaviorEnum.TwoTrackAndMTK, ChannelRecButtonBehaviorEnum.Rec)
