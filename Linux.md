@@ -10,3 +10,30 @@
           export PATH=$PATH:$HOME/dotnet
         - Add the two last row to the profle
           sudo nano .profile
+
+Visual studio:
+sudo apt-get install code //visual studio
+dotnet:
+curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel Current
+echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
+echo 'export PATH=$PATH:$HOME/.dotnet' >> ~/.bashrc
+source ~/.bashrc
+
+
+sudo apt-get install libasound2-dev
+
+
+Manjaro linux
+sudo pacman -S git
+sudo pacman -S base-devel
+cd ~/Downloads
+git clone https://AUR.archlinux.org/visual-studio-code-bin.git
+cd visual-studio-code-bin/
+makepkg -s
+sudo pacman -U visual-studio-code-bin-1.52.1-1-aarch64.pkg.tar.zst
+
+.net core 3.1
+sudo mkdir -p $HOME/dotnet
+sudo tar zxf dotnet-sdk-3.1.100-linux-arm.tar.gz -C $HOME/dotnet
+export DOTNET_ROOT=$HOME/dotnet
+export PATH=$PATH:$HOME/dotnet
