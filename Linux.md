@@ -37,3 +37,6 @@ sudo mkdir -p $HOME/dotnet
 sudo tar zxf dotnet-sdk-3.1.100-linux-arm.tar.gz -C $HOME/dotnet
 export DOTNET_ROOT=$HOME/dotnet
 export PATH=$PATH:$HOME/dotnet
+
+# Raspberry PI 64bit (.NET 6)
+
