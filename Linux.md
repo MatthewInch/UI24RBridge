@@ -51,6 +51,7 @@ export PATH=$PATH:$HOME/dotnet
 
 ```bash
 sudo apt-get install code
+sudo apt-get install libasound2-dev
 ```
 
 Make UI24RBridgeTest executable

@@ -22,12 +22,18 @@ namespace MidiTest
             var viewDebugMessage = configuration["DebugMessages"] == "true";
 
             var access = MidiAccessManager.Default;
+            var deviceNames = access.Outputs.Select(x => x.Name);
+            foreach(var s in deviceNames)
+            {
+                Console.WriteLine(s);
+            }
+
             var deviceNumber = access.Outputs.Where(i => i.Name.ToUpper() == midiOutputDevice.ToUpper()).FirstOrDefault();
 
             var output = access.OpenOutputAsync(deviceNumber.Id).Result;
 
             deviceNumber = access.Inputs.Where(i => i.Name.ToUpper() == midiInputDevice.ToUpper()).FirstOrDefault();
-            var input = access.OpenInputAsync(deviceNumber.Id).Result;
+            var input = access.OpenInputAsync(deviceNumber.Id).Result; 
             input.MessageReceived += Input_MessageReceived;
 
 
