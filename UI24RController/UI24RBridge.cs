@@ -133,11 +133,17 @@ namespace UI24RController
                 var channelTypeID = "i";
                 if (e.IsPress)
                 {
-
                     _client.Send($"3:::SETD^{channelTypeID}.{channelNumber}.mute^1");
+                    
+                    _mixerChannels[channelNumber].IsMute = true;
+                    SetControllerMuteButtonsForCurrentLayer();
+
+
                 }
                 else
                 {
+                    _mixerChannels[channelNumber].IsMute = false;
+                    SetControllerMuteButtonsForCurrentLayer();
 
                     _client.Send($"3:::SETD^{channelTypeID}.{channelNumber}.mute^0");
                 }
