@@ -86,7 +86,7 @@ public interface IMIDIController
     event EventHandler<EventArgs> RightEvent;
     event EventHandler<EventArgs> CenterEvent;
 
-    event EventHandler<EventArgs> ScrubEvent;
+    event EventHandler<ButtonEventArgs> ScrubEvent;
 
     #endregion
 

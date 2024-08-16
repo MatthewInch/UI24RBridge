@@ -119,7 +119,7 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> RightEvent;
         public event EventHandler<EventArgs> CenterEvent;
 
-        public event EventHandler<EventArgs> ScrubEvent;
+        public event EventHandler<ButtonEventArgs> ScrubEvent;
 
         #endregion
 
@@ -366,10 +366,11 @@ namespace UI24RController.MIDIController
         {
             WheelEvent?.Invoke(this, new WheelEventArgs(wheelDirection));
         }
-        protected void OnScrubEvent()
+        protected void OnScrubEvent(bool isPressed=true)
         {
-            ScrubEvent?.Invoke(this, new EventArgs());
+            ScrubEvent?.Invoke(this, new ButtonEventArgs(isPressed));
         }
+
 
         protected void OnConnectionErrorEvent()
         {
@@ -739,10 +740,13 @@ namespace UI24RController.MIDIController
                 {
                     OnCenterEvent();
                 }
-
+                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Scrub], 0x00))
+                {
+                    OnScrubEvent(true);
+                }
                 else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Scrub], 0x7f))
                 {
-                    OnScrubEvent();
+                    OnScrubEvent(false);
                 }
 
                 else if (message[0]== 0x90 && ButtonsID.Instance.GetAuxButton(message[1]).isAux) //F1-F8 press

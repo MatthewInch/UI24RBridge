@@ -32,7 +32,10 @@ namespace UI24RBridgeTest
             var auxButtonBehavior = configuration["AuxButtonBehavior"];
             var buttonsValues = configuration["PrimaryButtons"];
             var startBank = configuration["StartBank"];
-            
+            var talkBack = configuration["TalkBack"];
+            var rtaOnWhenSelect = configuration["RtaOnWhenSelect"] == "true";
+
+
             var controller = MIDIControllerFactory.GetMidiController(protocol);
             IMIDIController controllerSecond = null;
             if (secondaryMidiInputDevice != null)
@@ -196,6 +199,18 @@ namespace UI24RBridgeTest
                     if (startBank == "1") settings.StartBank = 1;
                     if (startBank == "2") settings.StartBank = 2;
                 }
+                if (talkBack != null)
+                {
+                    int talkBackChannel = 0;
+                    if  (int.TryParse(talkBack, out talkBackChannel))
+                    {
+                        settings.TalkBack = talkBackChannel;
+                    }
+
+                }
+
+                settings.RtaOnWhenSelect = rtaOnWhenSelect;
+
                 UI24RBridge bridgeSecondary = null;
                 if (settingsSecondary != null)
                 {

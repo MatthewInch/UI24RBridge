@@ -42,6 +42,9 @@ namespace UI24RController
         public string ControllerStartChannel { get; set; }
         public int StartBank { get; set; }
 
+        public int TalkBack { get; set; }
+        public bool RtaOnWhenSelect { get; set; }
+
         public BridgeSettings(string address, IMIDIController controller, Action<string, bool> messageWriter) 
             : this(address, controller, messageWriter, "SYNC_ID", RecButtonBehaviorEnum.TwoTrackAndMTK, ChannelRecButtonBehaviorEnum.Rec)
         {
@@ -73,6 +76,8 @@ namespace UI24RController
             this.ChannelRecButtonBehavior = channelRecButtonBehavior;
             this.AuxButtonBehavior = AuxButtonBehaviorEnum.Release;
             this.ButtonsValuesFileName = "ButtonsDefault.json";
+            this.TalkBack = 0;
+            this.RtaOnWhenSelect = false;
         }
         protected class DictionarySerializerClass
         {

@@ -102,6 +102,7 @@ namespace UI24RController
             _settings.Controller.ConnectionErrorEvent += _midiController_ConnectionErrorEvent;
             _settings.Controller.AuxButtonEvent += _midiController_AuxButtonEvent;
             _settings.Controller.FxButtonEvent += Controller_FXButtonEvent;
+            _settings.Controller.ScrubEvent += Controller_ScrubEvent;
              if (!_settings.Controller.IsConnected)
             {
                 _midiController_ConnectionErrorEvent(this, null);
@@ -124,6 +125,24 @@ namespace UI24RController
             
         }
 
+        private void Controller_ScrubEvent(object sender, ButtonEventArgs e)
+        {
+            if (_settings.TalkBack > 0)
+            {
+                var channelNumber = _settings.TalkBack-1;
+                var channelTypeID = "i";
+                if (e.IsPress)
+                {
+
+                    _client.Send($"3:::SETD^{channelTypeID}.{channelNumber}.mute^1");
+                }
+                else
+                {
+
+                    _client.Send($"3:::SETD^{channelTypeID}.{channelNumber}.mute^0");
+                }
+            }
+        }
 
         private void _midiController_ConnectionErrorEvent(object sender, EventArgs e)
         {
@@ -276,6 +295,11 @@ namespace UI24RController
             _selectedChannel = ch;
             _settings.Controller.SetSelectLed(e.ChannelNumber, true);
             _client.Send(_mixerChannels[ch].SelectChannelMessage(_settings.SyncID));
+            //turnOn RTA
+            if (_settings.RtaOnWhenSelect)
+            {
+                _client.Send(_mixerChannels[ch].TurnOnRTAMessage());
+            }
         }
         private void _midiController_KnobEvent(object sender, MIDIController.KnobEventArgs e)
         {

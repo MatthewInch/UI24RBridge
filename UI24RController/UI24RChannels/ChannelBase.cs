@@ -141,6 +141,13 @@ namespace UI24RController.UI24RChannels
         {
             return $"3:::BMSG^SYNC^{syncID}^{this.ChannelNumberInMixer}";
         }
+
+        public virtual string TurnOnRTAMessage()
+        {
+            
+            return $"3:::SETS^var.rta^{this.channelTypeID}.{this.ChannelNumber}";
+        }
+
         public string MuteMessage()
         {
             if ((_muteGroupMask & GlobalMuteGroup) > 0 | ((VCA & VCAMuteMask) > 0))
