@@ -148,7 +148,7 @@ namespace UI24RController.UI24RChannels
             return $"3:::SETS^var.rta^{this.channelTypeID}.{this.ChannelNumber}";
         }
 
-        public string MuteMessage()
+        public virtual string MuteMessage()
         {
             if ((_muteGroupMask & GlobalMuteGroup) > 0 | ((VCA & VCAMuteMask) > 0))
                 return ForceUnMuteMessage();
@@ -156,7 +156,7 @@ namespace UI24RController.UI24RChannels
                 return $"3:::SETD^{channelTypeID}.{this.ChannelNumber}.mute^{(this.IsMute ? 1 : 0)}";
 
         }
-        public string ForceUnMuteMessage()
+        public virtual string ForceUnMuteMessage()
         {
             return $"3:::SETD^{channelTypeID}.{this.ChannelNumber}.forceunmute^{(this._forceUnMute ? 1 : 0)}";
         }

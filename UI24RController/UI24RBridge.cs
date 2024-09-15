@@ -11,6 +11,7 @@ using Websocket.Client;
 using System.IO;
 using Websocket.Client.Models;
 using UI24RController.MIDIController;
+using System.Reflection.Emit;
 
 namespace UI24RController
 {
@@ -25,8 +26,9 @@ namespace UI24RController
         protected WebsocketClient _client;
 
         protected UI24RBridge _secondaryBridge; //Represent the secondary controller that can be controlled by the current instance
-   
-        protected int _selectedChannel = -1; //-1 = no selected channel
+
+        private int selectedChannel = -1; //-1 = no selected channel
+        public int SelectedChannel { get => selectedChannel; set => selectedChannel = value; }
         //protected int _pressedFunctionButton = -1; //-1 = no pressed button
         protected SelectedLayoutEnum _selectedLayout = SelectedLayoutEnum.Channels;
 
@@ -120,7 +122,7 @@ namespace UI24RController
             _settings.Controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
             if (settings.ControllerStartChannel != null && settings.ControllerStartChannel == "1")
             {
-                _mixer.setLayerUp();
+                _mixer.IsChannelOffset = true;
             }
             
         }
@@ -199,39 +201,42 @@ namespace UI24RController
         private void _midiController_RecChannelEvent(object sender, MIDIController.ChannelEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber);
-            if (_settings.ChannelRecButtonBehavior == BridgeSettings.ChannelRecButtonBehaviorEnum.Rec )
+            if (ch > -1)
             {
-                if (_mixerChannels[ch] is IRecordable)
+                if (_settings.ChannelRecButtonBehavior == BridgeSettings.ChannelRecButtonBehaviorEnum.Rec)
                 {
-                    var channel = _mixerChannels[ch] as IRecordable;
-                    channel.IsRec = !channel.IsRec;
-                    _client.Send(channel.RecMessage());
-                    _settings.Controller.SetRecLed(e.ChannelNumber, channel.IsRec);
-                }
-            }
-            else //phantom
-            {
-                if (_mixerChannels[ch] is IInputable)
-                {
-                    var currentChannel = _mixerChannels[ch] as IInputable;
-                    if (currentChannel.SrcType == SrcTypeEnum.Hw)
+                    if (_mixerChannels[ch] is IRecordable)
                     {
-                        currentChannel.IsPhantom = !currentChannel.IsPhantom;
-                        _client.Send(currentChannel.PhantomMessage());
-                        _settings.Controller.SetRecLed(e.ChannelNumber, currentChannel.IsPhantom);
-
-                        //if multiple channels are set to same HW input
-                        foreach (var singleChannel in _mixerChannels)
+                        var channel = _mixerChannels[ch] as IRecordable;
+                        channel.IsRec = !channel.IsRec;
+                        _client.Send(channel.RecMessage());
+                        _settings.Controller.SetRecLed(e.ChannelNumber, channel.IsRec);
+                    }
+                }
+                else //phantom
+                {
+                    if (_mixerChannels[ch] is IInputable)
+                    {
+                        var currentChannel = _mixerChannels[ch] as IInputable;
+                        if (currentChannel.SrcType == SrcTypeEnum.Hw)
                         {
-                            if (singleChannel is IInputable)
+                            currentChannel.IsPhantom = !currentChannel.IsPhantom;
+                            _client.Send(currentChannel.PhantomMessage());
+                            _settings.Controller.SetRecLed(e.ChannelNumber, currentChannel.IsPhantom);
+
+                            //if multiple channels are set to same HW input
+                            foreach (var singleChannel in _mixerChannels)
                             {
-                                var singleInputChannel = singleChannel as IInputable;
-                                if (singleInputChannel.SrcType == SrcTypeEnum.Hw && singleInputChannel.SrcNumber == currentChannel.SrcNumber)
+                                if (singleChannel is IInputable)
                                 {
-                                    singleInputChannel.IsPhantom = currentChannel.IsPhantom;
-                                    for (int i = 0; i < 8; ++i)
-                                        if (singleInputChannel == _mixerChannels[_mixer.getChannelNumberInCurrentLayer(i)])
-                                            _settings.Controller.SetRecLed(i, currentChannel.IsPhantom);
+                                    var singleInputChannel = singleChannel as IInputable;
+                                    if (singleInputChannel.SrcType == SrcTypeEnum.Hw && singleInputChannel.SrcNumber == currentChannel.SrcNumber)
+                                    {
+                                        singleInputChannel.IsPhantom = currentChannel.IsPhantom;
+                                        for (int i = 0; i < 8; ++i)
+                                            if (singleInputChannel == _mixerChannels[_mixer.getChannelNumberInCurrentLayer(i)])
+                                                _settings.Controller.SetRecLed(i, currentChannel.IsPhantom);
+                                    }
                                 }
                             }
                         }
@@ -244,23 +249,26 @@ namespace UI24RController
         private void _midiController_SoloChannelEvent(object sender, MIDIController.ChannelEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber);
-            _mixerChannels[ch].IsSolo = !_mixerChannels[ch].IsSolo;
-            _client.Send(_mixerChannels[ch].SoloMessage());
-            _settings.Controller.SetSoloLed(e.ChannelNumber, _mixerChannels[ch].IsSolo);
-            //if the channel is linked we have to set the other channel to the same value
-            if (_mixerChannels[ch] is IStereoLinkable)
+            if (ch > -1)
             {
-                var stereoChannel = _mixerChannels[ch] as IStereoLinkable;
-                if (stereoChannel.LinkedWith != -1)
+                _mixerChannels[ch].IsSolo = !_mixerChannels[ch].IsSolo;
+                _client.Send(_mixerChannels[ch].SoloMessage());
+                _settings.Controller.SetSoloLed(e.ChannelNumber, _mixerChannels[ch].IsSolo);
+                //if the channel is linked we have to set the other channel to the same value
+                if (_mixerChannels[ch] is IStereoLinkable)
                 {
-                    var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
-                    _mixerChannels[otherCh].IsSolo = !_mixerChannels[otherCh].IsSolo;
-                    _client.Send(_mixerChannels[otherCh].SoloMessage());
-                    //If the other chanel is on the current layout we have to set too
-                    (var otherChOnLayer, var isOnLayer) = GetControllerChannel(otherCh);
-                    if (isOnLayer)
+                    var stereoChannel = _mixerChannels[ch] as IStereoLinkable;
+                    if (stereoChannel.LinkedWith != -1)
                     {
-                        _settings.Controller.SetSoloLed(otherChOnLayer, _mixerChannels[otherCh].IsSolo);
+                        var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
+                        _mixerChannels[otherCh].IsSolo = !_mixerChannels[otherCh].IsSolo;
+                        _client.Send(_mixerChannels[otherCh].SoloMessage());
+                        //If the other chanel is on the current layout we have to set too
+                        (var otherChOnLayer, var isOnLayer) = GetControllerChannel(otherCh);
+                        if (isOnLayer)
+                        {
+                            _settings.Controller.SetSoloLed(otherChOnLayer, _mixerChannels[otherCh].IsSolo);
+                        }
                     }
                 }
             }
@@ -268,77 +276,87 @@ namespace UI24RController
         private void _midiController_MuteChannelEvent(object sender, MIDIController.ChannelEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber);
-            _mixerChannels[ch].IsMute = !_mixerChannels[ch].IsMute;
-            _client.Send(_mixerChannels[ch].MuteMessage());
-            _settings.Controller.SetMuteLed(e.ChannelNumber, _mixerChannels[ch].IsMute);
-            //if the channel is linked we have to set the other channel to the same value
-            if (_mixerChannels[ch] is IStereoLinkable)
+            if (ch > -1)
             {
-                var stereoChannel = _mixerChannels[ch] as IStereoLinkable;
-                if (stereoChannel.LinkedWith != -1)
+                _mixerChannels[ch].IsMute = !_mixerChannels[ch].IsMute;
+                _client.Send(_mixerChannels[ch].MuteMessage());
+                _settings.Controller.SetMuteLed(e.ChannelNumber, _mixerChannels[ch].IsMute);
+                //if the channel is linked we have to set the other channel to the same value
+                if (_mixerChannels[ch] is IStereoLinkable)
                 {
-                    var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
-                    _mixerChannels[otherCh].IsMute = !_mixerChannels[otherCh].IsMute;
-                    _client.Send(_mixerChannels[otherCh].MuteMessage());
-                    //If the other chanel is on the current layout we have to set too
-                    (var otherChOnLayer, var isOnLayer) = GetControllerChannel(otherCh);
-                    if (isOnLayer)
+                    var stereoChannel = _mixerChannels[ch] as IStereoLinkable;
+                    if (stereoChannel.LinkedWith != -1)
                     {
-                        _settings.Controller.SetMuteLed(otherChOnLayer, _mixerChannels[otherCh].IsMute);
+                        var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
+                        _mixerChannels[otherCh].IsMute = !_mixerChannels[otherCh].IsMute;
+                        _client.Send(_mixerChannels[otherCh].MuteMessage());
+                        //If the other chanel is on the current layout we have to set too
+                        (var otherChOnLayer, var isOnLayer) = GetControllerChannel(otherCh);
+                        if (isOnLayer)
+                        {
+                            _settings.Controller.SetMuteLed(otherChOnLayer, _mixerChannels[otherCh].IsMute);
+                        }
                     }
                 }
+                SetControllerMuteButtonsForCurrentLayer();
             }
-            SetControllerMuteButtonsForCurrentLayer();
         }
+       
         private void _midiController_SelectChannelEvent(object sender, MIDIController.ChannelEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber);
-            if (_selectedChannel != -1)
+            if (ch > -1)
             {
-                _mixerChannels[_selectedChannel].IsSelected = false;
-            }
-            _mixerChannels[ch].IsSelected = true;
-            _selectedChannel = ch;
-            _settings.Controller.SetSelectLed(e.ChannelNumber, true);
-            _client.Send(_mixerChannels[ch].SelectChannelMessage(_settings.SyncID));
-            //turnOn RTA
-            if (_settings.RtaOnWhenSelect)
-            {
-                _client.Send(_mixerChannels[ch].TurnOnRTAMessage());
+                if (SelectedChannel != -1)
+                {
+                    _mixerChannels[SelectedChannel].IsSelected = false;
+                }
+                _mixerChannels[ch].IsSelected = true;
+                SelectedChannel = ch;
+                _settings.Controller.SetSelectLed(e.ChannelNumber, true);
+                _client.Send(_mixerChannels[ch].SelectChannelMessage(_settings.SyncID));
+                //turnOn RTA
+                if (_settings.RtaOnWhenSelect)
+                {
+                    _client.Send(_mixerChannels[ch].TurnOnRTAMessage());
+                }
             }
         }
         private void _midiController_KnobEvent(object sender, MIDIController.KnobEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber);
-            if (_mixerChannels[ch] is IInputable)
+            if (ch > -1)
             {
-                var currentChannel = _mixerChannels[ch] as IInputable;
-                if(currentChannel.SrcType == SrcTypeEnum.Hw)
+                if (_mixerChannels[ch] is IInputable)
                 {
-                    currentChannel.Gain = currentChannel.Gain + (1.0d / 100.0d) * e.KnobDirection;
-                    if (currentChannel.Gain > 1)
-                        currentChannel.Gain = 1;
-                    if (currentChannel.Gain < 0)
-                        currentChannel.Gain = 0;
-
-                    _client.Send(currentChannel.GainMessage());
-                    _settings.Controller.SetGainLed(e.ChannelNumber, currentChannel.Gain);
-                    //if multiple channels are set to same HW input
-                    foreach (var singleChannel in _mixerChannels)
+                    var currentChannel = _mixerChannels[ch] as IInputable;
+                    if (currentChannel.SrcType == SrcTypeEnum.Hw)
                     {
-                        if (singleChannel is IInputable)
+                        currentChannel.Gain = currentChannel.Gain + (1.0d / 100.0d) * e.KnobDirection;
+                        if (currentChannel.Gain > 1)
+                            currentChannel.Gain = 1;
+                        if (currentChannel.Gain < 0)
+                            currentChannel.Gain = 0;
+
+                        _client.Send(currentChannel.GainMessage());
+                        _settings.Controller.SetGainLed(e.ChannelNumber, currentChannel.Gain);
+                        //if multiple channels are set to same HW input
+                        foreach (var singleChannel in _mixerChannels)
                         {
-                            var singleInputChannel = singleChannel as IInputable;
-                            if (singleInputChannel.SrcType == SrcTypeEnum.Hw && singleInputChannel.SrcNumber == currentChannel.SrcNumber)
+                            if (singleChannel is IInputable)
                             {
-                                singleInputChannel.Gain = currentChannel.Gain;
-                                for(int i=0;i<8; ++i)
-                                    if(singleInputChannel == _mixerChannels[_mixer.getChannelNumberInCurrentLayer(i)])
-                                        _settings.Controller.SetGainLed(i, currentChannel.Gain);
+                                var singleInputChannel = singleChannel as IInputable;
+                                if (singleInputChannel.SrcType == SrcTypeEnum.Hw && singleInputChannel.SrcNumber == currentChannel.SrcNumber)
+                                {
+                                    singleInputChannel.Gain = currentChannel.Gain;
+                                    for (int i = 0; i < 8; ++i)
+                                        if (singleInputChannel == _mixerChannels[_mixer.getChannelNumberInCurrentLayer(i)])
+                                            _settings.Controller.SetGainLed(i, currentChannel.Gain);
+                                }
                             }
                         }
-                    }
 
+                    }
                 }
             }
         }
@@ -374,10 +392,10 @@ namespace UI24RController
         {
             _mixer.setBankUp();
             SetControllerToCurrentLayerAndSend();
-            if (_settings.ControllerStartChannel != null && _settings.ControllerStartChannel == "1")
-            {
-                _mixer.setLayerUp();
-            }
+            //if (_settings.ControllerStartChannel != null && _settings.ControllerStartChannel == "1")
+            //{
+            //    _mixer.setLayerUp();
+            //}
             if (_secondaryBridge != null)
             {
                 _secondaryBridge._midiController_BankUp(sender, e);
@@ -387,40 +405,43 @@ namespace UI24RController
         private void _midiController_FaderEvent(object sender, MIDIController.FaderEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber);
-            //if (_pressedFunctionButton == -1) or it is a master fader
-            if ((_selectedLayout == SelectedLayoutEnum.Channels) || (_mixerChannels[ch] is MainChannel))
+            if (ch > -1)
             {
-                _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
-                _client.Send(_mixerChannels[ch].MixFaderMessage());
-                //if the channel is linked we have to set the other channel to the same value
-                if (_mixerChannels[ch] is IStereoLinkable)
+                //if (_pressedFunctionButton == -1) or it is a master fader
+                if ((_selectedLayout == SelectedLayoutEnum.Channels) || (_mixerChannels[ch] is MainChannel))
                 {
-                    var stereoChannel = _mixerChannels[ch] as IStereoLinkable;
-                    if (stereoChannel.LinkedWith != -1)
+                    _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
+                    _client.Send(_mixerChannels[ch].MixFaderMessage());
+                    //if the channel is linked we have to set the other channel to the same value
+                    if (_mixerChannels[ch] is IStereoLinkable)
                     {
-                        var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
-                        _mixerChannels[otherCh].ChannelFaderValue = e.FaderValue;
-                        _client.Send(_mixerChannels[otherCh].MixFaderMessage());
-                        //If the other chanel is on the current layout we have to set too
-                        (var otherChOnLayer, var isOnLayer) = GetControllerChannel(otherCh);
-                        if (isOnLayer)
+                        var stereoChannel = _mixerChannels[ch] as IStereoLinkable;
+                        if (stereoChannel.LinkedWith != -1)
                         {
-                            _settings.Controller.SetFader(otherChOnLayer, e.FaderValue);
+                            var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
+                            _mixerChannels[otherCh].ChannelFaderValue = e.FaderValue;
+                            _client.Send(_mixerChannels[otherCh].MixFaderMessage());
+                            //If the other chanel is on the current layout we have to set too
+                            (var otherChOnLayer, var isOnLayer) = GetControllerChannel(otherCh);
+                            if (isOnLayer)
+                            {
+                                _settings.Controller.SetFader(otherChOnLayer, e.FaderValue);
+                            }
                         }
                     }
                 }
-            }
-            else
-            {
-                //_mixerChannels[ch].AuxSendValues[_pressedFunctionButton] = e.FaderValue;
-                _mixerChannels[ch].AuxSendValues[_selectedLayout] = e.FaderValue;
-                if (_selectedLayout.IsAux())
+                else
                 {
-                    _client.Send(_mixerChannels[ch].SetAuxValueMessage(_selectedLayout));
-                }
-                else if (_selectedLayout.IsFx())
-                {
-                    _client.Send(_mixerChannels[ch].SetFxValueMessage(_selectedLayout));
+                    //_mixerChannels[ch].AuxSendValues[_pressedFunctionButton] = e.FaderValue;
+                    _mixerChannels[ch].AuxSendValues[_selectedLayout] = e.FaderValue;
+                    if (_selectedLayout.IsAux())
+                    {
+                        _client.Send(_mixerChannels[ch].SetAuxValueMessage(_selectedLayout));
+                    }
+                    else if (_selectedLayout.IsFx())
+                    {
+                        _client.Send(_mixerChannels[ch].SetFxValueMessage(_selectedLayout));
+                    }
                 }
             }
         }
@@ -558,7 +579,8 @@ namespace UI24RController
             var channels = _mixer.getCurrentLayer().Select((item, i) => new { Channel = item, controllerChannelNumber = i });
             foreach (var ch in channels)
             {
-                _settings.Controller.SetSoloLed(ch.controllerChannelNumber, _mixerChannels[ch.Channel].IsSolo);
+                if (ch.Channel > -1)
+                    _settings.Controller.SetSoloLed(ch.controllerChannelNumber, _mixerChannels[ch.Channel].IsSolo);
             }
         }
 
@@ -570,7 +592,8 @@ namespace UI24RController
             var channels = _mixer.getCurrentLayer().Select((item, i) => new { Channel = item, controllerChannelNumber = i });
             foreach (var ch in channels)
             {
-                _settings.Controller.SetMuteLed(ch.controllerChannelNumber, _mixerChannels[ch.Channel].IsMute);
+                if (ch.Channel > -1)
+                    _settings.Controller.SetMuteLed(ch.controllerChannelNumber, _mixerChannels[ch.Channel].IsMute);
             }
         }
 
@@ -639,14 +662,47 @@ namespace UI24RController
                 }
             }
         }
-        private void _midiController_UserLayerEdit(object sender, FunctionEventArgs e)
+
+        #region user layer events
+        //these envent are public and provided to the secondary controller
+        //if the selected channel is on the secondary controller the modified value has to be send back to the primary controller
+
+        public bool SelectedChannelIsOnCurrentLayer 
+        { 
+            get
+            {
+               return _mixer.getCurrentLayer().Where(x => x == SelectedChannel).Count() > 0;
+            } 
+        }
+        public int UserLayerEditNewChannel
+        {
+            get
+            {
+                return _mixer.UserLayerEditNewChannel;
+            }
+            set
+            {
+                _mixer.UserLayerEditNewChannel = value;
+            }
+        }
+        public bool UserLayerEdit
+        {
+            get { return _mixer.UserLayerEdit; }
+            set { _mixer.UserLayerEdit = value; }
+        }
+
+
+
+        public void _midiController_UserLayerEdit(object sender, FunctionEventArgs e)
         {
             _mixer.UserLayerEdit = e.IsPress;
+            if (_secondaryBridge != null) _secondaryBridge.UserLayerEdit = e.IsPress;
+
             _settings.Controller.SetLed(ButtonsEnum.User, e.IsPress);
 
             if (e.IsPress)
             {
-                if (_mixer.UserLayerEdit && _selectedChannel != 54)
+                if (_mixer.UserLayerEdit && SelectedChannel != 54)
                 {
                     //Go to user layer if necessary
                     if (_mixer.goToUserBank())
@@ -654,62 +710,92 @@ namespace UI24RController
                         SetControllerToCurrentLayerAndSend();
                         _settings.Controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
                     }
-                    //Set Select to First channel if necessary
-                    bool isOnLayer = _mixer.getCurrentLayer().Where(x => x == _selectedChannel).Count() > 0;
-                    if (!isOnLayer)
+                    //Set Select to First channel if necessary (selected channel is not in primary and secondary controller controller)
+                    if (!this.SelectedChannelIsOnCurrentLayer && 
+                        (_secondaryBridge != null && !_secondaryBridge.SelectedChannelIsOnCurrentLayer))
                     {
-                        if (_selectedChannel != -1)
+                        if (SelectedChannel != -1)
                         {
-                            _mixerChannels[_selectedChannel].IsSelected = false;
+                            _mixerChannels[SelectedChannel].IsSelected = false;
                         }
-                        _selectedChannel = _mixer.getCurrentLayer().FirstOrDefault();
-                        _mixerChannels[_selectedChannel].IsSelected = true;
+                        SelectedChannel = _mixer.getCurrentLayer().FirstOrDefault();
+                        _mixerChannels[SelectedChannel].IsSelected = true;
                         _settings.Controller.SetSelectLed(0, true);
-                        _client.Send(_mixerChannels[_selectedChannel].SelectChannelMessage(_settings.SyncID));
+                        _client.Send(_mixerChannels[SelectedChannel].SelectChannelMessage(_settings.SyncID));
                     }
-                    _mixer.UserLayerEditNewChannel = _selectedChannel;
+                    //if current layer contains the selected channel
+                    this.UserLayerEditNewChannel = SelectedChannel;
+                    if (_secondaryBridge != null) _secondaryBridge.UserLayerEditNewChannel = SelectedChannel;
+
                 }
             }
             else
             {
-                int controllerPos = Array.IndexOf(_mixer.getCurrentLayer(), _selectedChannel);
-                _mixer.setNewUserChannelInCurrentBank(controllerPos);
+                int bank, layer, position, channelValue = -1;
+                if (_secondaryBridge != null && _secondaryBridge.SelectedChannelIsOnCurrentLayer)
+                {
+                   (bank, layer, position, channelValue) = _secondaryBridge.UpdateChannelOnUserLayer();
+                   SetChannelOnUserLayer(bank, layer, position, channelValue);
+                }
+                else 
+                {
+                   (bank, layer, position, channelValue) = UpdateChannelOnUserLayer();
+                   if (_secondaryBridge != null) _secondaryBridge.SetChannelOnUserLayer(bank, layer, position, channelValue);
+                }
+            }
+        }
+
+        public void SetChannelOnUserLayer(int bank, int layer, int position, int channel)
+        {
+            _mixer.setChannelInLayerAndPosition(bank, layer, position, channel);
+        }
+
+        public (int bank, int layer, int position, int channelValue) UpdateChannelOnUserLayer()
+        {
+            if (this.SelectedChannelIsOnCurrentLayer)
+            {
+                int controllerPos = Array.IndexOf(_mixer.getCurrentLayer(), SelectedChannel);
+                var (bank, layer, position, channelValue) = _mixer.setNewUserChannelInCurrentBank(controllerPos);
                 _settings.Controller.WriteTextToChannelLCDSecondLine(controllerPos, "");
                 SetControllerChannelToCurrentLayerAndSend(_mixer.UserLayerEditNewChannel, controllerPos);
+                return (bank, layer, position, channelValue);
             }
-
-
+            return (-1, -1, -1, -1);
         }
-        private void _midiController_WheelEvent(object sender, MIDIController.WheelEventArgs e)
+
+
+        public void _midiController_WheelEvent(object sender, MIDIController.WheelEventArgs e)
         {
-            if (_mixer.UserLayerEdit && _selectedChannel != 54)
+            if (_mixer.UserLayerEdit && SelectedChannel != 54 && this.SelectedChannelIsOnCurrentLayer)
             { 
-                //selected layer must be at current layer
-                bool isOnLayer = _mixer.getCurrentLayer().Where(x => x == _selectedChannel).Count() > 0;
-                if (!isOnLayer)
-                {
-                    if (_selectedChannel != -1)
-                    {
-                        _mixerChannels[_selectedChannel].IsSelected = false;
-                    }
-                    _selectedChannel = _mixer.getCurrentLayer().FirstOrDefault();
-                    _mixerChannels[_selectedChannel].IsSelected = true;
-                    _settings.Controller.SetSelectLed(0, true);
-                    _mixer.UserLayerEditNewChannel = _selectedChannel;
-                    _client.Send(_mixerChannels[_selectedChannel].SelectChannelMessage(_settings.SyncID));
-                }
+                ////selected layer must be at current layer
+                //if (this.SelectedChannelIsOnCurrentLayer)
+                //{
+                //    if (SelectedChannel != -1)
+                //    {
+                //        _mixerChannels[SelectedChannel].IsSelected = false;
+                //    }
+                //    SelectedChannel = _mixer.getCurrentLayer().FirstOrDefault();
+                //    _mixerChannels[SelectedChannel].IsSelected = true;
+                //    _settings.Controller.SetSelectLed(0, true);
+                //    _mixer.UserLayerEditNewChannel = SelectedChannel;
+                //    _client.Send(_mixerChannels[SelectedChannel].SelectChannelMessage(_settings.SyncID));
+                //}
+
                 //find next channel not used on this layer
-                int controllerPos = Array.IndexOf(_mixer.getCurrentLayer(), _selectedChannel);
+                int controllerPos = Array.IndexOf(_mixer.getCurrentLayer(), SelectedChannel);
                 _mixer.findNextAvailableChannelForUserLayer(controllerPos, e.WheelDirection);
                 _settings.Controller.WriteTextToChannelLCDSecondLine(controllerPos, _mixerChannels[_mixer.UserLayerEditNewChannel].Name);
             }
+            if (_secondaryBridge != null) _secondaryBridge._midiController_WheelEvent(sender, e);
         }
-        private void _midiController_SaveEvent(object sender, EventArgs e)
+        public void _midiController_SaveEvent(object sender, EventArgs e)
         {
             string jsonString;
             jsonString = JsonSerializer.Serialize(_mixer.getUserLayerToArray());
             File.WriteAllText(CONFIGFILE_VIEW_GROUP, jsonString);
         }
+        #endregion
         private void _midiController_TapTempoEvent(object sender, EventArgs e)
         {
             int tempo = _mixer.TapTempo();
@@ -769,54 +855,70 @@ namespace UI24RController
 
         private void SetControllerChannelToCurrentLayerAndSend(int channelNumber, int controllerChannelNumber)
         {
-            if (_selectedLayout == SelectedLayoutEnum.Channels)
+            if (channelNumber > -1)
             {
-                _settings.Controller.SetFader(controllerChannelNumber, _mixerChannels[channelNumber].ChannelFaderValue);
-            }
-            else
-            {
-                if (!(_mixerChannels[channelNumber] is MainChannel))
+                if (_selectedLayout == SelectedLayoutEnum.Channels)
                 {
-                    _settings.Controller.SetFader(controllerChannelNumber, _mixerChannels[channelNumber].AuxSendValues[_selectedLayout]);
+                    _settings.Controller.SetFader(controllerChannelNumber, _mixerChannels[channelNumber].ChannelFaderValue);
                 }
-            }
+                else
+                {
+                    if (!(_mixerChannels[channelNumber] is MainChannel))
+                    {
+                        _settings.Controller.SetFader(controllerChannelNumber, _mixerChannels[channelNumber].AuxSendValues[_selectedLayout]);
+                    }
+                }
 
-            if (_mixerChannels[channelNumber].IsSelected)
-            {
-                _settings.Controller.SetSelectLed(controllerChannelNumber, true);
-            }
 
-            if (_mixerChannels[channelNumber] is IInputable)
-            {
-                var inputChannel = _mixerChannels[channelNumber] as IInputable;
-                if (inputChannel.SrcType == SrcTypeEnum.Hw)
-                    _settings.Controller.SetGainLed(controllerChannelNumber, inputChannel.Gain);
+                if (_mixerChannels[channelNumber].IsSelected)
+                {
+                    _settings.Controller.SetSelectLed(controllerChannelNumber, true);
+                }
+
+                if (_mixerChannels[channelNumber] is IInputable)
+                {
+                    var inputChannel = _mixerChannels[channelNumber] as IInputable;
+                    if (inputChannel.SrcType == SrcTypeEnum.Hw)
+                        _settings.Controller.SetGainLed(controllerChannelNumber, inputChannel.Gain);
+                    else
+                        _settings.Controller.SetGainLed(controllerChannelNumber, 0);
+                }
                 else
                     _settings.Controller.SetGainLed(controllerChannelNumber, 0);
+
+                _settings.Controller.WriteTextToChannelLCDFirstLine(controllerChannelNumber, _mixerChannels[channelNumber].Name);
+                _settings.Controller.SetMuteLed(controllerChannelNumber, _mixerChannels[channelNumber].IsMute);
+                _settings.Controller.SetSoloLed(controllerChannelNumber, _mixerChannels[channelNumber].IsSolo);
+
+                if (_settings.ChannelRecButtonBehavior == BridgeSettings.ChannelRecButtonBehaviorEnum.Rec)
+                {
+                    if (_mixerChannels[channelNumber] is IRecordable)
+                        _settings.Controller.SetRecLed(controllerChannelNumber, (_mixerChannels[channelNumber] as IRecordable).IsRec);
+                    else
+                        _settings.Controller.SetRecLed(controllerChannelNumber, false);
+                }
+                else //phantom
+                {
+                    if (_mixerChannels[channelNumber] is IInputable)
+                        _settings.Controller.SetRecLed(controllerChannelNumber, (_mixerChannels[channelNumber] as IInputable).IsPhantom);
+                    else
+                        _settings.Controller.SetRecLed(controllerChannelNumber, false);
+                }
             }
-            else
+            else //empty channel
+            {
+                _settings.Controller.SetFader(controllerChannelNumber, 0);
+
+                _settings.Controller.SetSelectLed(controllerChannelNumber, false);
                 _settings.Controller.SetGainLed(controllerChannelNumber, 0);
-
-            _settings.Controller.WriteTextToChannelLCDFirstLine(controllerChannelNumber, _mixerChannels[channelNumber].Name);
-            _settings.Controller.SetMuteLed(controllerChannelNumber, _mixerChannels[channelNumber].IsMute);
-            _settings.Controller.SetSoloLed(controllerChannelNumber, _mixerChannels[channelNumber].IsSolo);
-
-            if (_settings.ChannelRecButtonBehavior == BridgeSettings.ChannelRecButtonBehaviorEnum.Rec)
-            {
-                if (_mixerChannels[channelNumber] is IRecordable)
-                    _settings.Controller.SetRecLed(controllerChannelNumber, (_mixerChannels[channelNumber] as IRecordable).IsRec);
-                else
-                    _settings.Controller.SetRecLed(controllerChannelNumber, false);
-            }
-            else //phantom
-            {
-                if (_mixerChannels[channelNumber] is IInputable)
-                    _settings.Controller.SetRecLed(controllerChannelNumber, (_mixerChannels[channelNumber] as IInputable).IsPhantom);
-                else
-                    _settings.Controller.SetRecLed(controllerChannelNumber, false);
+                                
+                _settings.Controller.WriteTextToChannelLCDFirstLine(controllerChannelNumber, "");
+                _settings.Controller.SetMuteLed(controllerChannelNumber, false);
+                _settings.Controller.SetSoloLed(controllerChannelNumber, false);
+                _settings.Controller.SetRecLed(controllerChannelNumber, false);
             }
 
-        }
+            }
         private void SetControllerToCurrentLayerAndSend()
         {
             var channels =  _mixer.getCurrentLayer().Select((item, i) => new { Channel = item, controllerChannelNumber = i });
@@ -1020,13 +1122,19 @@ namespace UI24RController
                 else if (m.StartsWith("SETS^vg.")) //first global view group (e.g:"SETS^vg.0^[0,1,2,3,4,5,6,17,18,19,20,22,23,38,39,40,41,42,43,44,45,48,49,21]")
                 {
                     var parts = m.Split('^');
-                    var newViewChannel = parts.Last().Trim('[', ']').Split(',');
-                    var viewGroupString = parts[1].Split('.').Last();
-                    int viewGroup;
-                    if (int.TryParse(viewGroupString, out viewGroup))
-                        if (newViewChannel.Length > 7)
-                            for (int i = 0; i < 8; ++i)
-                                _mixer.setChannelToViewLayerAndPosition(int.Parse(newViewChannel[i]), viewGroup, i);
+                    //var newViewChannel = parts.Last().Trim('[', ']').Split(',');
+                    if (parts.Last().StartsWith('[')) //managed only the view values settings
+                    {
+                        var newViewChannels = JsonSerializer.Deserialize<int[]>(parts.Last());
+                        var viewGroupString = parts[1].Split('.').Last();
+                        int viewGroup;
+                        if (int.TryParse(viewGroupString, out viewGroup))
+                        {
+                            _mixer.setChannelsToViewLayerAndPosition(newViewChannels, viewGroup);
+
+                        }
+                        SetControllerToCurrentLayerAndSend();
+                    }
                 }
                 else if (m.StartsWith($"BMSG^SYNC^{_settings.SyncID}"))
                 {
@@ -1034,23 +1142,23 @@ namespace UI24RController
                     var chString = m.Split("^").Last();
                     if (int.TryParse(chString, out ch))
                     {
-                        if (_selectedChannel != -1)
-                            _mixerChannels[_selectedChannel].IsSelected = false;
+                        if (SelectedChannel != -1)
+                            _mixerChannels[SelectedChannel].IsSelected = false;
                         if (ch == -1) //main channel
                         {
                             _mixerChannels[54].IsSelected = true;
-                            _selectedChannel = 54;
+                            SelectedChannel = 54;
                             _mixer.UserLayerEditNewChannel = -1;
 
                         }
                         else
                         {
                             _mixerChannels[ch].IsSelected = true;
-                            _selectedChannel = ch;
+                            SelectedChannel = ch;
                             _mixer.UserLayerEditNewChannel = ch;
                         }
                         var channelNumber = _mixer.getCurrentLayer().Select((item, i) => new { Channel = item, controllerChannelNumber = i })
-                           .Where(c => c.Channel == _mixerChannels[_selectedChannel].ChannelNumberInMixer).FirstOrDefault();
+                           .Where(c => c.Channel == _mixerChannels[SelectedChannel].ChannelNumberInMixer).FirstOrDefault();
                         if (channelNumber != null)
                         {
                             _settings.Controller.SetSelectLed(channelNumber.controllerChannelNumber, true);
@@ -1065,7 +1173,7 @@ namespace UI24RController
                     for (int i = 0; i < 8; i++)
                     {
                        var channelNumber = _mixer.getChannelNumberInCurrentLayer(i);
-                        if (channelNumber < 48) //input channel
+                        if (channelNumber < 48 && channelNumber >= 0) //input channel
                         {
                             _settings.Controller.WriteChannelMeter(i, ui24rvumessage.VUChannels[channelNumber].GetPostValue());
                         }

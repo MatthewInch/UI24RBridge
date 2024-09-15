@@ -1,73 +1,86 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
+
 
 namespace UI24RController.UI24RChannels
 {
     public class Mixer
     {
+        //private List<int[]> _layers = new List<int[]>();
+        private Dictionary<int, List<int[]>> _banks = new Dictionary<int, List<int[]>>();
+        private int _selectedLayer;
+        private int _selectedBank;
+        private int _numLayersPerBank;
+        private int _numBanks;
+        private int _numFaders;
+
+        /// <summary>
+        /// If it is true show the next layer (not the selected) or in case of viewgroup bank the second 8 channel from view
+        /// </summary>
+        public bool IsChannelOffset { get; set; }
 
         public Mixer()
         {
+            _numLayersPerBank = 6;
+            _numBanks = 3;
+            _selectedLayer = 0;
+            _selectedBank = 0;
+            _numFaders = 9;
+
             initLayers();
             initMuteGroups();
             TapInit();
         }
 
         #region Layers
-        private List<int[]> _layers = new List<int[]>();
-        private int _selectedLayer;
-        private int _selectedBank;
-        private int _numLayersPerBank;
-        private int _numBanks;
-        private int _numFaders;
+
         public bool UserLayerEdit { get; set; }
         public int UserLayerEditNewChannel { get; set; }
 
         private void initLayers(int startBank = 0)
         {
-            _numLayersPerBank = 6;
-            _numBanks = 3;
-            _selectedLayer = 0;
-            _selectedBank = startBank;
-            _numFaders = 9;
+          
             UserLayerEdit = false;
             UserLayerEditNewChannel = -1;
 
             //Inititalize Initial Layers
+            _banks.Add(0, new List<int[]>());
             for (int i = 0; i < _numLayersPerBank; ++i)
             {
                 int[] channelLayer = new int[9];
                 for (int j = 0; j < _numFaders - 1; ++j)
                     channelLayer[j] = j + i * (_numFaders - 1);
                 channelLayer[_numFaders - 1] = 54;
-                _layers.Add(channelLayer);
+                _banks[0].Add(channelLayer);
             }
             //some rearangements in default layers
             for (int j = 0; j < 8; ++j)
-                _layers[4][j] = 38 + j;
-            _layers[5][0] = 46;
-            _layers[5][1] = 47;
+                _banks[0][4][j] = 38 + j;
+            _banks[0][5][0] = 46;
+            _banks[0][5][1] = 47;
             for (int j = 0; j < 6; ++j)
-                _layers[5][j+2] = 48 + j;
-
-            //initialize View group layers
-            for (int i = 0; i < _numLayersPerBank; ++i)
-            {
-                int[] channelLayer = new int[9];
-                channelLayer[0] = -1;
-                channelLayer[_numFaders - 1] = 54;
-                _layers.Add(channelLayer);
-            }
+                _banks[0][5][j+2] = 48 + j;
 
             //initialize User layers
+            _banks.Add(1, new List<int[]>());
             for (int i = 0; i < _numLayersPerBank; ++i)
             {
                 int[] channelLayer = new int[9];
                 for (int j = 0; j < _numFaders - 1; ++j)
                     channelLayer[j] = j + i * (_numFaders - 1);
                 channelLayer[_numFaders - 1] = 54;
-                _layers.Add(channelLayer);
+                _banks[1].Add(channelLayer);
+            }
+
+
+            //initialize View group layers
+            _banks.Add(2, new List<int[]>());
+            for (int i = 0; i < _numLayersPerBank; ++i)
+            {
+                _banks[2].Add(new int[] { -1, -1, -1, -1, -1, -1, -1, -1, 54 });
             }
         }
 
@@ -75,15 +88,14 @@ namespace UI24RController.UI24RChannels
         public void setBank(int bankNumber)
         {
             _selectedBank = bankNumber % _numBanks;
-            _selectedLayer = _selectedBank * _numLayersPerBank;
-            skipUnusedLayerUp();
+            _selectedLayer = 0;
         }
         public void setUserLayerFromArray(int[][] input)
         {
             for (int i = 0; i < input.Length && i < _numLayersPerBank; ++i)
                 if (input[i].Length >= _numFaders - 1)
                     for (int j = 0; j < _numFaders - 1; ++j)
-                        _layers[i + 2 * _numLayersPerBank][j] = input[i][j];
+                        _banks[1][i][j] = input[i][j];
         }
         public int[][] getUserLayerToArray()
         {
@@ -92,14 +104,16 @@ namespace UI24RController.UI24RChannels
             {
                 output[i] = new int[_numFaders - 1];
                 for (int j = 0; j < _numFaders - 1; ++j)
-                    output[i][j] = _layers[i + 2 * _numLayersPerBank][j];
+                    output[i][j] = _banks[1][i][j];
             }
             return output;
         }
-        public void setNewUserChannelInCurrentBank(int controllerPosition)
+        public (int bank, int layer, int position, int channel) setNewUserChannelInCurrentBank(int controllerPosition)
         {
+            var currentLayerNumber = this.IsChannelOffset ? (_selectedLayer + 1) % _numLayersPerBank : _selectedLayer;
             if (controllerPosition >= 0 & controllerPosition < 8)
-                _layers[_selectedLayer][controllerPosition] = UserLayerEditNewChannel;
+                _banks[_selectedBank][currentLayerNumber][controllerPosition] = UserLayerEditNewChannel;
+            return (_selectedBank, currentLayerNumber, controllerPosition, UserLayerEditNewChannel);
         }
         public void findNextAvailableChannelForUserLayer(int controllerPos, int dir)
         {
@@ -122,91 +136,50 @@ namespace UI24RController.UI24RChannels
 
         }
 
-        public void setChannelToViewLayerAndPosition(int channel, int layer, int position)
+
+
+        /// <summary>
+        /// Set channels in a global view in the mixer object
+        /// </summary>
+        /// <param name="channel"></param>
+        /// <param name="layer"></param>
+        /// <param name="position"></param>
+        public void setChannelsToViewLayerAndPosition(int[] channels, int viewGroupNumber)
         {
-            setChannelToBankLayerAndPosition(channel, 1, layer, position);
+            _banks[2][viewGroupNumber] = channels;
         }
 
-        public void setChannelToUserLayerAndPosition(int channel, int layer, int position)
+        public void setChannelInLayerAndPosition(int bank, int layerNumber, int position, int channel) 
         {
-            setChannelToBankLayerAndPosition(channel, 3, layer, position);
+            _banks[bank][layerNumber][position] = channel;
         }
 
-        public void setChannelToBankLayerAndPosition(int channel, int bank, int layer, int position)
-        {
-            if (position < 0 || position >= 8)
-                return;
-            if (bank < 0 || bank >= _numBanks)
-                return;
-            if (layer < 0 || layer >= _numLayersPerBank)
-                return;
-            _layers[bank * _numLayersPerBank + layer][position] = channel;
-        }
-
-        private void skipUnusedLayerUp()
-        {
-            int initialLayer = _selectedLayer;
-            //skip unused layers
-            while (_layers[_selectedLayer][0] < 0)
-            {
-                _selectedLayer = (_selectedLayer + 1) % (_numLayersPerBank * _numBanks);
-                if (_selectedLayer % _numLayersPerBank == 0 && initialLayer >= 0)
-                {
-                    _selectedLayer = _selectedBank * _numLayersPerBank;
-                    initialLayer = -1;
-                }
-            }
-            //update bank if needed
-            _selectedBank = _selectedLayer / _numLayersPerBank;
-        }
-
-        private void skipUnusedLayerDown()
-        {
-            int initialLayer = _selectedLayer;
-            //skip unused layers
-            while (_layers[_selectedLayer][0] < 0)
-            {
-                _selectedLayer = (_numLayersPerBank * _numBanks + _selectedLayer - 1) % (_numLayersPerBank * _numBanks);
-                if (_selectedLayer % _numLayersPerBank == _numLayersPerBank - 1 && initialLayer >= 0)
-                {
-                    _selectedLayer = _selectedBank * _numLayersPerBank;
-                    initialLayer = -1;
-                }
-            }
-
-            //update bank if needed
-            _selectedBank = _selectedLayer / _numLayersPerBank;
-        }
 
         public void setLayerUp()
         {
-            _selectedLayer = (_selectedLayer + 1) % _numLayersPerBank + _numLayersPerBank * _selectedBank;
-            skipUnusedLayerUp();
+            _selectedLayer = (_selectedLayer + 1) % _numLayersPerBank;
         }
         public void setLayerDown()
         {
-            _selectedLayer = (_selectedLayer + _numLayersPerBank - 1) % _numLayersPerBank + _numLayersPerBank * _selectedBank;
-            skipUnusedLayerDown();
+            _selectedLayer = (_selectedLayer + _numLayersPerBank - 1) % _numLayersPerBank;
         }
 
         public void setBankUp()
         {
             _selectedBank = (_selectedBank + 1) % _numBanks;
-            _selectedLayer = _selectedBank * _numLayersPerBank;
-            skipUnusedLayerUp();
+            _selectedLayer = 0;
         }
         public void setBankDown()
         {
             _selectedBank = (_selectedBank + _numBanks - 1) % _numBanks;
-            _selectedLayer = _selectedBank * _numLayersPerBank;
-            skipUnusedLayerDown();
+            _selectedLayer = 0;
         }
         public bool goToUserBank()
         {
             bool updated = false;
-            while (_selectedBank < 2)
+            if (_selectedBank != 1)
             {
-                setBankUp();
+                _selectedBank = 1;
                 updated = true;
             }
             return updated;
@@ -218,10 +191,10 @@ namespace UI24RController.UI24RChannels
                 case 0:
                     return 'I'; // Initial Layer
                 case 1:
-                    return 'V'; // View Layer
+                    return 'U'; // User Layer
                 case 2:
                 default:
-                    return 'U';
+                    return 'V'; // Global View Layer
             }
         }
         public string getCurrentLayerString()
@@ -229,10 +202,31 @@ namespace UI24RController.UI24RChannels
             return getBankChar(_selectedBank).ToString() + ((_selectedLayer % _numLayersPerBank) + 1).ToString();
         }
 
+        /// <summary>
+        /// Return the 8 channel of the current layer plus the main fader
+        /// the banks 0 (general) and 1 (user bank) contains 8ch+main fader in every layer
+        /// the banks 2 (view groups) contains all view group channel per layer without main fader
+        /// in that case the getCurrentLayer return the first (or second) 8 value plus main fader
+        /// </summary>
+        /// <returns></returns>
         public int[] getCurrentLayer()
         {
-            if (_selectedLayer < _layers.Count)
-                return _layers[_selectedLayer];
+            if (_selectedLayer < _banks[_selectedBank].Count)
+            {
+                
+                if (_selectedBank<2)
+                {
+                    var selectedLayer = this.IsChannelOffset ? (_selectedLayer + 1) % _numLayersPerBank : _selectedLayer;
+                    return _banks[_selectedBank][selectedLayer];
+                }
+                else //view groups
+                {
+                    var offset = this.IsChannelOffset ? 8 : 0;
+                    var result = _banks[_selectedBank][_selectedLayer].Skip(offset).Take(8).ToFixedLength(8,-1).Append(54);
+                    return result.ToArray();
+                    
+                }
+            }
             return new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 54 };
         }
 
