@@ -95,3 +95,9 @@ In the settings file (**appsettings.json**):
     "TalkBack": "20",\
     "RtaOnWhenSelect" : "true"\
 }
+
+**Donate**
+
+I hope you find my solution helpful! While I don’t plan to create a paid version, your support means a lot to me. If you’d like to help keep me motivated, please consider clicking the button below. Your generosity is greatly appreciated!
+
+Donate >> [<img src="https://raw.githubusercontent.com/MatthewInch/UI24RBridge/master/donate.jpg" width="100">](https://paypal.me/SzokeMatyas) << Donate
