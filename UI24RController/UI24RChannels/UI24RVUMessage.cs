@@ -98,7 +98,6 @@ namespace UI24RController.UI24RChannels
 
         public UI24RVUMessage(string inputMessage)
         {
-            BinaryFormatter formatter = new BinaryFormatter();
             MemoryStream memStream = new MemoryStream();
             //Cut VU2^ from the messsage
             var encodedString = inputMessage.Substring(4);

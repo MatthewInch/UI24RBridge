@@ -191,7 +191,7 @@ namespace UI24RController
             if (File.Exists(CONFIGFILE_VIEW_GROUP))
             {
                 var jsonString = File.ReadAllText(CONFIGFILE_VIEW_GROUP);
-                int[][] viewViewGroups = JsonSerializer.Deserialize<int[][]>(jsonString);
+                int[][] viewViewGroups = JsonSerializer.Deserialize<int[][]>(jsonString, MyClassTypeResolver<int[][]>.GetSerializerOptions());
                 _mixer.setUserLayerFromArray(viewViewGroups);
             }
         }
@@ -792,7 +792,7 @@ namespace UI24RController
         public void _midiController_SaveEvent(object sender, EventArgs e)
         {
             string jsonString;
-            jsonString = JsonSerializer.Serialize(_mixer.getUserLayerToArray());
+            jsonString = JsonSerializer.Serialize(_mixer.getUserLayerToArray(), MyClassTypeResolver<int[][]>.GetSerializerOptions());
             File.WriteAllText(CONFIGFILE_VIEW_GROUP, jsonString);
         }
         #endregion
@@ -1125,7 +1125,9 @@ namespace UI24RController
                     //var newViewChannel = parts.Last().Trim('[', ']').Split(',');
                     if (parts.Last().StartsWith('[')) //managed only the view values settings
                     {
-                        var newViewChannels = JsonSerializer.Deserialize<int[]>(parts.Last());
+                        JsonSerializerOptions options = new JsonSerializerOptions();
+                        options.TypeInfoResolver = new MyClassTypeResolver<int[] >();
+                        var newViewChannels = JsonSerializer.Deserialize<int[]>(parts.Last(),options);
                         var viewGroupString = parts[1].Split('.').Last();
                         int viewGroup;
                         if (int.TryParse(viewGroupString, out viewGroup))

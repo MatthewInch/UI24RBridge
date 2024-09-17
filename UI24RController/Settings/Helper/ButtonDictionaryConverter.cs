@@ -104,7 +104,7 @@ namespace UI24RController.Settings.Helper
                     var hexaString = JsonSerializer.Deserialize<string>(ref reader, options);
                     var byteValue = Convert.ToByte(hexaString, 16);
                     
-                     value = JsonSerializer.Deserialize<TValue>(byteValue.ToString());
+                     value = JsonSerializer.Deserialize<TValue>(byteValue.ToString(),options);
 
                     // Add to dictionary.
                     dictionary.Add(key, value);

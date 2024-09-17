@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using UI24RController.Settings.Helper;
 
 namespace UI24RController
@@ -79,15 +80,32 @@ namespace UI24RController
             this.TalkBack = 0;
             this.RtaOnWhenSelect = false;
         }
+
+        public class DictionarySerializerClassTypeResolver : DefaultJsonTypeInfoResolver
+        {
+            public override JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                JsonTypeInfo jsonTypeInfo = base.GetTypeInfo(type, options);
+
+                Type basePointType = typeof(DictionarySerializerClass);
+
+                return jsonTypeInfo;
+            }
+        }
+
         protected class DictionarySerializerClass
         {
             [JsonConverter(typeof(DictionaryTKeyEnumTValueConverter))]
             public Dictionary<ButtonsEnum, byte> ButtonsDictionary { get; set; }
+
+
         }
+
         public Dictionary<ButtonsEnum, byte> GetButtonsValues()
         {
             var jsonText = File.ReadAllText(this.ButtonsValuesFileName);
-            var outObject = JsonSerializer.Deserialize(jsonText, typeof(DictionarySerializerClass));
+            var options = MyClassTypeResolver<DictionarySerializerClass>.GetSerializerOptions();
+            var outObject = JsonSerializer.Deserialize(jsonText, typeof(DictionarySerializerClass),options);
             Dictionary<ButtonsEnum, byte> result = (outObject as DictionarySerializerClass).ButtonsDictionary;
             return result;
         }
