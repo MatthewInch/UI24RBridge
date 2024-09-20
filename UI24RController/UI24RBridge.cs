@@ -29,6 +29,7 @@ namespace UI24RController
 
         private int selectedChannel = -1; //-1 = no selected channel
         public int SelectedChannel { get => selectedChannel; set => selectedChannel = value; }
+        public KnobsFunctionEnum KnobsFunction { get; set; }
         //protected int _pressedFunctionButton = -1; //-1 = no pressed button
         protected SelectedLayoutEnum _selectedLayout = SelectedLayoutEnum.Channels;
 
@@ -105,6 +106,9 @@ namespace UI24RController
             _settings.Controller.AuxButtonEvent += _midiController_AuxButtonEvent;
             _settings.Controller.FxButtonEvent += Controller_FXButtonEvent;
             _settings.Controller.ScrubEvent += Controller_ScrubEvent;
+            _settings.Controller.TrackEvent += Controller_TrackEvent; //HPF: functionality
+            _settings.Controller.PanEvent += Controller_PanEvent;     //Pan: functionality
+            this.KnobsFunction = KnobsFunctionEnum.Gain;
              if (!_settings.Controller.IsConnected)
             {
                 _midiController_ConnectionErrorEvent(this, null);
@@ -124,33 +128,10 @@ namespace UI24RController
             {
                 _mixer.IsChannelOffset = true;
             }
-            
+            SetStateLedsOnController();
         }
 
-        private void Controller_ScrubEvent(object sender, ButtonEventArgs e)
-        {
-            if (_settings.TalkBack > 0)
-            {
-                var channelNumber = _settings.TalkBack-1;
-                var channelTypeID = "i";
-                if (e.IsPress)
-                {
-                    _client.Send($"3:::SETD^{channelTypeID}.{channelNumber}.mute^1");
-                    
-                    _mixerChannels[channelNumber].IsMute = true;
-                    SetControllerMuteButtonsForCurrentLayer();
 
-
-                }
-                else
-                {
-                    _mixerChannels[channelNumber].IsMute = false;
-                    SetControllerMuteButtonsForCurrentLayer();
-
-                    _client.Send($"3:::SETD^{channelTypeID}.{channelNumber}.mute^0");
-                }
-            }
-        }
 
         private void _midiController_ConnectionErrorEvent(object sender, EventArgs e)
         {
@@ -197,6 +178,64 @@ namespace UI24RController
         }
 
         #region Midicontroller events
+
+        private void Controller_TrackEvent(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void Controller_PanEvent(object sender, EventArgs e)
+        {
+            //if current function is panorama, turn off and set to gain
+            if (this.KnobsFunction == KnobsFunctionEnum.Pan)
+            {
+                _settings.Controller.SetLed(ButtonsEnum.Pan, false);
+                this.KnobsFunction = KnobsFunctionEnum.Gain;
+                if (_secondaryBridge != null)
+                {
+                    _secondaryBridge.KnobsFunction = KnobsFunctionEnum.Gain;
+                }
+            }
+            else
+            {
+                _settings.Controller.SetLed(ButtonsEnum.Pan, true);
+                this.KnobsFunction = KnobsFunctionEnum.Pan;
+                if (_secondaryBridge != null)
+                {
+                    _secondaryBridge.KnobsFunction = KnobsFunctionEnum.Pan;
+                }
+            }
+            SetControllerToCurrentLayerAndSend();
+            if (_secondaryBridge != null)
+            {
+                _secondaryBridge.SetControllerToCurrentLayerAndSend();
+            }
+        }
+
+        private void Controller_ScrubEvent(object sender, ButtonEventArgs e)
+        {
+            if (_settings.TalkBack > 0)
+            {
+                var channelNumber = _settings.TalkBack - 1;
+                var channelTypeID = "i";
+                if (e.IsPress)
+                {
+                    _client.Send($"3:::SETD^{channelTypeID}.{channelNumber}.mute^1");
+
+                    _mixerChannels[channelNumber].IsMute = true;
+                    SetControllerMuteButtonsForCurrentLayer();
+
+
+                }
+                else
+                {
+                    _mixerChannels[channelNumber].IsMute = false;
+                    SetControllerMuteButtonsForCurrentLayer();
+
+                    _client.Send($"3:::SETD^{channelTypeID}.{channelNumber}.mute^0");
+                }
+            }
+        }
 
         private void _midiController_RecChannelEvent(object sender, MIDIController.ChannelEventArgs e)
         {
@@ -327,36 +366,52 @@ namespace UI24RController
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber);
             if (ch > -1)
             {
-                if (_mixerChannels[ch] is IInputable)
+                switch (this.KnobsFunction)
                 {
-                    var currentChannel = _mixerChannels[ch] as IInputable;
-                    if (currentChannel.SrcType == SrcTypeEnum.Hw)
-                    {
-                        currentChannel.Gain = currentChannel.Gain + (1.0d / 100.0d) * e.KnobDirection;
-                        if (currentChannel.Gain > 1)
-                            currentChannel.Gain = 1;
-                        if (currentChannel.Gain < 0)
-                            currentChannel.Gain = 0;
-
-                        _client.Send(currentChannel.GainMessage());
-                        _settings.Controller.SetGainLed(e.ChannelNumber, currentChannel.Gain);
-                        //if multiple channels are set to same HW input
-                        foreach (var singleChannel in _mixerChannels)
+                    case KnobsFunctionEnum.Gain:
+                        if (_mixerChannels[ch] is IInputable)
                         {
-                            if (singleChannel is IInputable)
+                            var currentGainChannel = _mixerChannels[ch] as IInputable;
+                            if (currentGainChannel.SrcType == SrcTypeEnum.Hw)
                             {
-                                var singleInputChannel = singleChannel as IInputable;
-                                if (singleInputChannel.SrcType == SrcTypeEnum.Hw && singleInputChannel.SrcNumber == currentChannel.SrcNumber)
+                                currentGainChannel.Gain = currentGainChannel.Gain + (1.0d / 100.0d) * e.KnobDirection;
+                                if (currentGainChannel.Gain > 1)
+                                    currentGainChannel.Gain = 1;
+                                if (currentGainChannel.Gain < 0)
+                                    currentGainChannel.Gain = 0;
+
+                                _client.Send(currentGainChannel.GainMessage());
+                                _settings.Controller.SetKnobLed(e.ChannelNumber, currentGainChannel.Gain);
+                                //if multiple channels are set to same HW input
+                                foreach (var singleChannel in _mixerChannels)
                                 {
-                                    singleInputChannel.Gain = currentChannel.Gain;
-                                    for (int i = 0; i < 8; ++i)
-                                        if (singleInputChannel == _mixerChannels[_mixer.getChannelNumberInCurrentLayer(i)])
-                                            _settings.Controller.SetGainLed(i, currentChannel.Gain);
+                                    if (singleChannel is IInputable)
+                                    {
+                                        var singleInputChannel = singleChannel as IInputable;
+                                        if (singleInputChannel.SrcType == SrcTypeEnum.Hw && singleInputChannel.SrcNumber == currentGainChannel.SrcNumber)
+                                        {
+                                            singleInputChannel.Gain = currentGainChannel.Gain;
+                                            for (int i = 0; i < 8; ++i)
+                                                if (singleInputChannel == _mixerChannels[_mixer.getChannelNumberInCurrentLayer(i)])
+                                                    _settings.Controller.SetKnobLed(i, currentGainChannel.Gain);
+                                        }
+                                    }
                                 }
+
                             }
                         }
+                        break;
+                    case KnobsFunctionEnum.Pan:
+                        var currentChannel = _mixerChannels[ch];
+                        currentChannel.Panorama = currentChannel.Panorama + (1.0d / 100.0d) * e.KnobDirection;
+                        if (currentChannel.Panorama > 1)
+                            currentChannel.Panorama = 1;
+                        if (currentChannel.Panorama < 0)
+                            currentChannel.Panorama = 0;
 
-                    }
+                        _client.Send(currentChannel.PanoramaMessage());
+                        _settings.Controller.SetKnobLed(e.ChannelNumber, currentChannel.Panorama);
+                        break;
                 }
             }
         }
@@ -875,16 +930,7 @@ namespace UI24RController
                     _settings.Controller.SetSelectLed(controllerChannelNumber, true);
                 }
 
-                if (_mixerChannels[channelNumber] is IInputable)
-                {
-                    var inputChannel = _mixerChannels[channelNumber] as IInputable;
-                    if (inputChannel.SrcType == SrcTypeEnum.Hw)
-                        _settings.Controller.SetGainLed(controllerChannelNumber, inputChannel.Gain);
-                    else
-                        _settings.Controller.SetGainLed(controllerChannelNumber, 0);
-                }
-                else
-                    _settings.Controller.SetGainLed(controllerChannelNumber, 0);
+                SetControllerChannelKnobb(channelNumber, controllerChannelNumber);
 
                 _settings.Controller.WriteTextToChannelLCDFirstLine(controllerChannelNumber, _mixerChannels[channelNumber].Name);
                 _settings.Controller.SetMuteLed(controllerChannelNumber, _mixerChannels[channelNumber].IsMute);
@@ -910,7 +956,7 @@ namespace UI24RController
                 _settings.Controller.SetFader(controllerChannelNumber, 0);
 
                 _settings.Controller.SetSelectLed(controllerChannelNumber, false);
-                _settings.Controller.SetGainLed(controllerChannelNumber, 0);
+                _settings.Controller.SetKnobLed(controllerChannelNumber, 0);
                                 
                 _settings.Controller.WriteTextToChannelLCDFirstLine(controllerChannelNumber, "");
                 _settings.Controller.SetMuteLed(controllerChannelNumber, false);
@@ -919,6 +965,38 @@ namespace UI24RController
             }
 
             }
+
+        private void SetControllerChannelKnobb(int channelNumber, int controllerChannelNumber)
+        {
+            if (channelNumber > -1)
+            {
+                switch (this.KnobsFunction)
+                {
+                    case KnobsFunctionEnum.Gain:
+                        if (this.KnobsFunction == KnobsFunctionEnum.Gain)
+                        {
+                            if (_mixerChannels[channelNumber] is IInputable)
+                            {
+                                var inputChannel = _mixerChannels[channelNumber] as IInputable;
+                                if (inputChannel.SrcType == SrcTypeEnum.Hw)
+                                    _settings.Controller.SetKnobLed(controllerChannelNumber, inputChannel.Gain);
+                                else
+                                    _settings.Controller.SetKnobLed(controllerChannelNumber, 0);
+                            }
+                            else
+                                _settings.Controller.SetKnobLed(controllerChannelNumber, 0);
+                        }
+                        break;
+                    case KnobsFunctionEnum.Pan:
+                        _settings.Controller.SetKnobLed(controllerChannelNumber, _mixerChannels[channelNumber].Panorama);
+                        break;
+                    default:
+                        _settings.Controller.SetKnobLed(controllerChannelNumber, 0);
+                        break;
+                }
+            }
+        }
+
         private void SetControllerToCurrentLayerAndSend()
         {
             var channels =  _mixer.getCurrentLayer().Select((item, i) => new { Channel = item, controllerChannelNumber = i });
@@ -933,6 +1011,7 @@ namespace UI24RController
         {
             _settings.Controller.SetLed(ButtonsEnum.Rec, _mixer.IsMultitrackRecordingRun || _mixer.IsTwoTrackRecordingRun);
             SetMuteGroupsLeds();
+            SetKnobsFunctionLedOnController();
             if (_selectedLayout.IsAux())
             {
                 _settings.Controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
@@ -944,6 +1023,12 @@ namespace UI24RController
                 _settings.Controller.WriteTextToBarsDisplay("FX" + (_selectedLayout.FxToInt() + 1).ToString());
             }
                 
+        }
+
+        private void SetKnobsFunctionLedOnController()
+        {
+            _settings.Controller.SetLed(ButtonsEnum.Pan, this.KnobsFunction == KnobsFunctionEnum.Pan);
+            _settings.Controller.SetLed(ButtonsEnum.Track, this.KnobsFunction == KnobsFunctionEnum.Hpf);
         }
         protected (int, bool) GetControllerChannel(int ch)
         {
@@ -984,12 +1069,20 @@ namespace UI24RController
                             if (_mixerChannels[ui24Message.ChannelNumber] is InputChannel && ui24Message.ChannelType == ChannelTypeEnum.HW)
                             {
                                 (_mixerChannels[ui24Message.ChannelNumber] as InputChannel).Gain = ui24Message.Gain;
-                                if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8)
+                                if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8 && this.KnobsFunction == KnobsFunctionEnum.Gain)
                                 {
-                                    _settings.Controller.SetGainLed(controllerChannelNumber, ui24Message.Gain);
+                                    _settings.Controller.SetKnobLed(controllerChannelNumber, ui24Message.Gain);
                                 }
                             }
                             break;
+                        case MessageTypeEnum.pan:
+                                _mixerChannels[ui24Message.ChannelNumber].Panorama = ui24Message.Panorama;
+                                if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8 && this.KnobsFunction == KnobsFunctionEnum.Pan)
+                                {
+                                    _settings.Controller.SetKnobLed(controllerChannelNumber, ui24Message.Panorama);
+                                }
+                            break;
+
                         case MessageTypeEnum.mute:
                             _mixerChannels[ui24Message.ChannelNumber].IsMute = ui24Message.LogicValue;
                             if (ui24Message.IsValid && isOnLayer && controllerChannelNumber < 8)

@@ -42,6 +42,7 @@ namespace UI24RController.UI24RChannels
             VCAMuteMask = 0;
         }
         public double ChannelFaderValue { get; set; }
+        public double Panorama { get; set; }
         protected string _name = "";
         public virtual string Name {
             get
@@ -163,6 +164,12 @@ namespace UI24RController.UI24RChannels
         public virtual string SoloMessage()
         {
             return $"3:::SETD^i.{this.ChannelNumber}.solo^{(this.IsSolo ? 1 : 0)}";
+        }
+
+        public virtual string PanoramaMessage()
+        {
+
+            return $"3:::SETD^i.{this.ChannelNumber}.pan^{this.Panorama.ToString().Replace(',', '.')}";
         }
     }
 }

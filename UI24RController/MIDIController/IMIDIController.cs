@@ -93,7 +93,7 @@ public interface IMIDIController
     //ButtonsID _buttonsID { get; set; }
 
     bool SetFader(int channelNumber, double faderValue);
-    bool SetGainLed(int channelNumber, double gainValue);
+    bool SetKnobLed(int channelNumber, double knobValue);
 
     void SetSelectLed(int channelNumber, bool turnOn);
     void SetMuteLed(int channelNumber, bool turnOn);

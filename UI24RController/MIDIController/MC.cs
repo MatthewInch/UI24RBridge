@@ -828,7 +828,7 @@ namespace UI24RController.MIDIController
             return false;
         }
 
-        public bool SetGainLed(int channelNumber, double gainValue)
+        public bool SetKnobLed(int channelNumber, double gainValue)
         {
             if (_output != null && channelNumber < 9)
             {

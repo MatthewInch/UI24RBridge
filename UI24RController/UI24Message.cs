@@ -19,6 +19,7 @@ namespace UI24RController
     public enum MessageTypeEnum
     {
         mix, gain, mute, forceunmute, solo, name, stereoIndex, mtk,
+        pan,eq,
         phantom, source, mgMask, vca,
         auxFaderValue, fxFaderValue,
         globalMGMask,
@@ -63,6 +64,7 @@ namespace UI24RController
         public int ChannelTypeNumber { get; internal set; }
         public double FaderValue { get; set; }
         public double Gain { get; set; }
+        public double Panorama { get; set; }
         public bool IsValid { get; internal set; }
         public bool LogicValue { get; internal set; }
         public int IntValue { get; internal set; }
@@ -126,6 +128,14 @@ namespace UI24RController
                         if (double.TryParse(messageParts[2], NumberStyles.Number, CultureInfo.InvariantCulture, out gain))
                         {
                             Gain = gain;
+                            IsValid = true;
+                        }
+                        break;
+                    case MessageTypeEnum.pan:
+                        double pan;
+                        if (double.TryParse(messageParts[2], NumberStyles.Number, CultureInfo.InvariantCulture, out pan))
+                        {
+                            Panorama = pan;
                             IsValid = true;
                         }
                         break;
@@ -364,6 +374,8 @@ namespace UI24RController
                     return MessageTypeEnum.currentState;
                 case "mgmask":
                     return MessageTypeEnum.mgMask;
+                case "pan":
+                    return MessageTypeEnum.pan;
                 default: // "i":
                     return MessageTypeEnum.uknown;
             }

@@ -34,6 +34,11 @@ namespace UI24RController
         Fx1, Fx2, Fx3, Fx4
     }
 
+    public enum KnobsFunctionEnum
+    {
+        Gain, Pan, Hpf
+    }
+
     public enum SrcTypeEnum
     {
         Hw, Line, None
