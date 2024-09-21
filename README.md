@@ -38,7 +38,7 @@ The earlier protocol has not been removed but the new functions only implemented
 	- Switch between Banks with ***Fader Bank <<*** and ***Fader Bank >>*** buttons or K (up) and J (down) key on the computer
 	- Switch between Layers in current bank with ***Channel Bank <<*** and ***Channel Bank >>*** buttons or M (up) and N (down) key on the computer
  - The ***faders*** work on every type of channels
- - The ***knobs*** set the gain on the input channels
+ - The ***knobs*** set the gain on the input channels or Panorama (change the behavior with Pan/Surround button)
  - Channel ***Select***, ***Solo*** and ***Mute*** buttons work on every channel
  - Channel ***Rec*** button sets either Mtk rec or Phantom 48V (selected in appsettings.json)
  - Buttons ***F1-F8*** switch to AUX1-8 sends
@@ -52,9 +52,10 @@ The earlier protocol has not been removed but the new functions only implemented
  - ***Undo*** button to Mute FX
  - ***Cancel*** button to Clear Mute
  - ***Enter*** button to Clear Solo
+ - ***Scrub*** button to mute/unmute the talkback channel (set it in config file)
 
 ### Future functions
- - Pan, HPF, EQ, Dyn
+ - HPF
 
 
 ### Configuration
