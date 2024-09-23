@@ -67,15 +67,23 @@ namespace UI24RController.UI24RChannels
         {
             get
             {
-                return ( _muteBtn | ((_muteGroupMask & GlobalMuteGroup) > 0) | ((VCA & VCAMuteMask) > 0)) & !_forceUnMute ;
+                return ( _muteBtn || ((_muteGroupMask & GlobalMuteGroup) > 0) || ((VCA & VCAMuteMask) > 0)) && !_forceUnMute ;
             }
             set
             {
-                if ( ((_muteGroupMask & GlobalMuteGroup) > 0) | ((VCA & VCAMuteMask) > 0))
-                    _forceUnMute = !value;
-                else
-                    _muteBtn = value;
+                //if ( ((_muteGroupMask & GlobalMuteGroup) > 0) || ((VCA & VCAMuteMask) > 0))
+                //    _forceUnMute = !value;
+                //else
+                _muteBtn = value;
                 VCAMuteSetter();
+            }
+        }
+
+        public bool IsMuteByMuteGroup
+        {
+            get
+            {
+                return ((_muteGroupMask & GlobalMuteGroup) > 0) || ((VCA & VCAMuteMask) > 0);
             }
         }
 
@@ -151,7 +159,7 @@ namespace UI24RController.UI24RChannels
 
         public virtual string MuteMessage()
         {
-            if ((_muteGroupMask & GlobalMuteGroup) > 0 | ((VCA & VCAMuteMask) > 0))
+            if ((_muteGroupMask & GlobalMuteGroup) > 0 || ((VCA & VCAMuteMask) > 0))
                 return ForceUnMuteMessage();
             else
                 return $"3:::SETD^{channelTypeID}.{this.ChannelNumber}.mute^{(this.IsMute ? 1 : 0)}";

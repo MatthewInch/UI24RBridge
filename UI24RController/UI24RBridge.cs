@@ -317,8 +317,16 @@ namespace UI24RController
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber);
             if (ch > -1)
             {
-                _mixerChannels[ch].IsMute = !_mixerChannels[ch].IsMute;
-                _client.Send(_mixerChannels[ch].MuteMessage());
+                if (_mixerChannels[ch].IsMuteByMuteGroup)
+                {
+                    _mixerChannels[ch].ForceUnMute = !_mixerChannels[ch].ForceUnMute;
+                    _client.Send(_mixerChannels[ch].ForceUnMuteMessage());
+                }
+                else
+                {
+                    _mixerChannels[ch].IsMute = !_mixerChannels[ch].IsMute;
+                    _client.Send(_mixerChannels[ch].MuteMessage());
+                }
                 _settings.Controller.SetMuteLed(e.ChannelNumber, _mixerChannels[ch].IsMute);
                 //if the channel is linked we have to set the other channel to the same value
                 if (_mixerChannels[ch] is IStereoLinkable)
@@ -327,8 +335,16 @@ namespace UI24RController
                     if (stereoChannel.LinkedWith != -1)
                     {
                         var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
-                        _mixerChannels[otherCh].IsMute = !_mixerChannels[otherCh].IsMute;
-                        _client.Send(_mixerChannels[otherCh].MuteMessage());
+                        if (_mixerChannels[ch].IsMuteByMuteGroup)
+                        {
+                            _mixerChannels[otherCh].ForceUnMute = !_mixerChannels[otherCh].ForceUnMute;
+                            _client.Send(_mixerChannels[otherCh].ForceUnMuteMessage());
+                        }
+                        else
+                        {
+                            _mixerChannels[otherCh].IsMute = !_mixerChannels[otherCh].IsMute;
+                            _client.Send(_mixerChannels[otherCh].MuteMessage());
+                        }
                         //If the other chanel is on the current layout we have to set too
                         (var otherChOnLayer, var isOnLayer) = GetControllerChannel(otherCh);
                         if (isOnLayer)

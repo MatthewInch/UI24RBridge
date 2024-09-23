@@ -111,7 +111,7 @@ namespace UI24RController.UI24RChannels
         public (int bank, int layer, int position, int channel) setNewUserChannelInCurrentBank(int controllerPosition)
         {
             var currentLayerNumber = this.IsChannelOffset ? (_selectedLayer + 1) % _numLayersPerBank : _selectedLayer;
-            if (controllerPosition >= 0 & controllerPosition < 8)
+            if (controllerPosition >= 0 && controllerPosition < 8)
                 _banks[_selectedBank][currentLayerNumber][controllerPosition] = UserLayerEditNewChannel;
             return (_selectedBank, currentLayerNumber, controllerPosition, UserLayerEditNewChannel);
         }
