@@ -59,9 +59,7 @@ The earlier protocol has not been removed but the new functions only implemented
 
 
 ### Configuration
-There is an appsettings.json file that contains every information to create the connection. 
-
-You can edit that, if you remove or rename it, the program generate that after a few questions.
+You can generate the config file at the first run. The program will ask a few question.
 
 <img src="https://raw.githubusercontent.com/MatthewInch/UI24RBridge/master/Images/setup.png">
 
