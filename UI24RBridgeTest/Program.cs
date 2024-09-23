@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Spectre.Console;
 using System;
 using System.IO;
 using UI24RController;
@@ -11,10 +12,16 @@ namespace UI24RBridgeTest
         private static readonly object balanceLock = new object();
         static void Main(string[] args)
         {
+            if (!File.Exists("appsettings.json"))
+            {
+                CreateAppsettings("appsettings.json");
+                return;
+            }
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
             var configuration = builder.Build();
+
             var address = configuration["UI24R-Url"];
             var midiInputDevice = configuration["MIDI-Input-Name"];
             var midiOutputDevice = configuration["MIDI-Output-Name"];
@@ -38,7 +45,7 @@ namespace UI24RBridgeTest
 
             var controller = MIDIControllerFactory.GetMidiController(protocol);
             IMIDIController controllerSecond = null;
-            if (secondaryMidiInputDevice != null)
+            if (!string.IsNullOrEmpty(secondaryMidiInputDevice))
             {
                 controllerSecond = MIDIControllerFactory.GetMidiController(protocol);
             }
@@ -248,6 +255,124 @@ namespace UI24RBridgeTest
                     
                 }
             }
+        }
+
+        private static void CreateAppsettings(string fileName)
+        {
+            var controller = MIDIControllerFactory.GetMidiController("MC");
+            var inputDevicenames = controller.GetInputDeviceNames();
+            var outputDevicenames = controller.GetOutputDeviceNames();
+            
+            AnsiConsole.WriteLine("appsettings.json is not found.");
+            AnsiConsole.WriteLine("Creating of the configuration file is starting.");
+            var address = AnsiConsole.Ask<string>(@"Please write the mixer address (eg: ws:\\192.168.3.12): "); //"UI24R-Url"
+            var midiInputDevice = AnsiConsole.Prompt(
+                new TextPrompt<string>("Choose primary input device. (It is case sensitive.)")
+                .AddChoices(inputDevicenames));   //configuration["MIDI-Input-Name"];
+
+            var midiOutputDevice = AnsiConsole.Prompt(
+                new TextPrompt<string>("Choose primary output device. (It is case sensitive.)")
+                .AddChoices(outputDevicenames));   //configuration["MIDI-Output-Name"];
+
+            //var primaryIsExtender = configuration["PrimaryIsExtender"] == "true";
+            string primaryIsExtender = "false";
+            if (AnsiConsole.Prompt(
+                new TextPrompt<bool>("Is primary device an extender?")
+                    .AddChoice(true)
+                    .AddChoice(false)
+                    .DefaultValue(false)
+                    .WithConverter(choice => choice ? "y" : "n")
+                ))
+            {
+                primaryIsExtender = "true";
+            }
+            var primaryChannelStart =      // configuration["PrimaryChannelStart"];
+                AnsiConsole.Prompt(
+                new TextPrompt<string>("Primary controller offset (show 1-8ch: 0 9-16ch: 1")
+                .AddChoices(["0", "1"])
+                .DefaultValue("0"));
+           
+            var isAddSecondaryDevice = AnsiConsole.Prompt(
+                new TextPrompt<bool>("Do you want to add secondary device?")
+                    .AddChoice(true)
+                    .AddChoice(false)
+                    .DefaultValue(false)
+                    .WithConverter(choice => choice ? "y" : "n")
+                );
+
+            string secondaryMidiInputDevice = null;
+            string secondaryMidiOutputDevice = null;
+            string secondaryIsExtender = "false";
+            string secondaryChannelStart = "1";
+            //var secondaryMidiInputDevice = configuration["MIDI-Input-Name-Second"];
+            //var secondaryMidiOutputDevice = configuration["MIDI-Output-Name-Second"]; 
+            //var secondaryIsExtender = configuration["SecondaryIsExtender"] == "true";
+            if (isAddSecondaryDevice)
+            {
+                secondaryMidiInputDevice = AnsiConsole.Prompt(
+                new TextPrompt<string>("Choose secondary input device. (It is case sensitive.)")
+                .AddChoices(inputDevicenames));   //configuration["MIDI-Input-Name"];
+
+                secondaryMidiOutputDevice = AnsiConsole.Prompt(
+                    new TextPrompt<string>("Choose secondary output device. (It is case sensitive.)")
+                    .AddChoices(outputDevicenames));   //configuration["MIDI-Output-Name"];
+
+                if (AnsiConsole.Prompt(
+                    new TextPrompt<bool>("Is secondary device an extender?")
+                        .AddChoice(true)
+                        .AddChoice(false)
+                        .DefaultValue(false)
+                        .WithConverter(choice => choice ? "y" : "n")
+                    ))
+                {
+                    secondaryIsExtender = "true";
+                }
+
+                secondaryChannelStart =      // configuration["SecondaryChannelStart"];
+               AnsiConsole.Prompt(
+                   new TextPrompt<string>("Secondary controller offset (show 1-8ch: 0 9-16ch: 1")
+                   .AddChoices(["0", "1"])
+                   .DefaultValue("1"));
+            }
+
+
+
+            var protocol = "MC"; // configuration["Protocol"];
+            var syncID = "SYNC_ID"; //configuration["SyncID"];
+            var viewDebugMessage = "false"; // configuration["DebugMessages"] == "true";
+            var recButtonBahavior = "2TrackAndMTK"; //configuration["DefaultRecButton"];
+            var channelRecButtonBahavior = "rec"; //configuration["DefaultChannelRecButton"];
+            var auxButtonBehavior = "Release";// configuration["AuxButtonBehavior"];
+            var buttonsValues = "ButtonsDefault.json"; // configuration["PrimaryButtons"];
+            //var startBank = configuration["StartBank"];
+            var talkBack = "20"; // configuration["TalkBack"];
+            var rtaOnWhenSelect = "true"; // configuration["RtaOnWhenSelect"] == "true";
+
+            string settingsContent = $@"{{
+  ""UI24R-Url"": ""{address}"",
+  ""MIDI-Input-Name"": ""{midiInputDevice}"", //Behringer BCF 2000: ""BCF2000""
+  ""MIDI-Output-Name"": ""{midiOutputDevice}"", //Behringer BCF 2000: ""BCF2000""
+  ""MIDI-Input-Name-Second"": ""{secondaryMidiInputDevice}"", //Behringer BCF 2000: ""BCF2000""
+  ""MIDI-Output-Name-Second"": ""{secondaryMidiOutputDevice}"", //Behringer BCF 2000: ""BCF2000""
+  ""PrimaryIsExtender"": ""{primaryIsExtender}"",
+  ""SecondaryIsExtender"": ""{secondaryIsExtender}"",
+  ""PrimaryChannelStart"": ""{primaryChannelStart}"", //0: 1-8ch, 1: 9-16
+  ""SecondaryChannelStart"": ""{secondaryChannelStart}"", //0: 1-8ch, 1: 9-16
+  ""Protocol"": ""MC"",
+  ""SyncID"": ""{syncID}"",
+  ""DefaultRecButton"": ""{recButtonBahavior}"", //possible values: ""onlyMTK"", ""only2Track"", ""2TrackAndMTK""; default is ""2TrackAndMTK
+  ""DefaultChannelRecButton"": ""{channelRecButtonBahavior}"", //possible values: ""phantom"", ""rec""; default is ""rec
+  ""DebugMessages"": ""false"",
+  ""AuxButtonBehavior"": ""{auxButtonBehavior}"", //possible values: ""Release"", ""Lock""; Default is ""Release""
+  ""PrimaryButtons"": ""{buttonsValues}"",
+  ""TalkBack"": ""{talkBack}"", //use scrub button. if it is uncommented it unmute the channel (number in value) if button is release the channel will mute
+  ""RtaOnWhenSelect"" : ""{rtaOnWhenSelect}"" //set RTA on channel when select the channel on the controller
+}}
+";
+
+            File.WriteAllText(fileName, settingsContent);
+            
+
         }
 
         /// <summary>

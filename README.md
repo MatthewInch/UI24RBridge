@@ -59,6 +59,12 @@ The earlier protocol has not been removed but the new functions only implemented
 
 
 ### Configuration
+There is an appsettings.json file that contains every information to create the connection. 
+
+You can edit that, if you remove or rename it, the program generate that after a few questions.
+
+<img src="https://raw.githubusercontent.com/MatthewInch/UI24RBridge/master/Images/setup.png">
+
 In the settings file (**appsettings.json**):
 - **UI24R-Url**: the mixer url (simply copy the url from the browser and replace http to ws and remove the /mixer.html from the end)
 - **MIDI-Input-Name**,**MIDI-Output-Name**: The controller name. If you don't know it simple remove these to row from the config file and modify the mixer url to an invalid value. The UI24RBridge write all of the available MIDI device to the console.
