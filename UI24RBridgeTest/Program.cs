@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Spectre.Console;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using UI24RController;
 using UI24RController.MIDIController;
@@ -22,6 +23,10 @@ namespace UI24RBridgeTest
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
             var configuration = builder.Build();
 
+            var controllersSetting = new List<UI24RController.ControllerSettings>();
+            configuration.GetSection("MidiControllers").Bind(controllersSetting);
+
+            
             var address = configuration["UI24R-Url"];
             var midiInputDevice = configuration["MIDI-Input-Name"];
             var midiOutputDevice = configuration["MIDI-Output-Name"];
@@ -44,6 +49,7 @@ namespace UI24RBridgeTest
 
 
             var controller = MIDIControllerFactory.GetMidiController(protocol);
+            var controllers = new List<IMIDIController>();
             IMIDIController controllerSecond = null;
             if (!string.IsNullOrEmpty(secondaryMidiInputDevice))
             {
@@ -55,39 +61,68 @@ namespace UI24RBridgeTest
             else
             {
                 Console.WriteLine("Create Bridge Object");
-                if (midiInputDevice == null || midiOutputDevice == null)
+                if ((controllersSetting.Count == 0) && ( midiInputDevice == null || midiOutputDevice == null))
                 {
                     if (midiInputDevice == null)
                         Console.WriteLine("The input device name is mandantory in the config file. (MIDI-Input-Name)");
                     if (midiOutputDevice == null)
                         Console.WriteLine("The ouput device name is mandantory in the config file. (MIDI-Output-Name)");
                     WriteMIDIDeviceNames(controller);
+                    return;
                 }
                 else
                 {
-                    Console.WriteLine("Set controller message event....");
-                    controller.MessageReceived += (obj, e) =>
+                    if (controllers.Count == 0)
                     {
-                        lock (balanceLock)
+                        Console.WriteLine("Set controller message event....");
+                        controller.MessageReceived += (obj, e) =>
                         {
-                            Console.WriteLine(e.Message);
+                            lock (balanceLock)
+                            {
+                                Console.WriteLine(e.Message);
+                            }
+                        };
+
+                        Console.WriteLine("Connect input device...");
+                        controller.ConnectInputDevice(midiInputDevice);
+                        Console.WriteLine("Connect output device...");
+                        controller.ConnectOutputDevice(midiOutputDevice);
+                        controller.IsExtender = primaryIsExtender;
+                        controllers.Add(controller);
+
+                        if (secondaryMidiInputDevice != null && secondaryMidiOutputDevice != null)
+                        {
+
+                            Console.WriteLine("Connect secondary input device...");
+                            controllerSecond.ConnectInputDevice(secondaryMidiInputDevice);
+                            Console.WriteLine("Connect secondary output device...");
+                            controllerSecond.ConnectOutputDevice(secondaryMidiOutputDevice);
+                            controllerSecond.IsExtender = secondaryIsExtender;
+                            controllers.Add(controllerSecond);
                         }
-                    };
-
-                    Console.WriteLine("Connect input device...");
-                    controller.ConnectInputDevice(midiInputDevice);
-                    Console.WriteLine("Connect output device...");
-                    controller.ConnectOutputDevice(midiOutputDevice);
-
-                    if (secondaryMidiInputDevice != null && secondaryMidiOutputDevice != null)
-                    {
-
-                        Console.WriteLine("Connect secondary input device...");
-                        controllerSecond.ConnectInputDevice(secondaryMidiInputDevice);
-                        Console.WriteLine("Connect secondary output device...");
-                        controllerSecond.ConnectOutputDevice(secondaryMidiOutputDevice);
                     }
+                    else
+                    {
+                        foreach (var controllerSetting in controllersSetting)
+                        {
+                            Console.WriteLine("Set controller message event....");
+                            controller = MIDIControllerFactory.GetMidiController(protocol);
+                            controller.MessageReceived += (obj, e) =>
+                            {
+                                lock (balanceLock)
+                                {
+                                    Console.WriteLine(e.Message);
+                                }
+                            };
 
+                            Console.WriteLine("Connect input device...");
+                            controller.ConnectInputDevice(controllerSetting.InputName);
+                            Console.WriteLine("Connect output device...");
+                            controller.ConnectOutputDevice(controllerSetting.OutputName);
+                            controller.IsExtender = controllerSetting.IsExtender;
+                        }
+
+                    }
                 }
 
                 Action<string, bool> messageWriter = (string messages, bool isDebugMessage) =>

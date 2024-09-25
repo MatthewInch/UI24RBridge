@@ -12,7 +12,7 @@ namespace UI24RController.UI24RChannels
         {
             LinkedWith = -1; //-1: not linked, 0 left, 1 right
             channelTypeID = "a";
-
+            Eq.ChannelType = channelTypeID;
         }
 
         protected override string GetDefaultName()

@@ -9,7 +9,7 @@ namespace UI24RController.UI24RChannels
         public VCAChannel(int channelNumber): base(channelNumber)
         {
             channelTypeID = "v";
-
+            Eq.ChannelType = channelTypeID;
         }
         public override int ChannelNumberInMixer => this.ChannelNumber + 48;
         protected override string GetDefaultName()

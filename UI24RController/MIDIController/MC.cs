@@ -51,6 +51,7 @@ namespace UI24RController.MIDIController
         protected ButtonsID _buttonsID = ButtonsID.Instance;
         public bool IsConnectionErrorOccured { get => _isConnectionErrorOccured; }
         public bool IsConnected { get => _isConnected; }
+        public bool IsExtender { get; set; }
 
         public event EventHandler<MessageEventArgs> MessageReceived;
         public event EventHandler<EventArgs> ConnectionErrorEvent;
@@ -130,6 +131,7 @@ namespace UI24RController.MIDIController
                 faderValues.TryAdd(i, new FaderState());
                 _clipLeds.TryAdd(i, DateTime.MinValue);
             }
+            IsExtender = false;
 
             //initialize Controller - all leds off
             //TODO: Search for right SysEx command, this one not working
@@ -1003,12 +1005,9 @@ namespace UI24RController.MIDIController
 
         public void InitializeController(IControllerSettings controllerSettings)
         {
-            if (controllerSettings != null)
+            if (this.IsExtender)
             {
-                if (controllerSettings.IsExtender)
-                {
-                    _lcdDisplayNumber = 0x15;
-                }
+                _lcdDisplayNumber = 0x15;
             }
             WriteTextToMainDisplay("            ", 0, 12);
             WriteTextToLCDSecondLine("");

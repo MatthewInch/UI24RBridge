@@ -40,8 +40,12 @@ namespace UI24RController.UI24RChannels
             };
             channelTypeID = "i";
             VCAMuteMask = 0;
+            Eq = new EqBase();
+            Eq.ChannelType = channelTypeID;
+            Eq.ChannelNumber = channelNumber;
         }
         public double ChannelFaderValue { get; set; }
+        public EqBase Eq { get; set; }
         public double Panorama { get; set; }
         protected string _name = "";
         public virtual string Name {

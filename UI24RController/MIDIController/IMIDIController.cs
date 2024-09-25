@@ -21,6 +21,7 @@ public interface IMIDIController
     #endregion
 
     event EventHandler<MessageEventArgs> MessageReceived;
+    bool IsExtender { get; set; }
 
     #region Button Events
     event EventHandler<FaderEventArgs> FaderEvent;

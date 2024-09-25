@@ -10,6 +10,7 @@ namespace UI24RController.UI24RChannels
         public FXChannel(int channelNumber): base(channelNumber)
         {
             channelTypeID = "f";
+            Eq.ChannelType = channelTypeID;
             _muteGroupMaskDefault = 1 << Mixer._muteAllBit | 1 << Mixer._muteAllFxBit;
         }
 

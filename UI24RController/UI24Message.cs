@@ -301,6 +301,15 @@ namespace UI24RController
                             }
                         }
                         break;
+                    case MessageTypeEnum.eq:
+                       // SETD ^ i.0.eq.hpf.freq ^ val
+                        //b1 - b4
+                        //SETD ^ i.0.eq.b1.freq ^ val
+                        //SETD ^ i.0.eq.b1.gain ^ val
+                        //SETD ^ i.0.eq.b1.q ^ val
+                        //SETD ^ i.0.eq.bypass.gain ^ val
+
+                        break;
                 }
             }
         }

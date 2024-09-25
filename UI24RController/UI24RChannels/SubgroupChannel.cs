@@ -9,7 +9,7 @@ namespace UI24RController.UI24RChannels
         public SubgroupChannel(int channelNumber): base(channelNumber)
         {
             channelTypeID = "s";
-
+            Eq.ChannelType = channelTypeID;
         }
         public override int ChannelNumberInMixer => this.ChannelNumber + 32;
         protected override string GetDefaultName()
