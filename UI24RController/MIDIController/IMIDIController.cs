@@ -22,6 +22,8 @@ public interface IMIDIController
 
     event EventHandler<MessageEventArgs> MessageReceived;
     bool IsExtender { get; set; }
+    int ChannelOffset { get; set; }
+    string ButtonsValuesFileName { get; set; }
 
     #region Button Events
     event EventHandler<FaderEventArgs> FaderEvent;
@@ -118,5 +120,8 @@ public interface IMIDIController
     void WriteChannelMeter(int channelNumber, byte value);
     void TurnOffClipLed(int channelNumber);
 
-    void InitializeController(IControllerSettings settings=null);
+    void InitializeController();
+
+    //Dictionary<ButtonsEnum, byte> GetButtonsValues(string fileName);
+
 }

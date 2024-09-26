@@ -88,6 +88,8 @@ namespace UI24RBridgeTest
                         Console.WriteLine("Connect output device...");
                         controller.ConnectOutputDevice(midiOutputDevice);
                         controller.IsExtender = primaryIsExtender;
+                        controller.ChannelOffset = primaryChannelStart == "0" ? 0 : 1;
+                        if  (buttonsValues != null) controller.ButtonsValuesFileName = buttonsValues.ToString();
                         controllers.Add(controller);
 
                         if (secondaryMidiInputDevice != null && secondaryMidiOutputDevice != null)
@@ -98,6 +100,8 @@ namespace UI24RBridgeTest
                             Console.WriteLine("Connect secondary output device...");
                             controllerSecond.ConnectOutputDevice(secondaryMidiOutputDevice);
                             controllerSecond.IsExtender = secondaryIsExtender;
+                            controllerSecond.ChannelOffset = secondaryChannelStart == "0" ? 0 : 1;
+                            if (buttonsValues != null) controller.ButtonsValuesFileName = buttonsValues;
                             controllers.Add(controllerSecond);
                         }
                     }
@@ -120,6 +124,11 @@ namespace UI24RBridgeTest
                             Console.WriteLine("Connect output device...");
                             controller.ConnectOutputDevice(controllerSetting.OutputName);
                             controller.IsExtender = controllerSetting.IsExtender;
+                            controller.ChannelOffset = controllerSetting.ChannelOffset;
+                            if (controllerSetting.PrimaryButtons != null)
+                            {
+                                controller.ButtonsValuesFileName = controllerSetting.PrimaryButtons;
+                            }
                         }
 
                     }
@@ -146,35 +155,11 @@ namespace UI24RBridgeTest
                  };
                 Console.WriteLine("Start bridge...");
 
-                BridgeSettings settings = new BridgeSettings(address, controller, messageWriter);
-                BridgeSettings settingsSecondary = null;
-                if (controllerSecond != null)
-                {
-                    settingsSecondary = new BridgeSettings(address, controllerSecond, messageWriter);
-                    if (secondaryIsExtender)
-                    {
-                        settingsSecondary.ControllerIsExtender = true;
-                    }
-                    if (secondaryChannelStart != null)
-                    {
-                        settingsSecondary.ControllerStartChannel = secondaryChannelStart;
-                    }
-                }
-                if (primaryIsExtender)
-                {
-                    settings.ControllerIsExtender = true;
-                }
-               
-                if (primaryChannelStart != null)
-                {
-                    settings.ControllerStartChannel = primaryChannelStart;
-                }
+                BridgeSettings settings = new BridgeSettings(address, messageWriter);
                 
                 if (syncID != null)
                 {
                     settings.SyncID = syncID;
-                    if ( settingsSecondary != null)
-                        settingsSecondary.SyncID = syncID;
                 }
                 if (recButtonBahavior != null)
                 {
@@ -182,18 +167,12 @@ namespace UI24RBridgeTest
                     {
                         case "onlymtk":
                             settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.OnlyMTK;
-                            if (settingsSecondary != null)
-                                settingsSecondary.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.OnlyMTK;
                             break;
                         case "only2track":
                             settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.OnlyTwoTrack;
-                            if (settingsSecondary != null)
-                                settingsSecondary.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.OnlyTwoTrack;
                             break;
                         default:
                             settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.TwoTrackAndMTK;
-                            if (settingsSecondary != null)
-                                settingsSecondary.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.TwoTrackAndMTK;
                             break;
                     }
                 }
@@ -203,13 +182,9 @@ namespace UI24RBridgeTest
                     {
                         case "phantom":
                             settings.ChannelRecButtonBehavior = BridgeSettings.ChannelRecButtonBehaviorEnum.Phantom;
-                            if (settingsSecondary != null)
-                                settingsSecondary.ChannelRecButtonBehavior = BridgeSettings.ChannelRecButtonBehaviorEnum.Phantom;
                             break;
                         default:
                             settings.ChannelRecButtonBehavior = BridgeSettings.ChannelRecButtonBehaviorEnum.Rec;
-                            if (settingsSecondary != null)
-                                settingsSecondary.ChannelRecButtonBehavior = BridgeSettings.ChannelRecButtonBehaviorEnum.Rec;
                             break;
                     }
                 }
@@ -219,21 +194,15 @@ namespace UI24RBridgeTest
                     {
                         case "lock":
                             settings.AuxButtonBehavior = BridgeSettings.AuxButtonBehaviorEnum.Lock;
-                            if (settingsSecondary != null)
-                                settingsSecondary.AuxButtonBehavior = BridgeSettings.AuxButtonBehaviorEnum.Lock;
                             break;
                         default:
                             settings.AuxButtonBehavior = BridgeSettings.AuxButtonBehaviorEnum.Release;
-                            if (settingsSecondary != null)
-                                settingsSecondary.AuxButtonBehavior = BridgeSettings.AuxButtonBehaviorEnum.Release;
                             break;
                     }
                 }
                 if (buttonsValues != null)
                 {
-                    settings.ButtonsValuesFileName = buttonsValues;
-                    if (settingsSecondary != null)
-                        settingsSecondary.ButtonsValuesFileName = buttonsValues;
+                    controllers.ForEach(controller => controller.ButtonsValuesFileName = buttonsValues);
                 }
                 if (startBank != null)
                 {
@@ -253,14 +222,9 @@ namespace UI24RBridgeTest
 
                 settings.RtaOnWhenSelect = rtaOnWhenSelect;
 
-                UI24RBridge bridgeSecondary = null;
-                if (settingsSecondary != null)
-                {
-                    bridgeSecondary = new UI24RBridge(settingsSecondary);
-                }
                 Console.WriteLine("Press 'ESC' to exit.");
                 bool isExit = false;
-                using (UI24RBridge bridge = new UI24RBridge(settings, bridgeSecondary))
+                using (UI24RBridge bridge = new UI24RBridge(settings, controllers))
                 {
                     while (!isExit)
                     {

@@ -7,15 +7,7 @@ namespace UI24RController.MIDIController
 {
     public class ButtonsID 
     {
-        //Thread safe Singleton
-        private static readonly ButtonsID _instance = new ButtonsID();
-        public static ButtonsID Instance 
-        { 
-            get 
-            { 
-                return _instance; 
-            } 
-        }
+
 
         public Dictionary<ButtonsEnum, byte> ButtonsDictionary { get; set; }
 
@@ -25,7 +17,7 @@ namespace UI24RController.MIDIController
             set { ButtonsDictionary[s] = value; }
         }
 
-        protected ButtonsID() : base()
+        public ButtonsID() : base()
         {
             ButtonsDictionary = new Dictionary<ButtonsEnum, byte>();
             //It will be configurable 

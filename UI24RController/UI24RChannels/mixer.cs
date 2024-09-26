@@ -115,7 +115,7 @@ namespace UI24RController.UI24RChannels
                 _banks[_selectedBank][currentLayerNumber][controllerPosition] = UserLayerEditNewChannel;
             return (_selectedBank, currentLayerNumber, controllerPosition, UserLayerEditNewChannel);
         }
-        public void findNextAvailableChannelForUserLayer(int controllerPos, int dir)
+        public void findNextAvailableChannelForUserLayer(int controllerPos, int dir, int channelOffset)
         {
             bool goOneMoreChannel = true;
 
@@ -128,7 +128,7 @@ namespace UI24RController.UI24RChannels
                 {
                     if (i != controllerPos)
                     {
-                        if (getCurrentLayer()[i] == UserLayerEditNewChannel)
+                        if (getCurrentLayer(channelOffset)[i] == UserLayerEditNewChannel)
                             goOneMoreChannel = true;
                     }
                 }
@@ -209,19 +209,19 @@ namespace UI24RController.UI24RChannels
         /// in that case the getCurrentLayer return the first (or second) 8 value plus main fader
         /// </summary>
         /// <returns></returns>
-        public int[] getCurrentLayer()
+        public int[] getCurrentLayer(int channelOffset)
         {
             if (_selectedLayer < _banks[_selectedBank].Count)
             {
                 
                 if (_selectedBank<2)
                 {
-                    var selectedLayer = this.IsChannelOffset ? (_selectedLayer + 1) % _numLayersPerBank : _selectedLayer;
+                    var selectedLayer = (_selectedLayer + channelOffset) % _numLayersPerBank;
                     return _banks[_selectedBank][selectedLayer];
                 }
                 else //view groups
                 {
-                    var offset = this.IsChannelOffset ? 8 : 0;
+                    var offset = channelOffset*8;
                     var result = _banks[_selectedBank][_selectedLayer].Skip(offset).Take(8).ToFixedLength(8,-1).Append(54);
                     return result.ToArray();
                     
@@ -230,11 +230,11 @@ namespace UI24RController.UI24RChannels
             return new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 54 };
         }
 
-        public int getChannelNumberInCurrentLayer(int ch)
+        public int getChannelNumberInCurrentLayer(int ch, int channelOffset)
         {
             ch = ch % _numFaders;
             if (ch < 0) ch = 0;
-            return getCurrentLayer()[ch];
+            return getCurrentLayer(channelOffset)[ch];
         }
         #endregion
 

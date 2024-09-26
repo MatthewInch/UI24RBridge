@@ -8,6 +8,10 @@ using Commons.Music.Midi.RtMidi;
 using System.Threading;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
+using System.Text.Json.Serialization;
+using System.Text.Json;
+using UI24RController.Settings.Helper;
+using System.IO;
 
 namespace UI24RController.MIDIController
 {
@@ -48,10 +52,25 @@ namespace UI24RController.MIDIController
         protected ConcurrentDictionary<int, DateTime> _clipLeds = new ConcurrentDictionary<int, DateTime>();
         protected byte _lcdDisplayNumber = 0x14; //with X-touch extender this is 15
 
-        protected ButtonsID _buttonsID = ButtonsID.Instance;
+        protected ButtonsID _buttonsID = new ButtonsID();
         public bool IsConnectionErrorOccured { get => _isConnectionErrorOccured; }
         public bool IsConnected { get => _isConnected; }
         public bool IsExtender { get; set; }
+        public int ChannelOffset { get; set; }
+
+        protected string _buttonsValuesFileName;
+        public string ButtonsValuesFileName { get { return _buttonsValuesFileName; }
+            set {
+                _buttonsValuesFileName = value;
+                var buttonSettingsFromFile = GetButtonsValues(value);
+                //update initial values if in the settings file it overwrited
+                foreach (KeyValuePair<ButtonsEnum, byte> button in buttonSettingsFromFile)
+                {
+                    _buttonsID.ButtonsDictionary[button.Key] = button.Value;
+                }
+
+            }
+        }
 
         public event EventHandler<MessageEventArgs> MessageReceived;
         public event EventHandler<EventArgs> ConnectionErrorEvent;
@@ -132,7 +151,7 @@ namespace UI24RController.MIDIController
                 _clipLeds.TryAdd(i, DateTime.MinValue);
             }
             IsExtender = false;
-
+            ChannelOffset = 0;
             //initialize Controller - all leds off
             //TODO: Search for right SysEx command, this one not working
             //byte[] sysex = new byte[] { 0xf0, 0, 0, 0x66, 0x14, 0x61, 0xf7 };
@@ -751,19 +770,19 @@ namespace UI24RController.MIDIController
                     OnScrubEvent(false);
                 }
 
-                else if (message[0]== 0x90 && ButtonsID.Instance.GetAuxButton(message[1]).isAux) //F1-F8 press
+                else if (message[0]== 0x90 && _buttonsID.GetAuxButton(message[1]).isAux) //F1-F8 press
                 {
-                    var auxNum = ButtonsID.Instance.GetAuxButton(message[1]).auxNum;
+                    var auxNum = _buttonsID.GetAuxButton(message[1]).auxNum;
                     OnAuxButtonEvent(auxNum, message[2] == 0x7f);
                 }
-                else if ((message[0] == 0x90) && ButtonsID.Instance.GetFxButton(message[1]).isFX)
+                else if ((message[0] == 0x90) && _buttonsID.GetFxButton(message[1]).isFX)
                 {
-                    var fxNum = ButtonsID.Instance.GetFxButton(message[1]).fxNum;
+                    var fxNum = _buttonsID.GetFxButton(message[1]).fxNum;
                     OnFxButtonEvent(fxNum, message[2] == 0x7f);
                 }
-                else if ((message[0] == 0x90) && ButtonsID.Instance.GetMuteGroupsButton(message[1]).isMuteGroupButton)
+                else if ((message[0] == 0x90) && _buttonsID.GetMuteGroupsButton(message[1]).isMuteGroupButton)
                 {
-                    var muteNum = ButtonsID.Instance.GetMuteGroupsButton(message[1]).muteGroupNum;
+                    var muteNum = _buttonsID.GetMuteGroupsButton(message[1]).muteGroupNum;
                     OnMuteGroupButtonEvent(muteNum, message[2] == 0x7f);
                 }
 
@@ -1003,7 +1022,7 @@ namespace UI24RController.MIDIController
             Send(new byte[] { 0xd0, (byte)(channelNumber * 16 + 0x0f) }, 0, 2, 0);
         }
 
-        public void InitializeController(IControllerSettings controllerSettings)
+        public void InitializeController()
         {
             if (this.IsExtender)
             {
@@ -1012,5 +1031,23 @@ namespace UI24RController.MIDIController
             WriteTextToMainDisplay("            ", 0, 12);
             WriteTextToLCDSecondLine("");
         }
+
+        protected class DictionarySerializerClass
+        {
+            [JsonConverter(typeof(DictionaryTKeyEnumTValueConverter))]
+            public Dictionary<ButtonsEnum, byte> ButtonsDictionary { get; set; }
+
+
+        }
+
+        protected Dictionary<ButtonsEnum, byte> GetButtonsValues(string fileName)
+        {
+            var jsonText = File.ReadAllText(fileName);
+            var options = MyClassTypeResolver<DictionarySerializerClass>.GetSerializerOptions();
+            var outObject = JsonSerializer.Deserialize(jsonText, typeof(DictionarySerializerClass), options);
+            Dictionary<ButtonsEnum, byte> result = (outObject as DictionarySerializerClass).ButtonsDictionary;
+            return result;
+        }
+
     }
 }
