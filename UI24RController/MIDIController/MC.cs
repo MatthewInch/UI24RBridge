@@ -37,7 +37,7 @@ namespace UI24RController.MIDIController
         /// Store every fader setted value of the faders, key is the channel number (z in the message)
         /// </summary>
         protected ConcurrentDictionary<byte, FaderState> faderValues = new ConcurrentDictionary<byte, FaderState>();
-            
+
         IMidiInput _input = null;
         protected string _inputDeviceNumber;
         protected string _inputDeviceName;
@@ -420,10 +420,10 @@ namespace UI24RController.MIDIController
                 _output.Dispose();
                 _output = null;
             }
-           
+
         }
 
-        public  bool ConnectInputDevice(string deviceName)
+        public async Task<bool> ConnectInputDevice(string deviceName)
         {
             try
             {
@@ -432,8 +432,8 @@ namespace UI24RController.MIDIController
                 var deviceNumber = access.Inputs.Where(i => i.Name.ToUpper() == deviceName.ToUpper()).FirstOrDefault();
                 if (deviceNumber != null)
                 {
-                    
-                    var input = access.OpenInputAsync(deviceNumber.Id).Result;
+                    var input = await access.OpenInputAsync(deviceNumber.Id);
+
                     _input = input;
                     _inputDeviceNumber = deviceNumber.Id;
                     _input.MessageReceived += (obj, e) =>
@@ -458,7 +458,7 @@ namespace UI24RController.MIDIController
             }
             return false;
         }
-        public bool ConnectOutputDevice(string deviceName)
+        public async Task<bool> ConnectOutputDevice(string deviceName)
         {
             try
             {
@@ -467,7 +467,7 @@ namespace UI24RController.MIDIController
                 var deviceNumber = access.Outputs.Where(i => i.Name.ToUpper() == deviceName.ToUpper()).FirstOrDefault();
                 if (deviceNumber != null)
                 {
-                    var output = access.OpenOutputAsync(deviceNumber.Id).Result;
+                    var output = await access.OpenOutputAsync(deviceNumber.Id);
                     _outputDeviceNumber = deviceNumber.Id;
                     _output = output;
                     _isConnected = true;
@@ -503,10 +503,11 @@ namespace UI24RController.MIDIController
                 _pingThread.Start();
 
         }
-        public bool ReConnectDevice()
+        public async Task<bool> ReConnectDevice()
         {
-           return ConnectInputDevice(_inputDeviceName) &&
-            ConnectOutputDevice(_outputDeviceName);
+            var inputOk  = await ConnectInputDevice(_inputDeviceName);
+            var outputOk = await ConnectOutputDevice(_outputDeviceName);
+            return inputOk && outputOk;
         }
 
         public string[] GetInputDeviceNames()
@@ -530,7 +531,7 @@ namespace UI24RController.MIDIController
 
                 }
             }
-            catch 
+            catch
             {
                 OnConnectionErrorEvent();
             }
@@ -539,7 +540,7 @@ namespace UI24RController.MIDIController
         {
             var message = e.Data;
 
-            if (message[0] == 0x90) //button pressed, released, fader released 
+            if (message[0] == 0x90) //button pressed, released, fader released
             {
                 if (message.MIDIEqual(0x90, 0x00, 0x00, 0xff, 0x00, 0xff) && (message[1] >= 0x68) && (message[1] <= 0x70)) //release fader (0x90 [0x68-0x70] 0x00)
                 {
@@ -794,7 +795,7 @@ namespace UI24RController.MIDIController
                 int lower = message[1]; // lower 7 bit
 
                 var faderValue = (upper + lower) / 16383.0;
-                
+
                 faderValues[channelNumber].Value = faderValue;
                 OnFaderEvent(channelNumber, faderValue);
                 if (!faderValues[channelNumber].IsTouched)

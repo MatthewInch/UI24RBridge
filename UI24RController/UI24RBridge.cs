@@ -34,10 +34,10 @@ namespace UI24RController
         protected SelectedLayoutEnum _selectedLayout = SelectedLayoutEnum.Channels;
 
         protected bool _isReconnecting = false;
- 
+
         /// <summary>
         /// Represent the UI24R mixer state
-        /// TODO: need to move every global variable that store any mixer specific state to the Mixer class (viewGroups, selectedChannel etc.) 
+        /// TODO: need to move every global variable that store any mixer specific state to the Mixer class (viewGroups, selectedChannel etc.)
         /// </summary>
         protected Mixer _mixer = new Mixer();
 
@@ -107,7 +107,7 @@ namespace UI24RController
 
             }
             this.KnobsFunction = KnobsFunctionEnum.Gain;
-            
+
             //if (!_settings.Controller.IsConnected)
             //{
             //    _midiController_ConnectionErrorEvent(this, null);
@@ -137,10 +137,10 @@ namespace UI24RController
             SendMessage("Try to reconnect....", false);
             if (!_isReconnecting)
             {
-                new Thread(() =>
+                new Thread(async () =>
                 {
                     _isReconnecting = true;
-                    while (_isReconnecting && !controller.ReConnectDevice())
+                    while (_isReconnecting && !await controller.ReConnectDevice())
                     {
                         Thread.Sleep(100);
                     }
@@ -179,7 +179,7 @@ namespace UI24RController
 
         private void Controller_TrackEvent(IMIDIController controller, EventArgs e)
         {
-            
+
         }
 
         private void Controller_PanEvent(IMIDIController controller, EventArgs e)
@@ -361,7 +361,7 @@ namespace UI24RController
                 SetControllerMuteButtonsForCurrentLayer();
             }
         }
-       
+
         private void _midiController_SelectChannelEvent(IMIDIController controller, MIDIController.ChannelEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber, controller.ChannelOffset);
@@ -758,8 +758,8 @@ namespace UI24RController
         //these envent are public and provided to the secondary controller
         //if the selected channel is on the secondary controller the modified value has to be send back to the primary controller
 
-        public bool SelectedChannelIsOnCurrentLayer(int channelOffset) 
-        { 
+        public bool SelectedChannelIsOnCurrentLayer(int channelOffset)
+        {
                return _mixer.getCurrentLayer(channelOffset).Where(x => x == SelectedChannel).Count() > 0;
         }
         public int UserLayerEditNewChannel
@@ -833,7 +833,7 @@ namespace UI24RController
                 _mixer.setNewUserChannelInCurrentBank(controllerPos);
                 controller.WriteTextToChannelLCDSecondLine(controllerPos, "");
                 SetControllerChannelToCurrentLayerAndSend(controller, _mixer.UserLayerEditNewChannel, controllerPos);
-                
+
             }
         }
 
@@ -849,7 +849,7 @@ namespace UI24RController
                     _mixer.findNextAvailableChannelForUserLayer(controllerPos, e.WheelDirection, otherController.ChannelOffset);
                     controller.WriteTextToChannelLCDSecondLine(controllerPos, _mixerChannels[_mixer.UserLayerEditNewChannel].Name);
                 }
-                
+
             }
             //if (_secondaryBridge != null) _secondaryBridge._midiController_WheelEvent(sender, e);
         }
@@ -871,11 +871,11 @@ namespace UI24RController
             }
         }
 
-        
+
         #endregion
 
         private void InitializeChannels()
-        { 
+        {
             _mixerChannels = new List<ChannelBase>();
             for (int i=0; i<24; i++)
             {
@@ -966,7 +966,7 @@ namespace UI24RController
 
                 controller.SetSelectLed(controllerChannelNumber, false);
                 controller.SetKnobLed(controllerChannelNumber, 0);
-                                
+
                 controller.WriteTextToChannelLCDFirstLine(controllerChannelNumber, "");
                 controller.SetMuteLed(controllerChannelNumber, false);
                 controller.SetSoloLed(controllerChannelNumber, false);
@@ -1031,7 +1031,7 @@ namespace UI24RController
                 {
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
                     controller.WriteTextToBarsDisplay("AX" + (_selectedLayout.AuxToInt() + 1).ToString());
-                } 
+                }
                 else if (_selectedLayout.IsFx())
                 {
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
@@ -1039,7 +1039,7 @@ namespace UI24RController
                 }
 
             });
-                
+
         }
 
         private void SetKnobsFunctionLedOnController()
@@ -1091,7 +1091,7 @@ namespace UI24RController
                                         chOnLayer.controller.SetFader(chOnLayer.controllerChannelNumber, ui24Message.FaderValue);
                                     });
                                 }
-                                
+
                             }
                             break;
                         case MessageTypeEnum.name:
@@ -1359,7 +1359,7 @@ namespace UI24RController
         private void SetMuteGroupsLeds()
         {
             UInt32 mask = _mixer.MuteMask;
-            _controllers.ForEach(controller => { 
+            _controllers.ForEach(controller => {
                 for (int i = 0; i < 6; ++i)
                 {
                     controller.SetLed(ButtonsEnum.MuteGroup1 + i, ((mask >> i) & 1) == 1);

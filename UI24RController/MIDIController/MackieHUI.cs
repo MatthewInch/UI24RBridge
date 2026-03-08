@@ -14,7 +14,7 @@ namespace UI24RController.MIDIController
         /// Store every fader setted value of the faders, key is the channel number (z in the message)
         /// </summary>
         protected Dictionary<byte, double> faderValues = new Dictionary<byte, double>();
-            
+
         IMidiInput _input = null;
         IMidiOutput _output = null;
 
@@ -94,13 +94,13 @@ namespace UI24RController.MIDIController
             }
         }
 
-        public  bool ConnectInputDevice(string deviceName)
+        public async Task<bool> ConnectInputDevice(string deviceName)
         {
             var access = MidiAccessManager.Default;
             var deviceNumber = access.Inputs.Where(i => i.Name == deviceName).FirstOrDefault();
             if (deviceNumber != null)
             {
-                _input = access.OpenInputAsync(deviceNumber.Id).Result;
+                _input = await access.OpenInputAsync(deviceNumber.Id);
                 _input.MessageReceived += (obj, e) =>
                 {
                     if (e.Data.Length>2)
@@ -113,7 +113,7 @@ namespace UI24RController.MIDIController
                 return true;
             }
             else
-                return false;            
+                return false;
         }
 
         private void ProcessMidiMessage()
@@ -127,13 +127,13 @@ namespace UI24RController.MIDIController
                 if (firstMessage.MIDIEqual(0x90, 0x00, 0x7f)) //ping answer -> do nothing
                 {
                 }
-                else if(firstMessage.MIDIEqual(0xb0, 0x0f)&& (firstMessage[2] < 8)) //first message of:  release fader 
+                else if(firstMessage.MIDIEqual(0xb0, 0x0f)&& (firstMessage[2] < 8)) //first message of:  release fader
                 {
                     var channelNumber = firstMessage[2];
                     var secondMessage = _messageQueue.Dequeue();
                     if (secondMessage.MIDIEqual(0xb0, 0x2f, 0x00)) //release fader
                     {
-                        //TODO: Send back the last fader value to the controller 
+                        //TODO: Send back the last fader value to the controller
                         if (faderValues.ContainsKey(channelNumber))
                         {
                             SetFader(channelNumber, faderValues[channelNumber]);
@@ -154,7 +154,7 @@ namespace UI24RController.MIDIController
                         faderValues.AddOrSet(channelNumber, faderValue);
                         OnFaderEvent(channelNumber, faderValue);
                     }
-                }   
+                }
                 else if (firstMessage.MIDIEqual(0xb0, 0x0f, 0x0a)) //preset up, preset down
                 {
                     var secondMessage = _messageQueue.Dequeue();
@@ -171,13 +171,13 @@ namespace UI24RController.MIDIController
             }
         }
 
-        public  bool ConnectOutputDevice(string deviceName)
+        public async Task<bool> ConnectOutputDevice(string deviceName)
         {
             var access = MidiAccessManager.Default;
             var deviceNumber = access.Outputs.Where(i => i.Name == deviceName).FirstOrDefault();
             if (deviceNumber != null)
             {
-                _output = access.OpenOutputAsync(deviceNumber.Id).Result;
+                _output = await access.OpenOutputAsync(deviceNumber.Id);
                 return true;
             }
             return false;
@@ -201,11 +201,11 @@ namespace UI24RController.MIDIController
         {
             if (_output != null && channelNumber<8)
             {
-                //'touch fader': b0 0f 0z 
+                //'touch fader': b0 0f 0z
                 //               b0 2f 40
-                //'release fader': b0 0f 0z 
-                //                 b0 2f 00 
-                //'move fader': b0 0z hi 
+                //'release fader': b0 0f 0z
+                //                 b0 2f 00
+                //'move fader': b0 0z hi
                 //              b0 2z lo
                 //where z is the channel number 1-8
                 //hi is between 0x00-0x7f
@@ -220,7 +220,7 @@ namespace UI24RController.MIDIController
                 //touch fader on channel
                 //_output.Send(new byte[] {data0, 0x0f, z }, 0, 3, 0);
                 //_output.Send(new byte[] { data0, 0x2f, 0x40 }, 0, 3, 0);
-                //move fader 
+                //move fader
                 _output.Send(new byte[] { data0, (byte)(0x00 + z), upper }, 0, 3, 0);
                 _output.Send(new byte[] { data0, (byte)(0x20 + z), lower }, 0, 3, 0);
                 faderValues.AddOrSet(z, faderValue);
@@ -278,7 +278,7 @@ namespace UI24RController.MIDIController
             throw new NotImplementedException();
         }
 
-        public bool ReConnectDevice()
+        public async Task<bool> ReConnectDevice()
         {
             throw new NotImplementedException();
         }

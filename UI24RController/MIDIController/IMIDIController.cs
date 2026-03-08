@@ -2,16 +2,17 @@
 using System.Collections.Generic;
 using UI24RController;
 using UI24RController.MIDIController;
+using System.Threading.Tasks;
 
 public interface IMIDIController
 {
     #region Connection
     string[] GetInputDeviceNames();
     string[] GetOutputDeviceNames();
-    bool ConnectInputDevice(string deviceName);
-    bool ConnectOutputDevice(string deviceName);
+    Task<bool> ConnectInputDevice(string deviceName);
+    Task<bool> ConnectOutputDevice(string deviceName);
 
-    bool ReConnectDevice();
+    Task<bool> ReConnectDevice();
 
     bool IsConnectionErrorOccured { get; }
     bool IsConnected { get; }
