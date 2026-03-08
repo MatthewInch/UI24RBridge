@@ -4,7 +4,6 @@ using System.Text;
 using Commons.Music.Midi;
 using System.Linq;
 using System.Threading.Tasks;
-using Commons.Music.Midi.RtMidi;
 using System.Threading;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
