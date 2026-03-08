@@ -3,6 +3,7 @@ using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UI24RController;
 using UI24RController.MIDIController;
 
@@ -26,7 +27,7 @@ namespace UI24RBridgeTest
             var controllersSetting = new List<UI24RController.ControllerSettings>();
             configuration.GetSection("MidiControllers").Bind(controllersSetting);
 
-            
+
             var address = configuration["UI24R-Url"];
             var midiInputDevice = configuration["MIDI-Input-Name"];
             var midiOutputDevice = configuration["MIDI-Output-Name"];
@@ -55,7 +56,7 @@ namespace UI24RBridgeTest
             {
                 controllerSecond = MIDIControllerFactory.GetMidiController(protocol);
             }
-            
+
             if (args.Length > 0)
                 WriteMIDIDeviceNames(controller);
             else
@@ -156,7 +157,7 @@ namespace UI24RBridgeTest
                 Console.WriteLine("Start bridge...");
 
                 BridgeSettings settings = new BridgeSettings(address, messageWriter);
-                
+
                 if (syncID != null)
                 {
                     settings.SyncID = syncID;
@@ -251,9 +252,26 @@ namespace UI24RBridgeTest
                             }
                         }
                     }
-                    
+
                 }
             }
+        }
+        private static string PromptDeviceChoice(string promptText, IEnumerable<string> deviceNames)
+        {
+            var nameList = deviceNames.ToList();
+
+            AnsiConsole.WriteLine(promptText);
+            for (int i = 0; i < nameList.Count; i++)
+                AnsiConsole.MarkupLine($"  [blue][[{i + 1}]][/]: {nameList[i]}");
+
+            int chosen = AnsiConsole.Prompt(
+                new TextPrompt<int>("Enter number:")
+                    .DefaultValue(1)
+                    .Validate(n => n >= 1 && n <= nameList.Count
+                        ? ValidationResult.Success()
+                        : ValidationResult.Error($"Please enter a number between 1 and {nameList.Count}")));
+
+            return nameList[chosen - 1];
         }
 
         private static void CreateAppsettings(string fileName)
@@ -261,17 +279,15 @@ namespace UI24RBridgeTest
             var controller = MIDIControllerFactory.GetMidiController("MC");
             var inputDevicenames = controller.GetInputDeviceNames();
             var outputDevicenames = controller.GetOutputDeviceNames();
-            
+
             AnsiConsole.WriteLine("appsettings.json is not found.");
             AnsiConsole.WriteLine("Creating of the configuration file is starting.");
             var address = AnsiConsole.Ask<string>(@"Please write the mixer address (eg: ws:\\192.168.3.12): "); //"UI24R-Url"
-            var midiInputDevice = AnsiConsole.Prompt(
-                new TextPrompt<string>("Choose primary input device. (It is case sensitive.)")
-                .AddChoices(inputDevicenames));   //configuration["MIDI-Input-Name"];
+            var midiInputDevice = PromptDeviceChoice(
+                "Choose primary input device:", inputDevicenames); //configuration["MIDI-Input-Name"];
 
-            var midiOutputDevice = AnsiConsole.Prompt(
-                new TextPrompt<string>("Choose primary output device. (It is case sensitive.)")
-                .AddChoices(outputDevicenames));   //configuration["MIDI-Output-Name"];
+            var midiOutputDevice = PromptDeviceChoice(
+                "Choose primary output device:", outputDevicenames); //configuration["MIDI-Output-Name"];
 
             //var primaryIsExtender = configuration["PrimaryIsExtender"] == "true";
             string primaryIsExtender = "false";
@@ -290,7 +306,7 @@ namespace UI24RBridgeTest
                 new TextPrompt<string>("Primary controller offset (show 1-8ch: 0 9-16ch: 1")
                 .AddChoices(["0", "1"])
                 .DefaultValue("0"));
-           
+
             var isAddSecondaryDevice = AnsiConsole.Prompt(
                 new TextPrompt<bool>("Do you want to add secondary device?")
                     .AddChoice(true)
@@ -304,17 +320,15 @@ namespace UI24RBridgeTest
             string secondaryIsExtender = "false";
             string secondaryChannelStart = "1";
             //var secondaryMidiInputDevice = configuration["MIDI-Input-Name-Second"];
-            //var secondaryMidiOutputDevice = configuration["MIDI-Output-Name-Second"]; 
+            //var secondaryMidiOutputDevice = configuration["MIDI-Output-Name-Second"];
             //var secondaryIsExtender = configuration["SecondaryIsExtender"] == "true";
             if (isAddSecondaryDevice)
             {
-                secondaryMidiInputDevice = AnsiConsole.Prompt(
-                new TextPrompt<string>("Choose secondary input device. (It is case sensitive.)")
-                .AddChoices(inputDevicenames));   //configuration["MIDI-Input-Name"];
+                secondaryMidiInputDevice = PromptDeviceChoice(
+                    "Choose secondary input device:", inputDevicenames); //configuration["MIDI-Input-Name"];
 
-                secondaryMidiOutputDevice = AnsiConsole.Prompt(
-                    new TextPrompt<string>("Choose secondary output device. (It is case sensitive.)")
-                    .AddChoices(outputDevicenames));   //configuration["MIDI-Output-Name"];
+                secondaryMidiOutputDevice = PromptDeviceChoice(
+                    "Choose secondary output device:", outputDevicenames); //configuration["MIDI-Output-Name"];
 
                 if (AnsiConsole.Prompt(
                     new TextPrompt<bool>("Is secondary device an extender?")
@@ -370,7 +384,7 @@ namespace UI24RBridgeTest
 ";
 
             File.WriteAllText(fileName, settingsContent);
-            
+
 
         }
 
