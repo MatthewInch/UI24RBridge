@@ -42,7 +42,7 @@ namespace UI24RController.UI24RChannels
 
         private void initLayers(int startBank = 0)
         {
-          
+
             UserLayerEdit = false;
             UserLayerEditNewChannel = -1;
 
@@ -149,7 +149,7 @@ namespace UI24RController.UI24RChannels
             _banks[2][viewGroupNumber] = channels;
         }
 
-        public void setChannelInLayerAndPosition(int bank, int layerNumber, int position, int channel) 
+        public void setChannelInLayerAndPosition(int bank, int layerNumber, int position, int channel)
         {
             _banks[bank][layerNumber][position] = channel;
         }
@@ -213,7 +213,7 @@ namespace UI24RController.UI24RChannels
         {
             if (_selectedLayer < _banks[_selectedBank].Count)
             {
-                
+
                 if (_selectedBank<2)
                 {
                     var selectedLayer = (_selectedLayer + channelOffset) % _numLayersPerBank;
@@ -224,7 +224,7 @@ namespace UI24RController.UI24RChannels
                     var offset = channelOffset*8;
                     var result = _banks[_selectedBank][_selectedLayer].Skip(offset).Take(8).ToFixedLength(8,-1).Append(54);
                     return result.ToArray();
-                    
+
                 }
             }
             return new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 54 };
@@ -241,7 +241,7 @@ namespace UI24RController.UI24RChannels
         #region Mute Group
 
         private UInt32 _muteMask;
-        public UInt32 MuteMask { 
+        public UInt32 MuteMask {
             get
             {
                 return _muteMask;
@@ -300,7 +300,7 @@ namespace UI24RController.UI24RChannels
 
         #region Tap Tempo
 
-        private DateTime _lastTick;
+        private DateTime? _lastTick;
         private List<int> _tempo;
 
 
@@ -322,7 +322,7 @@ namespace UI24RController.UI24RChannels
                 return -1;
             }
 
-            double timeDiff = (newTick - _lastTick).TotalSeconds;
+            double timeDiff = (newTick - _lastTick.Value).TotalSeconds;
 
             //if tick after more than 5s, clear ticks
             if (timeDiff > 5)

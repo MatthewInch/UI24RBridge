@@ -86,13 +86,13 @@ namespace UI24RController.MIDIController
             }
         }
 
-        public bool ConnectInputDevice(string deviceName)
+        public async Task<bool> ConnectInputDevice(string deviceName)
         {
             var access = MidiAccessManager.Default;
             var deviceNumber = access.Inputs.Where(i => i.Name == deviceName).FirstOrDefault();
             if (deviceNumber != null)
             {
-                _input = access.OpenInputAsync(deviceNumber.Id).Result;
+                _input = await access.OpenInputAsync(deviceNumber.Id);
                 _input.MessageReceived += (obj, e) =>
                 {
                     if (e.Data.Length>2)
@@ -104,7 +104,7 @@ namespace UI24RController.MIDIController
                 return true;
             }
             else
-                return false;            
+                return false;
         }
 
         private void ProcessMidiMessage(MidiReceivedEventArgs e)
@@ -122,13 +122,13 @@ namespace UI24RController.MIDIController
             }
         }
 
-        public bool ConnectOutputDevice(string deviceName)
+        public async Task<bool> ConnectOutputDevice(string deviceName)
         {
             var access = MidiAccessManager.Default;
             var deviceNumber = access.Outputs.Where(i => i.Name == deviceName).FirstOrDefault();
             if (deviceNumber != null)
             {
-                _output = access.OpenOutputAsync(deviceNumber.Id).Result;
+                _output = await access.OpenOutputAsync(deviceNumber.Id);
                 return true;
             }
             return false;
@@ -207,7 +207,7 @@ namespace UI24RController.MIDIController
             throw new NotImplementedException();
         }
 
-        public bool ReConnectDevice()
+        public async Task<bool> ReConnectDevice()
         {
             throw new NotImplementedException();
         }
