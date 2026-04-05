@@ -1,44 +1,3 @@
-# How to install UI24RBridge to Raspberry Pi
-
-- Install arm64 ubuntu linux to raspberry
-- Install .net Core 3.1 runtime from [here]( https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu)
-    - manual installation steps (article)[https://sumodh.com/2020/05/05/how-to-install-net-core-x64-sdk-in-raspberry-pi-4/?doing_wp_cron=1618749257.7842419147491455078125]:
-        - Download the Arm64 linux binaries from [here](https://dotnet.microsoft.com/download/dotnet/3.1)
-        - sudo mkdir -p $HOME/dotnet
-          sudo tar zxf dotnet-sdk-3.1.408-linux-arm.tar.gz -C $HOME/dotnet
-          export DOTNET_ROOT=$HOME/dotnet
-          export PATH=$PATH:$HOME/dotnet
-        - Add the two last row to the profle
-          sudo nano .profile
-
-Visual studio:
-sudo apt-get install code //visual studio
-dotnet:
-curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel Current
-echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
-echo 'export PATH=$PATH:$HOME/.dotnet' >> ~/.bashrc
-source ~/.bashrc
-
-
-sudo apt-get install libasound2-dev
-
-
-Manjaro linux
-sudo pacman -S git
-sudo pacman -S base-devel
-cd ~/Downloads
-git clone https://AUR.archlinux.org/visual-studio-code-bin.git
-cd visual-studio-code-bin/
-makepkg -s
-sudo pacman -U visual-studio-code-bin-1.52.1-1-aarch64.pkg.tar.zst
-
-.net core 3.1
-sudo mkdir -p $HOME/dotnet
-sudo tar zxf dotnet-sdk-3.1.100-linux-arm.tar.gz -C $HOME/dotnet
-export DOTNET_ROOT=$HOME/dotnet
-export PATH=$PATH:$HOME/dotnet
-
-
 # Raspberry PI CM5
 The most efficient approach is to use a Raspberry Pi CM5 with a carrier board
 (such as WaveShare CM5-IO-BASE-B) and a M.2 SSD to have the fastest boot times.
@@ -102,4 +61,27 @@ sudo reboot
 ```
 sudo systemctl disable --now NetworkManager-wait-online.service
 sudo systemctl mask NetworkManager-wait-online.service
+```
+
+## Build Ui24RBridge
+```
+# Install dependencies
+sudo apt install libasound2-dev
+
+# Install the .NET SDK
+wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
+chmod +x ./dotnet-install.sh
+./dotnet-install.sh
+rm ./dotnet-install.sh
+echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
+echo 'export PATH=$PATH:$HOME/.dotnet' >> ~/.bashrc
+source ~/.bashrc
+
+# Clone the repository
+git clone https://github.com/MatthewInch/UI24RBridge.git
+
+# Build
+cd UI24RBridge/UI24RBridgeTest/
+dotnet build -c Release
+
 ```
