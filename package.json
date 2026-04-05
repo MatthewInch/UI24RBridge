@@ -40,8 +40,7 @@
       "category": "Audio"
     },
     "win": {
-      "target": "nsis",
-      "sign": false
+      "target": "nsis"
     },
     "mac": {
       "target": "dmg",
