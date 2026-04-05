@@ -2,7 +2,19 @@
 
 Connects a **Mackie Control** compatible MIDI controller to a **Soundcraft UI24R** mixer.
 
-This is a full rewrite of the original [.NET UI24RBridge](https://github.com/MatthewInch/UI24RBridge) in JavaScript/Electron, replacing the unstable .NET MIDI stack with [JZZ.js](https://jazz-soft.net/doc/JZZ/) and communicating with the mixer over a plain TCP socket (the UI24R's native protocol).
+## Download
+
+| Platform | File |
+|----------|------|
+| **Windows** | `.exe` installer |
+| **Linux** | `.AppImage` (run anywhere) or `.deb` (Debian/Ubuntu) |
+| **macOS** | `.dmg` |
+
+👉 **[Download the latest release](https://github.com/MatthewInch/UI24RBridge/releases/latest)**
+
+---
+
+This is a full rewrite of the original [.NET UI24RBridge](https://github.com/MatthewInch/UI24RBridge/tree/master) in JavaScript/Electron, replacing the unstable .NET MIDI stack with [JZZ.js](https://jazz-soft.net/doc/JZZ/) and communicating with the mixer over a plain TCP socket (the UI24R's native protocol).
 
 ## Requirements
 
