@@ -2,6 +2,10 @@
   "name": "ui24r-bridge",
   "version": "1.0.0",
   "description": "Bridge between Soundcraft UI24R and Mackie Control MIDI controllers",
+  "author": {
+    "name": "Mátyás Szőke",
+    "email": "matthewinch78@gmail.com"
+  },
   "main": "main.js",
   "scripts": {
     "start": "electron .",
