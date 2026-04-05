@@ -341,10 +341,10 @@ class MixerConnection extends EventEmitter {
   }
 
   _handleMessage(msg) {
-    if (this.debug) this._log('RX:', msg);
-
     // Mixer echoes ALIVE back — already handled by our send interval
     if (msg === 'ALIVE') return;
+
+    if (this.debug && !msg.startsWith('VU2') && !msg.startsWith('RTA^')) this._log('RX:', msg);
 
     // State updates: "SETD^path^value" or "SETS^path^value"
     if (msg.startsWith('SETD^') || msg.startsWith('SETS^')) {
@@ -434,8 +434,15 @@ class MixerConnection extends EventEmitter {
       return;
     }
 
-    if (path.startsWith('var.viewgroups.')) {
-      this.emit('raw', { type: 'viewgroup', path, value });
+    // View groups: "vg.0" → array of channel index strings e.g. "[1,2,3,4,]"
+    const vgMatch = path.match(/^vg\.(\d+)$/);
+    if (vgMatch) {
+      const groupIdx = parseInt(vgMatch[1], 10);
+      // Parse the trailing-comma-tolerant JSON array of channel indices
+      try {
+        const channels = JSON.parse(value.replace(/,\s*\]/, ']'));
+        this.emit('viewGroup', groupIdx, channels);
+      } catch { /* malformed — ignore */ }
       return;
     }
   }

@@ -251,10 +251,11 @@ class Bridge extends EventEmitter {
       this._setPlayLed(state === 'play');
     });
 
-    m.on('raw', (msg) => {
-      if (msg?.type === 'viewgroup')
-        this._handleViewGroupUpdate(msg.path, msg.value);
+    m.on('viewGroup', (groupIdx, channelIndices) => {
+      this._handleViewGroupUpdate(groupIdx, channelIndices);
     });
+
+    m.on('raw', (_msg) => { /* unhandled mixer messages */ });
   }
 
   // ─── MIDI → Mixer: faders ────────────────────────────────────────────────────
@@ -546,13 +547,25 @@ class Bridge extends EventEmitter {
 
   // ─── View groups (Bank V) ─────────────────────────────────────────────────────
 
-  _handleViewGroupUpdate(msgPath, value) {
-    const m = msgPath.match(/var\.viewgroups\.(\d+)\.(\d+)/);
-    if (!m) return;
-    const vIdx = parseInt(m[1], 10);
-    const cIdx = parseInt(m[2], 10);
-    if (!this._viewGroups[vIdx]) this._viewGroups[vIdx] = [];
-    this._viewGroups[vIdx][cIdx] = value;
+  _handleViewGroupUpdate(groupIdx, channelIndices) {
+    // Convert flat channel indices to path strings using the mixer's channel order:
+    // 0-23 = inputs, 24-25 = line in, 26-27 = player, 28-31 = fx returns,
+    // 32-41 = aux masters, 42-47 = VCA groups, 48 = main mix
+    const indexToPath = (idx) => {
+      if (idx < 24)  return `i.${idx}`;
+      if (idx < 26)  return `l.${idx - 24}`;
+      if (idx < 28)  return `p.${idx - 26}`;
+      if (idx < 32)  return `f.${idx - 28}`;
+      if (idx < 42)  return `a.${idx - 32}`;
+      if (idx < 48)  return `v.${idx - 42}`;
+      if (idx === 48) return 'm';
+      return '';
+    };
+
+    this._viewGroups[groupIdx] = channelIndices
+      .map(idx => indexToPath(parseInt(idx, 10)))
+      .filter(Boolean);
+
     this._banks.setViewGroups(this._viewGroups);
   }
 
