@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+<title>UI24R Bridge</title>
+<style>
+:root {
+  --bg:      #09090c;
+  --surface: #111118;
+  --raised:  #18181f;
+  --border:  #23232e;
+  --accent:  #4ade80;
+  --blue:    #60a5fa;
+  --amber:   #fbbf24;
+  --red:     #f87171;
+  --purple:  #a78bfa;
+  --text:    #e2e8f0;
+  --sub:     #94a3b8;
+  --muted:   #3f4558;
+  --mono:    'JetBrains Mono', 'Fira Code', monospace;
+  --sans:    -apple-system, 'Segoe UI', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Titlebar ─────────────────────────────────────── */
+#titlebar {
+  height: 38px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+#titlebar .title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--sub);
+}
+#titlebar .sep { width: 1px; height: 16px; background: var(--border); }
+.pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 9px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  -webkit-app-region: no-drag;
+}
+.dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--muted);
+  transition: background .3s, box-shadow .3s;
+  flex-shrink: 0;
+}
+.dot.ok    { background: var(--accent); box-shadow: 0 0 7px var(--accent); }
+.dot.err   { background: var(--red);    box-shadow: 0 0 5px var(--red); }
+.dot.warn  { background: var(--amber);  box-shadow: 0 0 5px var(--amber); }
+#titlebar .spacer { flex: 1; }
+
+/* ── Layout ───────────────────────────────────────── */
+#app {
+  flex: 1; display: flex; overflow: hidden;
+}
+#sidebar {
+  width: 250px; flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+#main {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* ── Tabs ─────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.tab {
+  padding: 9px 16px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .05em;
+  color: var(--sub);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .15s;
+  user-select: none;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Sidebar sections ─────────────────────────────── */
+.sec {
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.sec-title {
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px;
+}
+label {
+  display: block;
+  font-size: 9px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--sub); margin-bottom: 3px;
+}
+input[type=text], select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  outline: none;
+  margin-bottom: 8px;
+  transition: border-color .2s;
+}
+input[type=text]:focus, select:focus { border-color: var(--blue); }
+select option { background: #111118; }
+
+/* ── Buttons ──────────────────────────────────────── */
+.btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; width: 100%; padding: 7px 12px;
+  border-radius: 5px; border: 1px solid var(--border);
+  background: var(--raised); color: var(--text);
+  font-family: var(--sans); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all .15s; margin-bottom: 4px;
+}
+.btn:hover   { border-color: var(--blue); background: #1a1e2e; }
+.btn:active  { transform: scale(.98); }
+.btn.go      { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+.btn.go:hover{ background: #22c55e; border-color: #22c55e; }
+.btn.stop    { border-color: var(--red); color: var(--red); }
+.btn.stop:hover { background: rgba(248,113,113,.08); }
+.btn:disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
+
+/* ── Tab panes ────────────────────────────────────── */
+.pane { flex: 1; overflow: hidden; display: none; flex-direction: column; }
+.pane.active { display: flex; }
+
+/* ── Live state pane ──────────────────────────────── */
+#pane-live {
+  display: flex; flex-direction: column; gap: 0;
+}
+
+/* Bank / layer selectors */
+.bank-bar {
+  padding: 10px 14px 6px;
+  display: flex; gap: 6px; align-items: center; flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+.badge {
+  padding: 4px 10px; border-radius: 4px;
+  border: 1px solid var(--border);
+  font-family: var(--mono); font-size: 10px;
+  color: var(--sub); cursor: default;
+  transition: all .2s;
+}
+.badge.on { border-color: var(--accent); color: var(--accent); background: rgba(74,222,128,.08); }
+.badge-sep { width: 1px; height: 18px; background: var(--border); margin: 0 2px; }
+
+/* Mode chips */
+.mode-bar {
+  padding: 6px 14px;
+  display: flex; gap: 5px; align-items: center; flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+.chip {
+  padding: 2px 8px; border-radius: 99px;
+  border: 1px solid var(--border);
+  font-family: var(--mono); font-size: 9px; color: var(--sub);
+  transition: all .2s;
+}
+.chip.on { border-color: var(--amber); color: var(--amber); background: rgba(251,191,36,.07); }
+
+/* ── Channel strip grid ───────────────────────────── */
+#ch-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 5px;
+  padding: 10px 14px;
+  flex-shrink: 0;
+}
+.strip {
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 7px 5px 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  transition: border-color .2s, background .2s;
+  min-height: 72px;
+}
+.strip.muted  { border-color: var(--red);    background: rgba(248,113,113,.05); }
+.strip.soloed { border-color: var(--amber);  background: rgba(251,191,36,.05); }
+.strip.sel    { border-color: var(--blue);   background: rgba(96,165,250,.06); }
+.strip.armed  { border-color: var(--purple); background: rgba(167,139,250,.05); }
+.strip-num  { font-family: var(--mono); font-size: 8px; color: var(--muted); }
+.strip-name { font-size: 9px; color: var(--text); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+.strip-path { font-family: var(--mono); font-size: 7px; color: var(--muted); }
+.strip-bar  { width: 100%; height: 3px; background: var(--border); border-radius: 2px; }
+.strip-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width .08s; }
+.strip-icons { display: flex; gap: 3px; }
+.icon { font-size: 7px; padding: 1px 3px; border-radius: 2px; }
+.icon.m { background: rgba(248,113,113,.25); color: var(--red); }
+.icon.s { background: rgba(251,191,36,.25);  color: var(--amber); }
+.icon.r { background: rgba(167,139,250,.25); color: var(--purple); }
+.icon.p { background: rgba(96,165,250,.25);  color: var(--blue); }
+
+/* ── Log pane ─────────────────────────────────────── */
+#pane-log {
+  overflow-y: auto;
+  padding: 8px 14px;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.8;
+}
+.le {
+  padding-left: 8px;
+  border-left: 2px solid var(--border);
+  color: var(--sub);
+  margin-bottom: 1px;
+}
+.le.info  { border-color: var(--blue);   color: #94a3b8; }
+.le.warn  { border-color: var(--amber);  color: var(--amber); }
+.le.err   { border-color: var(--red);    color: var(--red); }
+.le .ts   { color: var(--muted); margin-right: 8px; }
+
+/* ── Settings pane ────────────────────────────────── */
+#pane-settings {
+  overflow-y: auto;
+  padding: 16px;
+}
+.setting-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-bottom: 12px;
+}
+.setting-row label { color: var(--sub); margin-bottom: 4px; }
+
+/* ── Scrollbar ────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ── Titlebar ─────────────────────────────────────── -->
+<div id="titlebar">
+  <span class="title">UI24R Bridge</span>
+  <div class="sep"></div>
+  <div class="pill"><div class="dot" id="d-midi"></div><span id="l-midi">MIDI</span></div>
+  <div class="pill" id="pill-midi2" style="display:none"><div class="dot" id="d-midi2"></div><span>MIDI 2</span></div>
+  <div class="pill"><div class="dot" id="d-mixer"></div><span>MIXER</span></div>
+  <div class="spacer"></div>
+  <div class="pill" id="pill-bank" style="color:var(--sub)">Bank I · L1</div>
+</div>
+
+<!-- ── App ──────────────────────────────────────────── -->
+<div id="app">
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div class="sec">
+      <div class="sec-title">Connection</div>
+      <label>Mixer URL (ws://…)</label>
+      <input type="text" id="cfg-url" placeholder="ws://192.168.5.2">
+      <label>MIDI Input (Primary)</label>
+      <select id="cfg-in"></select>
+      <label>MIDI Output (Primary)</label>
+      <select id="cfg-out"></select>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Secondary Controller</div>
+      <label>MIDI Input 2</label>
+      <select id="cfg-in2"></select>
+      <label>MIDI Output 2</label>
+      <select id="cfg-out2"></select>
+      <label>Secondary is extender</label>
+      <select id="cfg-ext2">
+        <option value="true">Yes (extender)</option>
+        <option value="false">No (full controller)</option>
+      </select>
+    </div>
+    <div class="sec" style="flex:1; display:flex; flex-direction:column; gap:0; justify-content:flex-end;">
+      <button class="btn go"  id="btn-start">▶  Start Bridge</button>
+      <button class="btn stop" id="btn-stop" disabled>■  Stop</button>
+      <button class="btn" id="btn-refresh" style="margin-top:8px; font-size:11px;">↺  Refresh MIDI Ports</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div id="main">
+    <div class="tabs">
+      <div class="tab active" data-tab="live">Live</div>
+      <div class="tab" data-tab="log">Log</div>
+      <div class="tab" data-tab="settings">Settings</div>
+    </div>
+
+    <!-- Live pane -->
+    <div class="pane active" id="pane-live">
+      <div class="bank-bar" id="bank-bar">
+        <div class="badge on" id="bk-I">Bank I</div>
+        <div class="badge"    id="bk-U">Bank U</div>
+        <div class="badge"    id="bk-V">Bank V</div>
+        <div class="badge-sep"></div>
+        <div class="badge on" id="ly-0">L1</div>
+        <div class="badge"    id="ly-1">L2</div>
+        <div class="badge"    id="ly-2">L3</div>
+        <div class="badge"    id="ly-3">L4</div>
+        <div class="badge"    id="ly-4">L5</div>
+        <div class="badge"    id="ly-5">L6</div>
+      </div>
+      <div class="mode-bar">
+        <div class="chip" id="chip-aux">AUX —</div>
+        <div class="chip" id="chip-fx">FX —</div>
+        <div class="chip" id="chip-pan">PAN</div>
+        <div class="chip" id="chip-sel" style="margin-left:auto">—</div>
+      </div>
+      <div id="ch-grid"></div>
+      <!-- log preview inside live pane -->
+      <div id="pane-log-live" style="flex:1; overflow-y:auto; padding:6px 14px; font-family:var(--mono); font-size:9px; line-height:1.8; border-top:1px solid var(--border); color:var(--muted);">
+      </div>
+    </div>
+
+    <!-- Full log pane -->
+    <div class="pane" id="pane-log"></div>
+
+    <!-- Settings pane -->
+    <div class="pane" id="pane-settings">
+      <div class="setting-row">
+        <div>
+          <label>Rec Button (Channel)</label>
+          <select id="s-rec">
+            <option value="rec">MTK Rec Arm</option>
+            <option value="phantom">Phantom 48V</option>
+          </select>
+        </div>
+        <div>
+          <label>Main Rec Button</label>
+          <select id="s-main-rec">
+            <option value="2TrackAndMTK">MTK + 2-Track</option>
+            <option value="onlyMTK">MTK only</option>
+            <option value="only2Track">2-Track only</option>
+          </select>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <label>AUX Button Behaviour</label>
+          <select id="s-aux">
+            <option value="Release">Hold to switch (Release)</option>
+            <option value="Lock">Toggle (Lock)</option>
+          </select>
+        </div>
+        <div>
+          <label>Start Bank</label>
+          <select id="s-startbank">
+            <option value="0">Bank I</option>
+            <option value="1">Bank U</option>
+            <option value="2">Bank V</option>
+          </select>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <label>Talkback Channel (blank = off)</label>
+          <input type="text" id="s-talkback" placeholder="e.g. 20">
+        </div>
+        <div>
+          <label>RTA on Select</label>
+          <select id="s-rta">
+            <option value="false">Off</option>
+            <option value="true">On</option>
+          </select>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <label>Primary Channel Start</label>
+          <select id="s-pstart">
+            <option value="0">Channels 1-8</option>
+            <option value="1">Channels 9-16</option>
+          </select>
+        </div>
+        <div>
+          <label>Secondary Channel Start</label>
+          <select id="s-sstart">
+            <option value="0">Channels 1-8</option>
+            <option value="1">Channels 9-16</option>
+          </select>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <label>Debug Messages</label>
+          <select id="s-debug">
+            <option value="false">Off</option>
+            <option value="true">On (verbose)</option>
+          </select>
+        </div>
+        <div>
+          <label>Sync ID (for Select button)</label>
+          <input type="text" id="s-syncid" placeholder="e.g. MyMixer">
+        </div>
+      </div>
+      <button class="btn" id="btn-save-settings" style="max-width:200px; margin-top:8px;">💾  Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<script src="renderer.js"></script>
+</body>
+</html>

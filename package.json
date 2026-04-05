@@ -1,0 +1,51 @@
+{
+  "name": "ui24r-bridge",
+  "version": "1.0.0",
+  "description": "Bridge between Soundcraft UI24R and Mackie Control MIDI controllers",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "build:linux": "electron-builder --linux",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "jzz": "^1.8.8"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.ui24rbridge.app",
+    "productName": "UI24R Bridge",
+    "copyright": "MIT",
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "renderer/**/*",
+      "appsettings.json",
+      "ViewGroups.json",
+      "ButtonsDefault.json"
+    ],
+    "extraResources": [
+      { "from": "ButtonsDefault.json", "to": "ButtonsDefault.json" },
+      { "from": "ViewGroups.json",     "to": "ViewGroups.json" },
+      { "from": "appsettings.json",    "to": "appsettings.json" }
+    ],
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Audio"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.music"
+    }
+  }
+}
