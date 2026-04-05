@@ -33,6 +33,12 @@ namespace UI24RController.MIDIController
                 IsTouched = false;
             }
         }
+
+        /// <summary>
+        /// Keep track of last MIDI status byte
+        /// </summary>
+        protected byte? _lastMidiStatus;
+
         /// <summary>
         /// Store every fader setted value of the faders, key is the channel number (z in the message)
         /// </summary>
@@ -156,6 +162,56 @@ namespace UI24RController.MIDIController
             //byte[] sysex = new byte[] { 0xf0, 0, 0, 0x66, 0x14, 0x61, 0xf7 };
             //Send(sysex, 0, sysex.Length, 0);
         }
+
+        protected byte[] NormalizeRunningStatus(byte[] data)
+        {
+            if (data == null || data.Length == 0)
+            {
+                return data;
+            }
+
+            var first = data[0];
+
+            // If the first byte is a status byte, track it, depending on type
+            // See: https://studiocode.dev/kb/MIDI/midi/
+            //   Channel messages can have running status. That is, if the next
+            //   channel status byte is the same as the last, it may be omitted.
+            //   The receiver assumes that the accompanying data is of the same
+            //   status as was last sent. Receipt of any other status byte except
+            //   real-time terminates running status.
+            if ((first & 0x80) != 0)
+            {
+                // Channel voice messages: valid running status
+                if (first >= 0x80 && first <= 0xEF)
+                {
+                    _lastMidiStatus = first;
+                }
+                // System exclusive / system common: cancel running status
+                else if (first >= 0xF0 && first <= 0xF7)
+                {
+                    _lastMidiStatus = null;
+                }
+                // System real-time: leave running status unchanged
+                else if (first >= 0xF8)
+                {
+                    // no change
+                }
+
+                return data;
+            }
+
+            // If the first byte is data, rebuild the message using the last known status.
+            if (_lastMidiStatus is byte status)
+            {
+                var normalized = new byte[data.Length + 1];
+                normalized[0] = status;
+                Buffer.BlockCopy(data, 0, normalized, 1, data.Length);
+                return normalized;
+            }
+
+            return data;
+        }
+
         protected void OnMessageReceived(string message)
         {
             MessageReceived?.Invoke(this, new MessageEventArgs(message));
@@ -425,6 +481,7 @@ namespace UI24RController.MIDIController
 
         public async Task<bool> ConnectInputDevice(string deviceName)
         {
+            _lastMidiStatus = null;
             try
             {
                 _inputDeviceName = deviceName;
@@ -438,9 +495,8 @@ namespace UI24RController.MIDIController
                     _inputDeviceNumber = deviceNumber.Id;
                     _input.MessageReceived += (obj, e) =>
                     {
-                        if (e.Data.Length > 2)
+                        if (e.Data.Length > 0)
                         {
-                            OnMessageReceived($"{e.Data[0].ToString("x2")} - {e.Data[1].ToString("x2")} - {e.Data[2].ToString("x2")}");
                             ProcessMidiMessage(e);
                         }
                     };
@@ -538,7 +594,14 @@ namespace UI24RController.MIDIController
         }
         private void ProcessMidiMessage(MidiReceivedEventArgs e)
         {
-            var message = e.Data;
+            var message = NormalizeRunningStatus(e.Data);
+
+            if (message == null || message.Length < 3)
+            {
+                return;
+            }
+
+            OnMessageReceived($"{message[0]:x2} - {message[1]:x2} - {message[2]:x2}");
 
             if (message[0] == 0x90) //button pressed, released, fader released
             {
@@ -812,7 +875,7 @@ namespace UI24RController.MIDIController
                 }
 
             }
-            else if (message[0] == 0xb0 && (message[1] >= 0x10 && message[1] <= 0x17)) //channel knobb turning
+            else if (message[0] == 0xb0 && message[1] >= 0x10 && message[1] <= 0x17) //channel knobb turning
             {
                 byte channelNumber = (byte)(message[1] - 0x10);
                 if (message[2] >= 0x01 && message[2] <= 0x03)
