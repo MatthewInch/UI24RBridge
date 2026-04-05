@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "electron": "^30.0.0",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^26.8.1"
   },
   "build": {
     "appId": "com.ui24rbridge.app",
@@ -32,11 +32,20 @@
       "ButtonsDefault.json"
     ],
     "extraResources": [
-      { "from": "ButtonsDefault.json", "to": "ButtonsDefault.json" },
-      { "from": "ViewGroups.json",     "to": "ViewGroups.json" }
+      {
+        "from": "ButtonsDefault.json",
+        "to": "ButtonsDefault.json"
+      },
+      {
+        "from": "ViewGroups.json",
+        "to": "ViewGroups.json"
+      }
     ],
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "category": "Audio"
     },
     "win": {
