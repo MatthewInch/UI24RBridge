@@ -345,7 +345,7 @@ class MixerConnection extends EventEmitter {
     if (msg === 'ALIVE') return;
 
     if (this.debug && !msg.startsWith('VU2') && !msg.startsWith('RTA^')) this._log('RX:', msg);
-
+    
     // State updates: "SETD^path^value" or "SETS^path^value"
     if (msg.startsWith('SETD^') || msg.startsWith('SETS^')) {
       const parts = msg.split('^');
@@ -431,6 +431,11 @@ class MixerConnection extends EventEmitter {
     const mgMatch = path.match(/^mg\.(\d+)\.mute$/);
     if (mgMatch) {
       this.emit('muteGroup', parseInt(mgMatch[1], 10), num !== 0);
+      return;
+    }
+
+    if (path.endsWith('.bpm')) {
+      this.emit('bpm', num);
       return;
     }
 

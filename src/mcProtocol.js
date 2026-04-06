@@ -218,13 +218,30 @@ function buildVpotLed(channel, mode, value) {
   return [0xB0, cc, data];
 }
 
-// ─── Timecode display ─────────────────────────────────────────────────────────
+// ─── Main (timecode) 7-segment display ────────────────────────────────────────
 /**
- * Build SysEx for the timecode/assignment display (not used by all controllers)
+ * Build CC messages to write text to the main 7-segment display (12 chars).
+ *
+ * The Mackie Control / X-Touch timecode display interprets the CC data byte
+ * as an ASCII character code (7 bits, 0–127). The controller's firmware
+ * handles the 7-segment rendering internally.
+ *
+ * CC 0x4B = leftmost digit, CC 0x40 = rightmost digit.
+ * Text position 0 maps to the leftmost digit.
+ *
+ * @param {string} text  Up to 12-character string (will be uppercased + padded)
+ * @returns {number[][]}  Array of 3-byte CC messages [0xB0, cc, value]
  */
-function buildTimecodeDisplay(deviceId, text) {
-  const bytes = stringToMcAscii(text.slice(0, 10), 10);
-  return [...MC_SYSEX_HEADER, deviceId, 0x10, 0x00, ...bytes, 0xF7];
+function buildMainDisplay(text) {
+  const s = (text || '').toUpperCase().padEnd(12, ' ').slice(0, 12);
+  const msgs = [];
+  for (let i = 0; i < 12; i++) {
+    // CC 0x4B = position 0 (leftmost), CC 0x40 = position 11 (rightmost)
+    const cc  = 0x40 + (11 - i);
+    const val = s.charCodeAt(i) & 0x7F;
+    msgs.push([0xB0, cc, val]);
+  }
+  return msgs;
 }
 
 // ─── Device inquiry / handshake ───────────────────────────────────────────────
@@ -262,7 +279,7 @@ module.exports = {
   buildAllLcdSysex,
   buildVuMeter,
   buildVpotLed,
-  buildTimecodeDisplay,
+  buildMainDisplay,
   buildDeviceQuery,
   stringToMcAscii,
 };

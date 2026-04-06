@@ -48,6 +48,7 @@ class Bridge extends EventEmitter {
     this._panMode   = false;
     this._auxLocked = config['AuxButtonBehavior'] === 'Lock';
     this._isPlaying = false;
+    this._tapTempo  = 0;    // BPM received from mixer
 
     // Talkback
     this._talkbackPath = config['TalkBack']
@@ -161,7 +162,10 @@ class Bridge extends EventEmitter {
   async _onMidiConnected(ctrl, isSecondary) {
     this._emitStatus();
     this._log(`MIDI ${isSecondary ? 'secondary' : 'primary'} connected: ${ctrl.inputName}`);
-    setTimeout(() => this._refreshController(ctrl, isSecondary), 400);
+    setTimeout(() => {
+      this._refreshController(ctrl, isSecondary).catch(err =>
+        this._log('refreshController error:', err.message));
+    }, 400);
   }
 
   // ─── Mixer event binding ─────────────────────────────────────────────────────
@@ -249,6 +253,11 @@ class Bridge extends EventEmitter {
 
     m.on('mediaState', (state) => {
       this._setPlayLed(state === 'play');
+    });
+
+    m.on('bpm', (v) => {
+      this._tapTempo = Math.round(v);
+      this._syncMainDisplay();
     });
 
     m.on('viewGroup', (groupIdx, channelIndices) => {
@@ -596,6 +605,7 @@ class Bridge extends EventEmitter {
 
     // LCD
     await this._refreshLcd(ctrl, channels);
+    this._syncMainDisplay();
 
     // V-Pot rings
     for (let i = 0; i < 8; i++) {
@@ -724,6 +734,17 @@ class Bridge extends EventEmitter {
       this._refreshLcd(this._secondary, this._banks.secondaryChannels);
   }
 
+  _syncMainDisplay() {
+    // Left side: bank letter + layer number (e.g. "I1", "U3", "V1")
+    const bankStr = `${this._banks.bank}${this._banks.layer + 1}`;
+    // Right side: tap tempo BPM (e.g. "120BPM") or blank
+    const bpmStr  = this._tapTempo > 0 ? `${this._tapTempo}BPM` : '';
+    // Compose into 12 chars: bank left-justified, BPM right-justified
+    const text = bankStr.padEnd(12 - bpmStr.length, ' ') + bpmStr;
+    this._primary?.setMainDisplay(text);
+    this._secondary?.setMainDisplay(text);
+  }
+
   _syncFadersToAux(auxIdx) {
     this._forAllStrips((p, i, ctrl) => {
       ctrl.setFader(i, p ? this._mixer.getState(`${p}.aux.${auxIdx}.value`) : 0);
@@ -768,8 +789,11 @@ class Bridge extends EventEmitter {
 
   _onChannelsChanged(primary, secondary) {
     this._log(`Bank ${this._banks.bank}  Layer ${this._banks.layer + 1}`);
-    if (this._primary?.connected)   this._refreshController(this._primary,   false);
-    if (this._secondary?.connected) this._refreshController(this._secondary, true);
+    if (this._primary?.connected)
+      this._refreshController(this._primary, false).catch(err => this._log('refresh error:', err.message));
+    if (this._secondary?.connected)
+      this._refreshController(this._secondary, true).catch(err => this._log('refresh error:', err.message));
+    this._syncMainDisplay();
     this._emitState();
   }
 
@@ -783,7 +807,8 @@ class Bridge extends EventEmitter {
       channels.forEach((p, i) => {
         if (!p) return;
         const lev = this._vuLevels[p] || 0;
-        ctrl.setMeter(i, lev);
+        // Skip sending silent meters to reduce MIDI spam when there's no audio
+        if (lev > 0) ctrl.setMeter(i, lev);
       });
     };
 

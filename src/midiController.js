@@ -120,7 +120,14 @@ class MidiController extends EventEmitter {
 
     // SysEx (device responses, etc.)
     if (msg[0] === 0xF0) {
-      this.emit('sysex', Array.from(msg));
+      const bytes = Array.from(msg);
+      // MCU handshake: device query response (F0 00 00 66 <id> 01 ...) → send host online (02)
+      if (bytes[1] === 0x00 && bytes[2] === 0x00 && bytes[3] === 0x66 &&
+          bytes[4] === this.deviceId && bytes[5] === 0x01) {
+        this._log('MCU handshake: device query response received, sending host online');
+        this._sendRaw([...MC.MC_SYSEX_HEADER, this.deviceId, 0x02, 0xF7]);
+      }
+      this.emit('sysex', bytes);
       return;
     }
 
@@ -205,6 +212,17 @@ class MidiController extends EventEmitter {
     await this._sendRaw(MC.buildVpotLed(channel, mode, value));
   }
 
+  /**
+   * Write text to the 12-digit 7-segment main display.
+   * @param {string} text  Up to 12 characters (uppercased, right-aligned)
+   */
+  async setMainDisplay(text) {
+    if (!this._connected) return;
+    for (const msg of MC.buildMainDisplay(text)) {
+      await this._sendRaw(msg);
+    }
+  }
+
   /** Clear all LEDs, faders to 0, LCDs to blank */
   async resetAll() {
     if (!this._connected) return;
@@ -221,6 +239,9 @@ class MidiController extends EventEmitter {
 
   async _sendRaw(bytes) {
     if (!this._output || !this._connected) return;
+    if (this.debug) {
+      this._log('MIDI OUT:', bytes.map(b => b.toString(16).padStart(2, '0')).join(' '));
+    }
     try {
       await this._output.send(JZZ.MIDI(bytes));
     } catch (err) {
