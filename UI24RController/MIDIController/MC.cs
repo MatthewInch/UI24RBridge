@@ -461,22 +461,31 @@ namespace UI24RController.MIDIController
         public void Dispose()
         {
             _isConnected = false;
+
             if (_pingThread != null)
             {
-                //stop the pinging thread
                 _isConnectionErrorOccured = true;
             }
+
+            // On linux, input and output ports might be the same device. The input
+            // port owns the resource and should be the one to dispose it
+
+            bool samePort = _input != null && _output != null
+                    && _input.Details?.Id == _output.Details?.Id;
+
+            if (_output != null && !samePort)
+            {
+                _output.Dispose();
+            }
+
+            _output = null;
+
+
             if (_input != null)
             {
                 _input.Dispose();
                 _input = null;
             }
-            if (_output != null)
-            {
-                _output.Dispose();
-                _output = null;
-            }
-
         }
 
         public async Task<bool> ConnectInputDevice(string deviceName)
