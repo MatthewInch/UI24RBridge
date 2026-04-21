@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 using System.Net.WebSockets;
 using System.Threading;
 using UI24RController.UI24RChannels;
@@ -114,14 +115,28 @@ namespace UI24RController
             //    _midiController_ConnectionErrorEvent(this, null);
             //}
             _mixer.setBank(_settings.StartBank);
-            SendMessage("Start websocket connection...", false);
-            _client = new WebsocketClient(new Uri(_settings.Address));
-            _client.MessageReceived.Subscribe(msg => UI24RMessageReceived(msg));
-            _client.DisconnectionHappened.Subscribe(info => WebsocketDisconnectionHappened(info));
-            _client.ReconnectionHappened.Subscribe(info => WebsocketReconnectionHappened(info));
-            _client.ErrorReconnectTimeout = new TimeSpan(0,0,10);
-            SendMessage("Connecting to UI24R....", false);
-            _client.Start();
+
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        _client = _createWebsocketClient();
+                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                        await _client.Start().WaitAsync(cts.Token);
+                        SendMessage($"UI24R connected.", false);
+                        break;
+                    }
+                    catch
+                    {
+                        SendMessage($"UI24R not reachable, retrying in 5 seconds...", false);
+                        try { _client.Dispose(); } catch { }
+                        await Task.Delay(5000);
+                    }
+                }
+            });
+
             controllers.ForEach(c=> c.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString()));
             //if (settings.ControllerStartChannel != null && settings.ControllerStartChannel == "1")
             //{
@@ -130,6 +145,23 @@ namespace UI24RController
             SetStateLedsOnController();
         }
 
+
+        private WebsocketClient _createWebsocketClient()
+        {
+            var client = new WebsocketClient(new Uri(_settings.Address), () =>
+            {
+                var socket = new ClientWebSocket();
+                socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(1);
+                return socket;
+            });
+            client.ReconnectTimeout = TimeSpan.FromSeconds(5);
+            client.ErrorReconnectTimeout = TimeSpan.FromSeconds(5);
+            client.IsReconnectionEnabled = true;
+            client.MessageReceived.Subscribe(msg => UI24RMessageReceived(msg));
+            client.DisconnectionHappened.Subscribe(info => WebsocketDisconnectionHappened(info));
+            client.ReconnectionHappened.Subscribe(info => WebsocketReconnectionHappened(info));
+            return client;
+        }
 
 
         private void _midiController_ConnectionErrorEvent(IMIDIController controller, EventArgs e)
