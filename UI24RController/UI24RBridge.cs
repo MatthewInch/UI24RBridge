@@ -201,12 +201,23 @@ namespace UI24RController
     }
         private void WebsocketReconnectionHappened(ReconnectionInfo info)
         {
-            _controllers.ForEach(c=> c.WriteTextToLCDSecondLine("UI24R is reconnected",5));
+            if (info.Type != ReconnectionType.Initial)
+                _controllers.ForEach(c => c.WriteTextToLCDSecondLine("UI24R is reconnected", 5));
+
+            Task.Run(async () =>
+            {
+                await Task.Delay(500); // Wait for Ui24R to send us all data
+                SetControllerToCurrentLayerAndSend();
+                SetStateLedsOnController();
+                SendMessage("Mixer state synced to controller.", false);
+            });
         }
+
         private void WebsocketDisconnectionHappened(DisconnectionInfo info)
         {
             _controllers.ForEach(c => c.WriteTextToLCDSecondLine("UI24R disconnected. Try to reconnect"));
         }
+
         private void InitializeViewGroupsFromConfig()
         {
             if (File.Exists(CONFIGFILE_VIEW_GROUP))
