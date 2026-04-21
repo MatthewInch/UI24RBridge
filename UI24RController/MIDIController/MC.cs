@@ -437,23 +437,13 @@ namespace UI24RController.MIDIController
 
         protected void OnConnectionErrorEvent()
         {
-            if (ConnectionErrorEvent != null )
-            {
-                _isConnectionErrorOccured = true;
-                _isConnected = false;
-                ConnectionErrorEvent(this, new EventArgs());
-            }
+            _isConnectionErrorOccured = true;
+            _isConnected = false;
+            ConnectionErrorEvent?.Invoke(this, new EventArgs());
         }
 
-        public void Dispose()
+        private void DisposePorts()
         {
-            _isConnected = false;
-
-            if (_pingThread != null)
-            {
-                _isConnectionErrorOccured = true;
-            }
-
             // On linux, input and output ports might be the same device. The input
             // port owns the resource and should be the one to dispose it
 
@@ -473,6 +463,19 @@ namespace UI24RController.MIDIController
                 _input.Dispose();
                 _input = null;
             }
+        }
+
+
+        public void Dispose()
+        {
+            _isConnected = false;
+
+            if (_pingThread != null)
+            {
+                _isConnectionErrorOccured = true;
+            }
+
+            DisposePorts();
         }
 
         public async Task<bool> ConnectInputDevice(string deviceName)
@@ -546,10 +549,23 @@ namespace UI24RController.MIDIController
                 {
                     while (!_isConnectionErrorOccured)
                     {
-                        Thread.Sleep(5000);
-                        Send(new byte[] { 0xb0, 0x00, 0x00 }, 0, 3, 0);
+                        Thread.Sleep(1000);
+
+                        bool deviceStillPresent = MidiAccessManager.Default.Inputs
+                            .Any(i => i.Name.ToUpper() == _inputDeviceName.ToUpper());
+
+                        if (!deviceStillPresent)
+                        {
+                            OnConnectionErrorEvent();
+                        }
+                        else
+                        {
+                            Send(new byte[] { 0xb0, 0x00, 0x00 }, 0, 3, 0);
+                        }
                     }
                 });
+
+                _pingThread.IsBackground = true;
             }
             if (!_pingThread.IsAlive)
                 _pingThread.Start();
@@ -557,6 +573,7 @@ namespace UI24RController.MIDIController
         }
         public async Task<bool> ReConnectDevice()
         {
+            DisposePorts();
             var inputOk  = await ConnectInputDevice(_inputDeviceName);
             var outputOk = await ConnectOutputDevice(_outputDeviceName);
             return inputOk && outputOk;

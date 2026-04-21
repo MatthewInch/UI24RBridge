@@ -22,6 +22,7 @@ namespace UI24RController
 
         const string CONFIGFILE_VIEW_GROUP = "ViewGroups.json";
 
+        private readonly HashSet<IMIDIController> _reconnectingControllers = new HashSet<IMIDIController>();
         protected BridgeSettings _settings;
         protected List<IMIDIController> _controllers;
         protected WebsocketClient _client;
@@ -134,29 +135,38 @@ namespace UI24RController
         private void _midiController_ConnectionErrorEvent(IMIDIController controller, EventArgs e)
         {
             SendMessage("Midi controller connection error.", false);
-            SendMessage("Try to reconnect....", false);
-            if (!_isReconnecting)
+
+            lock (_reconnectingControllers)
             {
-                new Thread(async () =>
+                if (_reconnectingControllers.Contains(controller))
                 {
-                    _isReconnecting = true;
-                    while (_isReconnecting && !await controller.ReConnectDevice())
-                    {
-                        Thread.Sleep(100);
-                    }
-
-                    SetControllerToCurrentLayerAndSend();
-                    SetStateLedsOnController();
-
-                    SendMessage("Midi controller reconnected.", false);
-                    _isReconnecting = false;
-                }).Start();
+                    SendMessage("Reconnection already in progress for this controller.");
+                    return;
+                }
+                _reconnectingControllers.Add(controller);
             }
-            else
+
+            SendMessage("Try to reconnect....", false);
+
+            new Thread(async () =>
             {
-                SendMessage("Reconnection state is true...");
-            }
-        }
+                while (!await controller.ReConnectDevice())
+                {
+                    Thread.Sleep(200);
+                }
+
+                controller.InitializeController();
+                SetControllerToCurrentLayerAndSend();
+                SetStateLedsOnController();
+
+                SendMessage("Midi controller reconnected.", false);
+
+                lock (_reconnectingControllers)
+                {
+                    _reconnectingControllers.Remove(controller);
+                }
+            }).Start();
+    }
         private void WebsocketReconnectionHappened(ReconnectionInfo info)
         {
             _controllers.ForEach(c=> c.WriteTextToLCDSecondLine("UI24R is reconnected",5));
