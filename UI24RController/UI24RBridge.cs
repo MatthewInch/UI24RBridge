@@ -540,50 +540,55 @@ namespace UI24RController
             //}
         }
 
+        private void _syncStereoLinkedChannel(int ch, double faderValue)
+        {
+            if (!(_mixerChannels[ch] is IStereoLinkable stereoChannel) || stereoChannel.LinkedWith == -1)
+                return;
+
+            var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
+
+            if (_selectedLayout == SelectedLayoutEnum.Channels || _mixerChannels[ch] is MainChannel)
+            {
+                _mixerChannels[otherCh].ChannelFaderValue = faderValue;
+                _client.Send(_mixerChannels[otherCh].MixFaderMessage());
+            }
+            else
+            {
+                _mixerChannels[otherCh].AuxSendValues[_selectedLayout] = faderValue;
+                if (_selectedLayout.IsAux())
+                    _client.Send(_mixerChannels[otherCh].SetAuxValueMessage(_selectedLayout));
+                else if (_selectedLayout.IsFx())
+                    _client.Send(_mixerChannels[otherCh].SetFxValueMessage(_selectedLayout));
+            }
+
+            var otherChOnLayers = GetControllerChannel(otherCh);
+            otherChOnLayers.ForEach(otherChOnLayer =>
+            {
+                if (otherChOnLayer.isOnLayer)
+                    otherChOnLayer.controller.SetFader(otherChOnLayer.controllerChannelNumber, faderValue);
+            });
+        }
+
         private void _midiController_FaderEvent(IMIDIController controller, MIDIController.FaderEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber, controller.ChannelOffset);
             if (ch > -1)
             {
-                //if (_pressedFunctionButton == -1) or it is a master fader
-                if ((_selectedLayout == SelectedLayoutEnum.Channels) || (_mixerChannels[ch] is MainChannel))
+                if (_selectedLayout == SelectedLayoutEnum.Channels || _mixerChannels[ch] is MainChannel)
                 {
                     _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
                     _client.Send(_mixerChannels[ch].MixFaderMessage());
-                    //if the channel is linked we have to set the other channel to the same value
-                    if (_mixerChannels[ch] is IStereoLinkable)
-                    {
-                        var stereoChannel = _mixerChannels[ch] as IStereoLinkable;
-                        if (stereoChannel.LinkedWith != -1)
-                        {
-                            var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
-                            _mixerChannels[otherCh].ChannelFaderValue = e.FaderValue;
-                            _client.Send(_mixerChannels[otherCh].MixFaderMessage());
-                            //If the other chanel is on the current layout we have to set too
-                            var otherChOnLayers = GetControllerChannel(otherCh);
-                            otherChOnLayers.ForEach(otherChOnLayer =>
-                            {
-                                if (otherChOnLayer.isOnLayer)
-                                {
-                                    otherChOnLayer.controller.SetFader(otherChOnLayer.controllerChannelNumber, e.FaderValue);
-                                }
-                            });
-                        }
-                    }
                 }
                 else
                 {
-                    //_mixerChannels[ch].AuxSendValues[_pressedFunctionButton] = e.FaderValue;
                     _mixerChannels[ch].AuxSendValues[_selectedLayout] = e.FaderValue;
                     if (_selectedLayout.IsAux())
-                    {
                         _client.Send(_mixerChannels[ch].SetAuxValueMessage(_selectedLayout));
-                    }
                     else if (_selectedLayout.IsFx())
-                    {
                         _client.Send(_mixerChannels[ch].SetFxValueMessage(_selectedLayout));
-                    }
                 }
+
+                _syncStereoLinkedChannel(ch, e.FaderValue);
             }
         }
 
