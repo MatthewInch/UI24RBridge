@@ -458,14 +458,13 @@ namespace UI24RController
                             var currentGainChannel = _mixerChannels[ch] as IInputable;
                             if (currentGainChannel.SrcType == SrcTypeEnum.Hw)
                             {
-                                currentGainChannel.Gain = currentGainChannel.Gain + (1.0d / 100.0d) * e.KnobDirection;
-                                if (currentGainChannel.Gain > 1)
-                                    currentGainChannel.Gain = 1;
-                                if (currentGainChannel.Gain < 0)
-                                    currentGainChannel.Gain = 0;
+                                int currentDb = (int)Math.Round(currentGainChannel.Gain * 63 - 6);
+                                int newDb = Math.Clamp(currentDb + e.KnobDirection, -6, 57);
+                                currentGainChannel.Gain = (newDb + 6) / 63.0d;
 
                                 _client.Send(currentGainChannel.GainMessage());
                                 controller.SetKnobLed(e.ChannelNumber, currentGainChannel.Gain);
+                                controller.WriteTemporaryTextToChannelLCDFirstLine(e.ChannelNumber, FormatGain(currentGainChannel.Gain), 2);
                                 //if multiple channels are set to same HW input
                                 foreach (var singleChannel in _mixerChannels)
                                 {
@@ -487,14 +486,13 @@ namespace UI24RController
                         break;
                     case KnobsFunctionEnum.Pan:
                         var currentChannel = _mixerChannels[ch];
-                        currentChannel.Panorama = currentChannel.Panorama + (1.0d / 100.0d) * e.KnobDirection;
-                        if (currentChannel.Panorama > 1)
-                            currentChannel.Panorama = 1;
-                        if (currentChannel.Panorama < 0)
-                            currentChannel.Panorama = 0;
+                        int currentPan = (int)Math.Round((currentChannel.Panorama - 0.5) * 200);
+                        int newPan = Math.Clamp(currentPan + e.KnobDirection, -100, 100);
+                        currentChannel.Panorama = newPan / 200.0d + 0.5d;
 
                         _client.Send(currentChannel.PanoramaMessage());
                         controller.SetKnobLed(e.ChannelNumber, currentChannel.Panorama);
+                        controller.WriteTemporaryTextToChannelLCDFirstLine(e.ChannelNumber, FormatPan(currentChannel.Panorama), 2);
                         break;
                 }
             }
@@ -980,6 +978,19 @@ namespace UI24RController
                 _client.Send(msg.Text);
                 _client.Send("3:::ALIVE");
             }
+        }
+
+        private static string FormatGain(double gain)
+        {
+            int db = (int)Math.Round(gain * 63 - 6);
+            return db >= 0 ? $"+{db}dB" : $"{db}dB";
+        }
+
+        private static string FormatPan(double pan)
+        {
+            int value = (int)Math.Round((pan - 0.5) * 200);
+            if (value == 0) return "CENTER";
+            return value < 0 ? $"{-value}L" : $"{value}R";
         }
 
         private ChannelStripColour GetChannelStripColour(int channelNumber)
