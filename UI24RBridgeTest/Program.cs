@@ -47,6 +47,7 @@ namespace UI24RBridgeTest
             var startBank = configuration["StartBank"];
             var talkBack = configuration["TalkBack"];
             var rtaOnWhenSelect = configuration["RtaOnWhenSelect"] == "true";
+            var enableUserBank = configuration["EnableUserBank"] != "false";
 
 
             var controller = MIDIControllerFactory.GetMidiController(protocol);
@@ -222,6 +223,7 @@ namespace UI24RBridgeTest
                 }
 
                 settings.RtaOnWhenSelect = rtaOnWhenSelect;
+                settings.EnableUserBank = enableUserBank;
 
                 Console.WriteLine("Press 'ESC' to exit.");
                 bool isExit = false;

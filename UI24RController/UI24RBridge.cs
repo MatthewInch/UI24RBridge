@@ -41,7 +41,7 @@ namespace UI24RController
         /// Represent the UI24R mixer state
         /// TODO: need to move every global variable that store any mixer specific state to the Mixer class (viewGroups, selectedChannel etc.)
         /// </summary>
-        protected Mixer _mixer = new Mixer();
+        protected Mixer _mixer;
 
         //0-23: Input channels
         //24-25: Linie In L/R
@@ -66,6 +66,7 @@ namespace UI24RController
         {
             this._settings = settings;
             this._controllers = controllers;
+            _mixer = new Mixer(settings.EnableUserBank);
             SendMessage("Start initialization...", false);
             InitializeChannels();
             InitializeViewGroupsFromConfig();
@@ -845,6 +846,7 @@ namespace UI24RController
 
         public void _midiController_UserLayerEdit(IMIDIController controller, FunctionEventArgs e)
         {
+            if (!_settings.EnableUserBank) return;
             _mixer.UserLayerEdit = e.IsPress;
             //if (_secondaryBridge != null) _secondaryBridge.UserLayerEdit = e.IsPress;
 
@@ -917,6 +919,7 @@ namespace UI24RController
         }
         public void _midiController_SaveEvent(IMIDIController controller, EventArgs e)
         {
+            if (!_settings.EnableUserBank) return;
             string jsonString;
             jsonString = JsonSerializer.Serialize(_mixer.getUserLayerToArray(), MyClassTypeResolver<int[][]>.GetSerializerOptions());
             File.WriteAllText(CONFIGFILE_VIEW_GROUP, jsonString);

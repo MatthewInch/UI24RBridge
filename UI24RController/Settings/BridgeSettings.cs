@@ -44,6 +44,7 @@ namespace UI24RController
 
         public int TalkBack { get; set; }
         public bool RtaOnWhenSelect { get; set; }
+        public bool EnableUserBank { get; set; } = true;
 
         public BridgeSettings(string address, Action<string, bool> messageWriter) 
             : this(address, messageWriter, "SYNC_ID", RecButtonBehaviorEnum.TwoTrackAndMTK, ChannelRecButtonBehaviorEnum.Rec)

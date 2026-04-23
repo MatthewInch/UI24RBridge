@@ -85,6 +85,7 @@ In the settings file (**appsettings.json**):
 - **PrimaryButtons**: Config file name for buttons behaviour. You can redefine the buttons functionality.
 - **TalkBack**: with scrub button it is emulate the talkback function. The value is a channel number. If the button is pressed that channel is unmuted, if the button is released tha channel is muted. (if the property removed the function is turned off)
 - **RtaOnWhenSelect**: Set RTA on a channel when select that channel on the controller (value can be "true" of "false"
+- **EnableUserBank**: Set to "false" to disable the User bank (Bank U). The ***USER*** button and ***Global View*** button will do nothing. Useful when Bank U is not needed and accidental presses should be avoided. Default is "true"
 
 **Example of the settings file**
 

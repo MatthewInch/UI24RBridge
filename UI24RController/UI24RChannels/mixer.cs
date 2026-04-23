@@ -22,13 +22,18 @@ namespace UI24RController.UI24RChannels
         /// </summary>
         public bool IsChannelOffset { get; set; }
 
-        public Mixer()
+        private bool _hasUserBank;
+        private int[] _availableBanks;
+
+        public Mixer(bool hasUserBank = true)
         {
             _numLayersPerBank = 6;
             _numBanks = 3;
             _selectedLayer = 0;
             _selectedBank = 0;
             _numFaders = 9;
+            _hasUserBank = hasUserBank;
+            _availableBanks = hasUserBank ? new[] { 0, 1, 2 } : new[] { 0, 2 };
 
             initLayers();
             initMuteGroups();
@@ -65,14 +70,17 @@ namespace UI24RController.UI24RChannels
                 _banks[0][5][j+2] = 48 + j;
 
             //initialize User layers
-            _banks.Add(1, new List<int[]>());
-            for (int i = 0; i < _numLayersPerBank; ++i)
+            if (_hasUserBank)
             {
-                int[] channelLayer = new int[9];
-                for (int j = 0; j < _numFaders - 1; ++j)
-                    channelLayer[j] = j + i * (_numFaders - 1);
-                channelLayer[_numFaders - 1] = 54;
-                _banks[1].Add(channelLayer);
+                _banks.Add(1, new List<int[]>());
+                for (int i = 0; i < _numLayersPerBank; ++i)
+                {
+                    int[] channelLayer = new int[9];
+                    for (int j = 0; j < _numFaders - 1; ++j)
+                        channelLayer[j] = j + i * (_numFaders - 1);
+                    channelLayer[_numFaders - 1] = 54;
+                    _banks[1].Add(channelLayer);
+                }
             }
 
 
@@ -92,6 +100,7 @@ namespace UI24RController.UI24RChannels
         }
         public void setUserLayerFromArray(int[][] input)
         {
+            if (!_hasUserBank) return;
             for (int i = 0; i < input.Length && i < _numLayersPerBank; ++i)
                 if (input[i].Length >= _numFaders - 1)
                     for (int j = 0; j < _numFaders - 1; ++j)
@@ -99,6 +108,7 @@ namespace UI24RController.UI24RChannels
         }
         public int[][] getUserLayerToArray()
         {
+            if (!_hasUserBank) return Array.Empty<int[]>();
             int[][] output = new int[_numLayersPerBank][];
             for (int i = 0; i < _numLayersPerBank; ++i)
             {
@@ -166,16 +176,19 @@ namespace UI24RController.UI24RChannels
 
         public void setBankUp()
         {
-            _selectedBank = (_selectedBank + 1) % _numBanks;
+            int idx = (Array.IndexOf(_availableBanks, _selectedBank) + 1) % _availableBanks.Length;
+            _selectedBank = _availableBanks[idx];
             _selectedLayer = 0;
         }
         public void setBankDown()
         {
-            _selectedBank = (_selectedBank + _numBanks - 1) % _numBanks;
+            int idx = (Array.IndexOf(_availableBanks, _selectedBank) + _availableBanks.Length - 1) % _availableBanks.Length;
+            _selectedBank = _availableBanks[idx];
             _selectedLayer = 0;
         }
         public bool goToUserBank()
         {
+            if (!_hasUserBank) return false;
             bool updated = false;
             if (_selectedBank != 1)
             {
