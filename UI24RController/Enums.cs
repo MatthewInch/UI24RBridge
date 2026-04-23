@@ -233,4 +233,16 @@ namespace UI24RController
             }
         }
     }
+
+    public enum ChannelStripColour : byte
+    {
+        Black    = 0x00,
+        Red      = 0x01,
+        Green    = 0x02,
+        Yellow   = 0x03,
+        Blue     = 0x04,
+        Magenta  = 0x05,
+        Cyan     = 0x06,
+        White    = 0x07,
+    }
 }

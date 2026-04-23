@@ -54,6 +54,7 @@ namespace UI24RController.MIDIController
         private const int ChannelStripCount = 8;
         private readonly string[][] _lineDefault = new[] { new string[ChannelStripCount], new string[ChannelStripCount] };
         private readonly Timer[][] _lineTempTimer = new[] { new Timer[ChannelStripCount], new Timer[ChannelStripCount] };
+        private readonly ChannelStripColour[] _stripColours = Enumerable.Repeat(ChannelStripColour.White, ChannelStripCount).ToArray();
         protected bool _isConnected = false;
         protected bool _isConnectionErrorOccured = false;
         protected Thread _pingThread;
@@ -967,6 +968,17 @@ namespace UI24RController.MIDIController
         public void SetLed(ButtonsEnum buttonName, bool turnOn)
         {
             Send(new byte[] { 0x90, _buttonsID[buttonName], (byte)(turnOn ? 0x7f : 0x00) }, 0, 3, 0);
+        }
+
+        public void SetChannelStripColour(int channelNumber, ChannelStripColour colour)
+        {
+            if (channelNumber < 0 || channelNumber >= ChannelStripCount) return;
+            _stripColours[channelNumber] = colour;
+            byte[] sysex = new byte[] { 0xf0, 0x00, 0x00, 0x66, _lcdDisplayNumber, 0x72,
+                (byte)_stripColours[0], (byte)_stripColours[1], (byte)_stripColours[2], (byte)_stripColours[3],
+                (byte)_stripColours[4], (byte)_stripColours[5], (byte)_stripColours[6], (byte)_stripColours[7],
+                0xf7 };
+            Send(sysex, 0, sysex.Length, 0);
         }
 
         public void WriteTextToChannelLCD(int channelNumber, string text, int line = 0)

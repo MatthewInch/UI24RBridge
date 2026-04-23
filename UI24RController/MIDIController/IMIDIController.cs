@@ -104,6 +104,7 @@ public interface IMIDIController
     void SetSoloLed(int channelNumber, bool turnOn);
     void SetRecLed(int channelNumber, bool turnOn);
     void SetLed(ButtonsEnum buttonName, bool turnOn);
+    void SetChannelStripColour(int channelNumber, ChannelStripColour colour);
 
     public void WriteTextToChannelLCD(int channelNumber, string text, int line);
     public void WriteDefaultTextToChannelLCDFirstLine(int channelNumber, string text);

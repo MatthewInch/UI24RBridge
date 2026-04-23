@@ -975,10 +975,24 @@ namespace UI24RController
             }
         }
 
+        private ChannelStripColour GetChannelStripColour(int channelNumber)
+        {
+            if (_selectedLayout.IsAux()) return ChannelStripColour.Yellow;
+            if (_selectedLayout.IsFx())  return ChannelStripColour.Cyan;
+            var ch = _mixerChannels[channelNumber];
+            if (ch is SubgroupChannel) return ChannelStripColour.Magenta;
+            if (ch is AuxChannel)      return ChannelStripColour.Yellow;
+            if (ch is FXChannel)       return ChannelStripColour.Cyan;
+            if (ch is VCAChannel)      return ChannelStripColour.Green;
+            return ChannelStripColour.White;
+        }
+
         private void SetControllerChannelToCurrentLayerAndSend(IMIDIController controller, int channelNumber, int controllerChannelNumber)
         {
             if (channelNumber > -1)
             {
+                controller.SetChannelStripColour(controllerChannelNumber, GetChannelStripColour(channelNumber));
+
                 if (_selectedLayout == SelectedLayoutEnum.Channels)
                 {
                     controller.SetFader(controllerChannelNumber, _mixerChannels[channelNumber].ChannelFaderValue);
@@ -1030,6 +1044,7 @@ namespace UI24RController
 
                 controller.WriteDefaultTextToChannelLCDFirstLine(controllerChannelNumber, "");
                 controller.WriteDefaultTextToChannelLCDSecondLine(controllerChannelNumber, "");
+                controller.SetChannelStripColour(controllerChannelNumber, ChannelStripColour.Black);
                 controller.SetMuteLed(controllerChannelNumber, false);
                 controller.SetSoloLed(controllerChannelNumber, false);
                 controller.SetRecLed(controllerChannelNumber, false);
