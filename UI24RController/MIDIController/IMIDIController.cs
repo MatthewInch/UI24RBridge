@@ -106,8 +106,10 @@ public interface IMIDIController
     void SetLed(ButtonsEnum buttonName, bool turnOn);
 
     public void WriteTextToChannelLCD(int channelNumber, string text, int line);
-    public void WriteTextToChannelLCDFirstLine(int channelNumber, string text);
-    public void WriteTextToChannelLCDSecondLine(int channelNumber, string text);
+    public void WriteDefaultTextToChannelLCDFirstLine(int channelNumber, string text);
+    public void WriteTemporaryTextToChannelLCDFirstLine(int channelNumber, string text, int seconds);
+    public void WriteDefaultTextToChannelLCDSecondLine(int channelNumber, string text);
+    public void WriteTemporaryTextToChannelLCDSecondLine(int channelNumber, string text, int seconds);
     public void WriteTextToLCDSecondLine(string text);
     public void WriteTextToLCDSecondLine(string text, int delay);
 

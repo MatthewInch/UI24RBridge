@@ -26,6 +26,9 @@ namespace UI24RController.UI24RChannels
             Gain = 0;
             IsPhantom = false;
         }
+
+        public override string ShortName => $"CH{(this.ChannelNumber + 1):D2}";
+
         protected override string GetDefaultName()
         {
             return $"CH {(this.ChannelNumber + 1):D2}";

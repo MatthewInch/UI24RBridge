@@ -51,6 +51,9 @@ namespace UI24RController.MIDIController
         protected string _outputDeviceNumber;
         protected string _outputDeviceName;
         protected Guid _lcdTextSyncGuid = Guid.NewGuid();
+        private const int ChannelStripCount = 8;
+        private readonly string[][] _lineDefault = new[] { new string[ChannelStripCount], new string[ChannelStripCount] };
+        private readonly Timer[][] _lineTempTimer = new[] { new Timer[ChannelStripCount], new Timer[ChannelStripCount] };
         protected bool _isConnected = false;
         protected bool _isConnectionErrorOccured = false;
         protected Thread _pingThread;
@@ -978,35 +981,68 @@ namespace UI24RController.MIDIController
                 Send(sysex, 0, sysex.Length, 0);
             }
         }
-        public void WriteTextToChannelLCDFirstLine(int channelNumber, string text)
+        private void WriteDefaultText(int channelNumber, int line, string text)
         {
-            WriteTextToChannelLCD(channelNumber, text, 0);
+            if (channelNumber >= 0 && channelNumber < ChannelStripCount)
+            {
+                _lineTempTimer[line][channelNumber]?.Dispose();
+                _lineTempTimer[line][channelNumber] = null;
+                _lineDefault[line][channelNumber] = text;
+            }
+            WriteTextToChannelLCD(channelNumber, text, line);
         }
-        public void WriteTextToChannelLCDSecondLine(int channelNumber, string text)
+
+        private void WriteTemporaryText(int channelNumber, int line, string text, int seconds)
         {
-            WriteTextToChannelLCD(channelNumber, text, 1);
+            if (channelNumber < 0 || channelNumber >= ChannelStripCount) return;
+            _lineTempTimer[line][channelNumber]?.Dispose();
+            WriteTextToChannelLCD(channelNumber, text, line);
+            _lineTempTimer[line][channelNumber] = new Timer(_ =>
+            {
+                _lineTempTimer[line][channelNumber]?.Dispose();
+                _lineTempTimer[line][channelNumber] = null;
+                WriteTextToChannelLCD(channelNumber, _lineDefault[line][channelNumber] ?? "", line);
+            }, null, seconds * 1000, Timeout.Infinite);
         }
-        public void WriteTextToLCDSecondLine( string text)
+
+        public void WriteDefaultTextToChannelLCDFirstLine(int channelNumber, string text) =>
+            WriteDefaultText(channelNumber, 0, text);
+
+        public void WriteTemporaryTextToChannelLCDFirstLine(int channelNumber, string text, int seconds) =>
+            WriteTemporaryText(channelNumber, 0, text, seconds);
+
+        public void WriteDefaultTextToChannelLCDSecondLine(int channelNumber, string text) =>
+            WriteDefaultText(channelNumber, 1, text);
+
+        public void WriteTemporaryTextToChannelLCDSecondLine(int channelNumber, string text, int seconds) =>
+            WriteTemporaryText(channelNumber, 1, text, seconds);
+
+        public void WriteTextToLCDSecondLine(string text)
         {
-                var message = ASCIIEncoding.ASCII.GetBytes((text + "                                                        ").Substring(0, 50));
-                byte[] sysex = (new byte[] { 0xf0, 0, 0, 0x66, _lcdDisplayNumber, 0x12, 0x38 }).Concat(message).Concat(new byte[] { 0xf7 }).ToArray();
-                Send(sysex, 0, sysex.Length, 0);
+            _lcdTextSyncGuid = Guid.NewGuid();
+            var padded = (text + new string(' ', ChannelStripCount * 7)).Substring(0, ChannelStripCount * 7);
+            var message = ASCIIEncoding.ASCII.GetBytes(padded);
+            byte[] sysex = (new byte[] { 0xf0, 0, 0, 0x66, _lcdDisplayNumber, 0x12, 0x38 }).Concat(message).Concat(new byte[] { 0xf7 }).ToArray();
+            Send(sysex, 0, sysex.Length, 0);
         }
+
         public void WriteTextToLCDSecondLine(string text, int delay)
         {
-            WriteTextToLCDSecondLine(text);
             var guid = Guid.NewGuid();
             _lcdTextSyncGuid = guid;
+            var padded = (text + new string(' ', ChannelStripCount * 7)).Substring(0, ChannelStripCount * 7);
+            var message = ASCIIEncoding.ASCII.GetBytes(padded);
+            byte[] sysex = (new byte[] { 0xf0, 0, 0, 0x66, _lcdDisplayNumber, 0x12, 0x38 }).Concat(message).Concat(new byte[] { 0xf7 }).ToArray();
+            Send(sysex, 0, sysex.Length, 0);
             new Thread(() =>
             {
                 Thread.Sleep(delay * 1000);
-                //if value change the other thread write back the last fader value
                 if (guid == _lcdTextSyncGuid)
                 {
-                    WriteTextToLCDSecondLine("");
+                    for (int i = 0; i < ChannelStripCount; i++)
+                        WriteTextToChannelLCD(i, _lineDefault[1][i] ?? "", 1);
                 }
             }).Start();
-
         }
 
         private byte convertStringToDisplayBytes(string str, int poz = 0)

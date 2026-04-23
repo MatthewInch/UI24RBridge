@@ -41,6 +41,7 @@ The earlier protocol has not been removed but the new functions only implemented
  - The ***knobs*** set the gain on the input channels or Panorama (change the behavior with Pan/Surround button)
  - Channel ***Select***, ***Solo*** and ***Mute*** buttons work on every channel
  - Channel ***Rec*** button sets either Mtk rec or Phantom 48V (selected in appsettings.json)
+ - Channel strip LCD **second line** shows the channel identifier (e.g. CH01, FX03) and, when viewing AUX/FX sends, appends the send suffix (e.g. CH01-A2, CH05-F1)
  - Buttons ***F1-F8*** switch to AUX1-8 sends
  - Button ***Switch***, ***Option***, ***Control*** and ***Alt*** switch to FX1-4 sends
  - Control Media player with ***<<***, ***>>***, ***Stop***, ***Play*** buttons

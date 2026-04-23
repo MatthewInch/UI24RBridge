@@ -889,7 +889,7 @@ namespace UI24RController
             {
                 int controllerPos = Array.IndexOf(_mixer.getCurrentLayer(controller.ChannelOffset), SelectedChannel);
                 _mixer.setNewUserChannelInCurrentBank(controllerPos);
-                controller.WriteTextToChannelLCDSecondLine(controllerPos, "");
+                controller.WriteDefaultTextToChannelLCDSecondLine(controllerPos, "");
                 SetControllerChannelToCurrentLayerAndSend(controller, _mixer.UserLayerEditNewChannel, controllerPos);
 
             }
@@ -905,7 +905,7 @@ namespace UI24RController
                     //find next channel not used on this layer
                     int controllerPos = Array.IndexOf(_mixer.getCurrentLayer(otherController.ChannelOffset), SelectedChannel);
                     _mixer.findNextAvailableChannelForUserLayer(controllerPos, e.WheelDirection, otherController.ChannelOffset);
-                    controller.WriteTextToChannelLCDSecondLine(controllerPos, _mixerChannels[_mixer.UserLayerEditNewChannel].Name);
+                    controller.WriteDefaultTextToChannelLCDSecondLine(controllerPos, _mixerChannels[_mixer.UserLayerEditNewChannel].Name);
                 }
 
             }
@@ -999,7 +999,10 @@ namespace UI24RController
 
                 SetControllerChannelKnobb(controller, channelNumber, controllerChannelNumber);
 
-                controller.WriteTextToChannelLCDFirstLine(controllerChannelNumber, _mixerChannels[channelNumber].Name);
+                controller.WriteDefaultTextToChannelLCDFirstLine(controllerChannelNumber, _mixerChannels[channelNumber].Name);
+                controller.WriteDefaultTextToChannelLCDSecondLine(controllerChannelNumber,
+                    _mixerChannels[channelNumber].GetDisplayName(_selectedLayout));
+
                 controller.SetMuteLed(controllerChannelNumber, _mixerChannels[channelNumber].IsMute);
                 controller.SetSoloLed(controllerChannelNumber, _mixerChannels[channelNumber].IsSolo);
 
@@ -1025,7 +1028,8 @@ namespace UI24RController
                 controller.SetSelectLed(controllerChannelNumber, false);
                 controller.SetKnobLed(controllerChannelNumber, 0);
 
-                controller.WriteTextToChannelLCDFirstLine(controllerChannelNumber, "");
+                controller.WriteDefaultTextToChannelLCDFirstLine(controllerChannelNumber, "");
+                controller.WriteDefaultTextToChannelLCDSecondLine(controllerChannelNumber, "");
                 controller.SetMuteLed(controllerChannelNumber, false);
                 controller.SetSoloLed(controllerChannelNumber, false);
                 controller.SetRecLed(controllerChannelNumber, false);
@@ -1159,7 +1163,7 @@ namespace UI24RController
 
                                 if (ui24Message.IsValid && chOnLayer.controllerChannelNumber < 8)
                                 {
-                                    chOnLayer.controller.WriteTextToChannelLCDFirstLine(chOnLayer.controllerChannelNumber, _mixerChannels[ui24Message.ChannelNumber].Name);
+                                    chOnLayer.controller.WriteDefaultTextToChannelLCDFirstLine(chOnLayer.controllerChannelNumber, _mixerChannels[ui24Message.ChannelNumber].Name);
                                 }
                             }
                             break;
