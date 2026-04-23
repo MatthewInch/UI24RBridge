@@ -598,11 +598,13 @@ namespace UI24RController
             {
                 if (e.IsPress)
                 {
+                    if (_selectedLayout.IsAux() || _selectedLayout.IsFx())
+                        controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = e.FunctionButton.ToAux();
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
                     controller.WriteTextToBarsDisplay("AX" + (_selectedLayout.AuxToInt() + 1).ToString());
                 }
-                else
+                else if (_selectedLayout == e.FunctionButton.ToAux())
                 {
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = SelectedLayoutEnum.Channels;
@@ -640,11 +642,13 @@ namespace UI24RController
             {
                 if (e.IsPress)
                 {
+                    if (_selectedLayout.IsAux() || _selectedLayout.IsFx())
+                        controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = e.FunctionButton.ToFx();
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
                     controller.WriteTextToBarsDisplay("FX" + (_selectedLayout.FxToInt() + 1).ToString());
                 }
-                else
+                else if (_selectedLayout == e.FunctionButton.ToFx())
                 {
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = SelectedLayoutEnum.Channels;
