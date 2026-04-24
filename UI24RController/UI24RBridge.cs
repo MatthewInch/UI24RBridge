@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 using System.Net.WebSockets;
 using System.Threading;
 using UI24RController.UI24RChannels;
@@ -22,6 +23,7 @@ namespace UI24RController
 
         const string CONFIGFILE_VIEW_GROUP = "ViewGroups.json";
 
+        private readonly HashSet<IMIDIController> _reconnectingControllers = new HashSet<IMIDIController>();
         protected BridgeSettings _settings;
         protected List<IMIDIController> _controllers;
         protected WebsocketClient _client;
@@ -113,14 +115,28 @@ namespace UI24RController
             //    _midiController_ConnectionErrorEvent(this, null);
             //}
             _mixer.setBank(_settings.StartBank);
-            SendMessage("Start websocket connection...", false);
-            _client = new WebsocketClient(new Uri(_settings.Address));
-            _client.MessageReceived.Subscribe(msg => UI24RMessageReceived(msg));
-            _client.DisconnectionHappened.Subscribe(info => WebsocketDisconnectionHappened(info));
-            _client.ReconnectionHappened.Subscribe(info => WebsocketReconnectionHappened(info));
-            _client.ErrorReconnectTimeout = new TimeSpan(0,0,10);
-            SendMessage("Connecting to UI24R....", false);
-            _client.Start();
+
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        _client = _createWebsocketClient();
+                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                        await _client.Start().WaitAsync(cts.Token);
+                        SendMessage($"UI24R connected.", false);
+                        break;
+                    }
+                    catch
+                    {
+                        SendMessage($"UI24R not reachable, retrying in 5 seconds...", false);
+                        try { _client.Dispose(); } catch { }
+                        await Task.Delay(5000);
+                    }
+                }
+            });
+
             controllers.ForEach(c=> c.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString()));
             //if (settings.ControllerStartChannel != null && settings.ControllerStartChannel == "1")
             //{
@@ -130,41 +146,78 @@ namespace UI24RController
         }
 
 
+        private WebsocketClient _createWebsocketClient()
+        {
+            var client = new WebsocketClient(new Uri(_settings.Address), () =>
+            {
+                var socket = new ClientWebSocket();
+                socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(1);
+                return socket;
+            });
+            client.ReconnectTimeout = TimeSpan.FromSeconds(5);
+            client.ErrorReconnectTimeout = TimeSpan.FromSeconds(5);
+            client.IsReconnectionEnabled = true;
+            client.MessageReceived.Subscribe(msg => UI24RMessageReceived(msg));
+            client.DisconnectionHappened.Subscribe(info => WebsocketDisconnectionHappened(info));
+            client.ReconnectionHappened.Subscribe(info => WebsocketReconnectionHappened(info));
+            return client;
+        }
+
 
         private void _midiController_ConnectionErrorEvent(IMIDIController controller, EventArgs e)
         {
             SendMessage("Midi controller connection error.", false);
-            SendMessage("Try to reconnect....", false);
-            if (!_isReconnecting)
+
+            lock (_reconnectingControllers)
             {
-                new Thread(async () =>
+                if (_reconnectingControllers.Contains(controller))
                 {
-                    _isReconnecting = true;
-                    while (_isReconnecting && !await controller.ReConnectDevice())
-                    {
-                        Thread.Sleep(100);
-                    }
-
-                    SetControllerToCurrentLayerAndSend();
-                    SetStateLedsOnController();
-
-                    SendMessage("Midi controller reconnected.", false);
-                    _isReconnecting = false;
-                }).Start();
+                    SendMessage("Reconnection already in progress for this controller.");
+                    return;
+                }
+                _reconnectingControllers.Add(controller);
             }
-            else
+
+            SendMessage("Try to reconnect....", false);
+
+            new Thread(async () =>
             {
-                SendMessage("Reconnection state is true...");
-            }
-        }
+                while (!await controller.ReConnectDevice())
+                {
+                    Thread.Sleep(200);
+                }
+
+                controller.InitializeController();
+                SetControllerToCurrentLayerAndSend();
+                SetStateLedsOnController();
+
+                SendMessage("Midi controller reconnected.", false);
+
+                lock (_reconnectingControllers)
+                {
+                    _reconnectingControllers.Remove(controller);
+                }
+            }).Start();
+    }
         private void WebsocketReconnectionHappened(ReconnectionInfo info)
         {
-            _controllers.ForEach(c=> c.WriteTextToLCDSecondLine("UI24R is reconnected",5));
+            if (info.Type != ReconnectionType.Initial)
+                _controllers.ForEach(c => c.WriteTextToLCDSecondLine("UI24R is reconnected", 5));
+
+            Task.Run(async () =>
+            {
+                await Task.Delay(500); // Wait for Ui24R to send us all data
+                SetControllerToCurrentLayerAndSend();
+                SetStateLedsOnController();
+                SendMessage("Mixer state synced to controller.", false);
+            });
         }
+
         private void WebsocketDisconnectionHappened(DisconnectionInfo info)
         {
             _controllers.ForEach(c => c.WriteTextToLCDSecondLine("UI24R disconnected. Try to reconnect"));
         }
+
         private void InitializeViewGroupsFromConfig()
         {
             if (File.Exists(CONFIGFILE_VIEW_GROUP))

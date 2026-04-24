@@ -2,9 +2,9 @@
 Bridge between the UI24R and a MIDI controllers. Current version can manage one or two controller. If you want to use more you can run more bridge instance.\
 This is a beta project. It tested only on Windows with Behringer X-Touch and X-Touch extender MIDI controllers.
 
-You can download the [latest release here](https://github.com/MatthewInch/UI24RBridge/releases/latest).
-The Linux binary not work in 32bit linux and instabil in 64bit versions
-The MacOS binary wasn't tested
+You can download the [latest release here](https://github.com/MatthewInch/UI24RBridge/releases/latest). Note that the MacOS binary wasn't tested.
+
+For Raspberry Pi or other linux distributions, see instructions [here](Linux.md)
 
 Implemented the Mackie Control protocol (It can work with any DAW controller that can use in MC mode).\
 The earlier protocol has not been removed but the new functions only implemented in MC mode.
@@ -89,7 +89,7 @@ In the settings file (**appsettings.json**):
 	"PrimaryIsExtender": "false",\
 	"SecondaryIsExtender": "true",\
 	"PrimaryChannelStart": "0", //0: 1-8ch, 1: 9-16\
-	"SecondaryChannelStart": "1", //0: 1-8ch, 1: 9-16\	
+	"SecondaryChannelStart": "1", //0: 1-8ch, 1: 9-16\
     "Protocol": "MC",\
     "SyncID": "Abaliget",\
     "DefaultRecButton": "2TrackAndMTK",\

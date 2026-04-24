@@ -33,6 +33,12 @@ namespace UI24RController.MIDIController
                 IsTouched = false;
             }
         }
+
+        /// <summary>
+        /// Keep track of last MIDI status byte
+        /// </summary>
+        protected byte? _lastMidiStatus;
+
         /// <summary>
         /// Store every fader setted value of the faders, key is the channel number (z in the message)
         /// </summary>
@@ -156,6 +162,43 @@ namespace UI24RController.MIDIController
             //byte[] sysex = new byte[] { 0xf0, 0, 0, 0x66, 0x14, 0x61, 0xf7 };
             //Send(sysex, 0, sysex.Length, 0);
         }
+
+        protected IEnumerable<byte[]> NormalizeAndSplitMidiMessages(byte[] data, int start, int length)
+        {
+            int i = start;
+            int end = start + length;
+
+            while (i < end)
+            {
+                byte first = data[i];
+
+                // If the first byte is a status byte, track it, depending on type
+                // See: https://studiocode.dev/kb/MIDI/midi/
+                //   Channel messages can have running status. That is, if the next
+                //   channel status byte is the same as the last, it may be omitted.
+                //   The receiver assumes that the accompanying data is of the same
+                //   status as was last sent. Receipt of any other status byte except
+                //   real-time terminates running status.
+
+                if ((first & 0x80) != 0)
+                {
+                    // Status byte present: full 3-byte message
+                    _lastMidiStatus = first;
+                    if (i + 3 > end) yield break;
+                    yield return new byte[] { data[i], data[i + 1], data[i + 2] };
+                    i += 3;
+                }
+                else
+                {
+                    // Running status: 2 data bytes, prepend last known status
+                    if (_lastMidiStatus == null) { i++; continue; } // no known status, skip
+                    if (i + 2 > end) yield break;
+                    yield return new byte[] { _lastMidiStatus.Value, data[i], data[i + 1] };
+                    i += 2;
+                }
+            }
+        }
+
         protected void OnMessageReceived(string message)
         {
             MessageReceived?.Invoke(this, new MessageEventArgs(message));
@@ -394,37 +437,50 @@ namespace UI24RController.MIDIController
 
         protected void OnConnectionErrorEvent()
         {
-            if (ConnectionErrorEvent != null )
-            {
-                _isConnectionErrorOccured = true;
-                _isConnected = false;
-                ConnectionErrorEvent(this, new EventArgs());
-            }
+            _isConnectionErrorOccured = true;
+            _isConnected = false;
+            ConnectionErrorEvent?.Invoke(this, new EventArgs());
         }
 
-        public void Dispose()
+        private void DisposePorts()
         {
-            _isConnected = false;
-            if (_pingThread != null)
+            // On linux, input and output ports might be the same device. The input
+            // port owns the resource and should be the one to dispose it
+
+            bool samePort = _input != null && _output != null
+                    && _input.Details?.Id == _output.Details?.Id;
+
+            if (_output != null && !samePort)
             {
-                //stop the pinging thread
-                _isConnectionErrorOccured = true;
+                _output.Dispose();
             }
+
+            _output = null;
+
+
             if (_input != null)
             {
                 _input.Dispose();
                 _input = null;
             }
-            if (_output != null)
+        }
+
+
+        public void Dispose()
+        {
+            _isConnected = false;
+
+            if (_pingThread != null)
             {
-                _output.Dispose();
-                _output = null;
+                _isConnectionErrorOccured = true;
             }
 
+            DisposePorts();
         }
 
         public async Task<bool> ConnectInputDevice(string deviceName)
         {
+            _lastMidiStatus = null;
             try
             {
                 _inputDeviceName = deviceName;
@@ -438,9 +494,8 @@ namespace UI24RController.MIDIController
                     _inputDeviceNumber = deviceNumber.Id;
                     _input.MessageReceived += (obj, e) =>
                     {
-                        if (e.Data.Length > 2)
+                        if (e.Data.Length > 0)
                         {
-                            OnMessageReceived($"{e.Data[0].ToString("x2")} - {e.Data[1].ToString("x2")} - {e.Data[2].ToString("x2")}");
                             ProcessMidiMessage(e);
                         }
                     };
@@ -494,10 +549,23 @@ namespace UI24RController.MIDIController
                 {
                     while (!_isConnectionErrorOccured)
                     {
-                        Thread.Sleep(5000);
-                        Send(new byte[] { 0xb0, 0x00, 0x00 }, 0, 3, 0);
+                        Thread.Sleep(1000);
+
+                        bool deviceStillPresent = MidiAccessManager.Default.Inputs
+                            .Any(i => i.Name.ToUpper() == _inputDeviceName.ToUpper());
+
+                        if (!deviceStillPresent)
+                        {
+                            OnConnectionErrorEvent();
+                        }
+                        else
+                        {
+                            Send(new byte[] { 0xb0, 0x00, 0x00 }, 0, 3, 0);
+                        }
                     }
                 });
+
+                _pingThread.IsBackground = true;
             }
             if (!_pingThread.IsAlive)
                 _pingThread.Start();
@@ -505,6 +573,7 @@ namespace UI24RController.MIDIController
         }
         public async Task<bool> ReConnectDevice()
         {
+            DisposePorts();
             var inputOk  = await ConnectInputDevice(_inputDeviceName);
             var outputOk = await ConnectOutputDevice(_outputDeviceName);
             return inputOk && outputOk;
@@ -538,294 +607,294 @@ namespace UI24RController.MIDIController
         }
         private void ProcessMidiMessage(MidiReceivedEventArgs e)
         {
-            var message = e.Data;
-
-            if (message[0] == 0x90) //button pressed, released, fader released
+            foreach (var message in NormalizeAndSplitMidiMessages(e.Data, e.Start, e.Length))
             {
-                if (message.MIDIEqual(0x90, 0x00, 0x00, 0xff, 0x00, 0xff) && (message[1] >= 0x68) && (message[1] <= 0x70)) //release fader (0x90 [0x68-0x70] 0x00)
+                if (message[0] == 0x90) //button pressed, released, fader released
                 {
-                    byte channelNumber = (byte)(message[1] - 0x68);
-                    if (faderValues.ContainsKey(channelNumber))
+                    if (message.MIDIEqual(0x90, 0x00, 0x00, 0xff, 0x00, 0xff) && (message[1] >= 0x68) && (message[1] <= 0x70)) //release fader (0x90 [0x68-0x70] 0x00)
                     {
-                        faderValues[channelNumber].IsTouched = false;
-                        SetFader(channelNumber, faderValues[channelNumber].Value);
-                    }
-                }
-                if (message.MIDIEqual(0x90, 0x00, 0x7f, 0xff, 0x00, 0xff) && (message[1] >= 0x68) && (message[1] <= 0x70)) //touch fader (0x90 [0x68-0x70] 0x00)
-                {
-                    byte channelNumber = (byte)(message[1] - 0x68);
-                    if (faderValues.ContainsKey(channelNumber))
-                    {
-                        faderValues[channelNumber].IsTouched = true;
-                    }
-                }
-
-                else if (message[1] >= _buttonsID[ButtonsEnum.Ch1Mute] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Mute] + 7) && message[2] == 0x7f) //channel mute button
-                {
-                    byte channelNumber = (byte)(message[1] - _buttonsID[ButtonsEnum.Ch1Mute]);
-                    OnChannelMuteEvent(channelNumber);
-                }
-                else if (message[1] >= _buttonsID[ButtonsEnum.Ch1Solo] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Solo] + 7) && message[2] == 0x7f) //channel solo button
-                {
-                    byte channelNumber = (byte)(message[1] - _buttonsID[ButtonsEnum.Ch1Solo]);
-                    OnChannelSoloEvent(channelNumber);
-                }
-                else if (message[1] >= _buttonsID[ButtonsEnum.Ch1Rec] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Rec] + 7) && message[2] == 0x7f) //channel rec button
-                {
-                    byte channelNumber = (byte)(message[1]- _buttonsID[ButtonsEnum.Ch1Rec]);
-                    OnChannelRecEvent(channelNumber);
-                }
-                else if  (message[1] >= _buttonsID[ButtonsEnum.Ch1Select] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Select] + 7) && message[2] == 0x7f) //channel select button
-                {
-                    byte channelNumber = (byte)(message[1] - _buttonsID[ButtonsEnum.Ch1Select]);
-                    OnChannelSelectEvent(channelNumber);
-                }
-                else if (message.MIDIEqual(0x90, 0x32, 0x7f)) //main select button
-                {
-                    OnChannelSelectEvent(8);
-                }
-
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Track], 0x7f))
-                {
-                    OnTrackEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Pan], 0x7f))
-                {
-                    OnPanEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Eq], 0x7f))
-                {
-                    OnEqEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Send], 0x7f))
-                {
-                    OnSendEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlugIn], 0x7f))
-                {
-                    OnPlugInEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Instr], 0x7f))
-                {
-                    OnInstrEvent();
-                }
-
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Display], 0x7f))
-                {
-                    OnDisplayBtnEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Smtpe], 0x7f))
-                {
-                    OnSmtpeBeatsBtnEvent();
-                }
-
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.GlobalView], 0x7f))
-                {
-                    OnGlobalViewEvent();
-                }
-
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.MidiTracks], 0x7f))
-                {
-                    OnMidiTracksEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Inputs], 0x7f))
-                {
-                    OnInputsEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.AudioTracks], 0x7f))
-                {
-                    OnAudioTracksEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.AudioInst], 0x7f))
-                {
-                    OnAudioInstEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.AuxBtn], 0x7f))
-                {
-                    OnAuxBtnEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.BusesBtn], 0x7f))
-                {
-                    OnBusesBtnEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Outputs], 0x7f))
-                {
-                    OnOutputsEvent();
-                }
-                else if ((message[0] == 0x90) && message[1] == _buttonsID[ButtonsEnum.User])
-                {
-                    OnUserEvent(0, message[2] == 0x7f);
-                }
-
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Save], 0x7f))
-                {
-                    OnSaveEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Undo], 0x7f))
-                {
-                    OnUndoEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Cancel], 0x7f))
-                {
-                    OnCancelEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Enter], 0x7f))
-                {
-                    OnEnterEvent();
-                }
-
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Marker], 0x7f))
-                {
-                    OnMarkerEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Nudge], 0x7f))
-                {
-                    OnNudgeEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Cycle], 0x7f))
-                {
-                    OnCycleEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Drop], 0x7f))
-                {
-                    OnDropEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Replace], 0x7f))
-                {
-                    OnReplaceEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Click], 0x7f))
-                {
-                    OnClickEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Solo], 0x7f))
-                {
-                    OnSoloEvent();
-                }
-
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlayPrev], 0x7f))
-                {
-                    OnPrevEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlayNext], 0x7f))
-                {
-                    OnNextEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Stop], 0x7f))
-                {
-                    OnStopEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Play], 0x7f))
-                {
-                    OnPlayEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Rec], 0x7f))
-                {
-                    OnRecEvent();
-                }
-
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.FaderBankUp], 0x7f))
-                {
-                    OnBankUp();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.FaderBankDown], 0x7f))
-                {
-                    OnBankDown();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.ChannelUp], 0x7f))
-                {
-                    OnLayerUp();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.ChannelDown], 0x7f))
-                {
-                    OnLayerDown();
-                }
-
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Up], 0x7f))
-                {
-                    OnUpEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Down], 0x7f))
-                {
-                    OnDownEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Left], 0x7f))
-                {
-                    OnLeftEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Right], 0x7f))
-                {
-                    OnRightEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Center], 0x7f))
-                {
-                    OnCenterEvent();
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Scrub], 0x00))
-                {
-                    OnScrubEvent(true);
-                }
-                else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Scrub], 0x7f))
-                {
-                    OnScrubEvent(false);
-                }
-
-                else if (message[0]== 0x90 && _buttonsID.GetAuxButton(message[1]).isAux) //F1-F8 press
-                {
-                    var auxNum = _buttonsID.GetAuxButton(message[1]).auxNum;
-                    OnAuxButtonEvent(auxNum, message[2] == 0x7f);
-                }
-                else if ((message[0] == 0x90) && _buttonsID.GetFxButton(message[1]).isFX)
-                {
-                    var fxNum = _buttonsID.GetFxButton(message[1]).fxNum;
-                    OnFxButtonEvent(fxNum, message[2] == 0x7f);
-                }
-                else if ((message[0] == 0x90) && _buttonsID.GetMuteGroupsButton(message[1]).isMuteGroupButton)
-                {
-                    var muteNum = _buttonsID.GetMuteGroupsButton(message[1]).muteGroupNum;
-                    OnMuteGroupButtonEvent(muteNum, message[2] == 0x7f);
-                }
-
-            }
-            else if (message[0] >= 0xe0 && (message[0] <= 0xe8)) //move fader
-            {
-                byte channelNumber = (byte)(message[0] - 0xe0);
-                //int data2 = (int)Math.Round(faderValue * 1023); //10 bit
-                int upper = message[2] << 7; //upper 7 bit
-                int lower = message[1]; // lower 7 bit
-
-                var faderValue = (upper + lower) / 16383.0;
-
-                faderValues[channelNumber].Value = faderValue;
-                OnFaderEvent(channelNumber, faderValue);
-                if (!faderValues[channelNumber].IsTouched)
-                {
-                    new Thread(() =>
-                    {
-                        Thread.Sleep(100);
-                        //if value change the other thread write back the last fader value
-                        if (faderValue == faderValues[channelNumber].Value)
+                        byte channelNumber = (byte)(message[1] - 0x68);
+                        if (faderValues.ContainsKey(channelNumber))
                         {
-                            SetFader(channelNumber, faderValue);
+                            faderValues[channelNumber].IsTouched = false;
+                            SetFader(channelNumber, faderValues[channelNumber].Value);
                         }
-                    }).Start();
-                }
+                    }
+                    else if (message.MIDIEqual(0x90, 0x00, 0x7f, 0xff, 0x00, 0xff) && (message[1] >= 0x68) && (message[1] <= 0x70)) //touch fader (0x90 [0x68-0x70] 0x00)
+                    {
+                        byte channelNumber = (byte)(message[1] - 0x68);
+                        if (faderValues.ContainsKey(channelNumber))
+                        {
+                            faderValues[channelNumber].IsTouched = true;
+                        }
+                    }
+                    else if (message[1] >= _buttonsID[ButtonsEnum.Ch1Mute] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Mute] + 7) && message[2] == 0x7f) //channel mute button
+                    {
+                        byte channelNumber = (byte)(message[1] - _buttonsID[ButtonsEnum.Ch1Mute]);
+                        OnChannelMuteEvent(channelNumber);
+                    }
+                    else if (message[1] >= _buttonsID[ButtonsEnum.Ch1Solo] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Solo] + 7) && message[2] == 0x7f) //channel solo button
+                    {
+                        byte channelNumber = (byte)(message[1] - _buttonsID[ButtonsEnum.Ch1Solo]);
+                        OnChannelSoloEvent(channelNumber);
+                    }
+                    else if (message[1] >= _buttonsID[ButtonsEnum.Ch1Rec] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Rec] + 7) && message[2] == 0x7f) //channel rec button
+                    {
+                        byte channelNumber = (byte)(message[1]- _buttonsID[ButtonsEnum.Ch1Rec]);
+                        OnChannelRecEvent(channelNumber);
+                    }
+                    else if  (message[1] >= _buttonsID[ButtonsEnum.Ch1Select] && message[1] <= (_buttonsID[ButtonsEnum.Ch1Select] + 7) && message[2] == 0x7f) //channel select button
+                    {
+                        byte channelNumber = (byte)(message[1] - _buttonsID[ButtonsEnum.Ch1Select]);
+                        OnChannelSelectEvent(channelNumber);
+                    }
+                    else if (message.MIDIEqual(0x90, 0x32, 0x7f)) //main select button
+                    {
+                        OnChannelSelectEvent(8);
+                    }
 
-            }
-            else if (message[0] == 0xb0 && (message[1] >= 0x10 && message[1] <= 0x17)) //channel knobb turning
-            {
-                byte channelNumber = (byte)(message[1] - 0x10);
-                if (message[2] >= 0x01 && message[2] <= 0x03)
-                    OnKnobEvent(channelNumber, message[2]);
-                if (message[2] >= 0x41 && message[2] <= 0x43)
-                    OnKnobEvent(channelNumber, -1 * (message[2] & 0x03));
-            }
-            else if (message[0] == 0xb0 && message[1] == 0x3c ) //jog wheel turning
-            {
-                if (message[2] >= 0x01 && message[2] <= 0x03)
-                    OnWheelEvent(0, message[2]);
-                if (message[2] >= 0x41 && message[2] <= 0x43)
-                    OnWheelEvent(0, -1 * (message[2] & 0x03));
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Track], 0x7f))
+                    {
+                        OnTrackEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Pan], 0x7f))
+                    {
+                        OnPanEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Eq], 0x7f))
+                    {
+                        OnEqEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Send], 0x7f))
+                    {
+                        OnSendEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlugIn], 0x7f))
+                    {
+                        OnPlugInEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Instr], 0x7f))
+                    {
+                        OnInstrEvent();
+                    }
+
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Display], 0x7f))
+                    {
+                        OnDisplayBtnEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Smtpe], 0x7f))
+                    {
+                        OnSmtpeBeatsBtnEvent();
+                    }
+
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.GlobalView], 0x7f))
+                    {
+                        OnGlobalViewEvent();
+                    }
+
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.MidiTracks], 0x7f))
+                    {
+                        OnMidiTracksEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Inputs], 0x7f))
+                    {
+                        OnInputsEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.AudioTracks], 0x7f))
+                    {
+                        OnAudioTracksEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.AudioInst], 0x7f))
+                    {
+                        OnAudioInstEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.AuxBtn], 0x7f))
+                    {
+                        OnAuxBtnEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.BusesBtn], 0x7f))
+                    {
+                        OnBusesBtnEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Outputs], 0x7f))
+                    {
+                        OnOutputsEvent();
+                    }
+                    else if ((message[0] == 0x90) && message[1] == _buttonsID[ButtonsEnum.User])
+                    {
+                        OnUserEvent(0, message[2] == 0x7f);
+                    }
+
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Save], 0x7f))
+                    {
+                        OnSaveEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Undo], 0x7f))
+                    {
+                        OnUndoEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Cancel], 0x7f))
+                    {
+                        OnCancelEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Enter], 0x7f))
+                    {
+                        OnEnterEvent();
+                    }
+
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Marker], 0x7f))
+                    {
+                        OnMarkerEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Nudge], 0x7f))
+                    {
+                        OnNudgeEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Cycle], 0x7f))
+                    {
+                        OnCycleEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Drop], 0x7f))
+                    {
+                        OnDropEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Replace], 0x7f))
+                    {
+                        OnReplaceEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Click], 0x7f))
+                    {
+                        OnClickEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Solo], 0x7f))
+                    {
+                        OnSoloEvent();
+                    }
+
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlayPrev], 0x7f))
+                    {
+                        OnPrevEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlayNext], 0x7f))
+                    {
+                        OnNextEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Stop], 0x7f))
+                    {
+                        OnStopEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Play], 0x7f))
+                    {
+                        OnPlayEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Rec], 0x7f))
+                    {
+                        OnRecEvent();
+                    }
+
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.FaderBankUp], 0x7f))
+                    {
+                        OnBankUp();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.FaderBankDown], 0x7f))
+                    {
+                        OnBankDown();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.ChannelUp], 0x7f))
+                    {
+                        OnLayerUp();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.ChannelDown], 0x7f))
+                    {
+                        OnLayerDown();
+                    }
+
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Up], 0x7f))
+                    {
+                        OnUpEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Down], 0x7f))
+                    {
+                        OnDownEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Left], 0x7f))
+                    {
+                        OnLeftEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Right], 0x7f))
+                    {
+                        OnRightEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Center], 0x7f))
+                    {
+                        OnCenterEvent();
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Scrub], 0x00))
+                    {
+                        OnScrubEvent(true);
+                    }
+                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Scrub], 0x7f))
+                    {
+                        OnScrubEvent(false);
+                    }
+
+                    else if (message[0]== 0x90 && _buttonsID.GetAuxButton(message[1]).isAux) //F1-F8 press
+                    {
+                        var auxNum = _buttonsID.GetAuxButton(message[1]).auxNum;
+                        OnAuxButtonEvent(auxNum, message[2] == 0x7f);
+                    }
+                    else if ((message[0] == 0x90) && _buttonsID.GetFxButton(message[1]).isFX)
+                    {
+                        var fxNum = _buttonsID.GetFxButton(message[1]).fxNum;
+                        OnFxButtonEvent(fxNum, message[2] == 0x7f);
+                    }
+                    else if ((message[0] == 0x90) && _buttonsID.GetMuteGroupsButton(message[1]).isMuteGroupButton)
+                    {
+                        var muteNum = _buttonsID.GetMuteGroupsButton(message[1]).muteGroupNum;
+                        OnMuteGroupButtonEvent(muteNum, message[2] == 0x7f);
+                    }
+
+                }
+                else if (message[0] >= 0xe0 && (message[0] <= 0xe8)) //move fader
+                {
+                    byte channelNumber = (byte)(message[0] - 0xe0);
+                    //int data2 = (int)Math.Round(faderValue * 1023); //10 bit
+                    int upper = message[2] << 7; //upper 7 bit
+                    int lower = message[1]; // lower 7 bit
+
+                    var faderValue = (upper + lower) / 16383.0;
+
+                    faderValues[channelNumber].Value = faderValue;
+                    OnFaderEvent(channelNumber, faderValue);
+                    if (!faderValues[channelNumber].IsTouched)
+                    {
+                        new Thread(() =>
+                        {
+                            Thread.Sleep(100);
+                            //if value change the other thread write back the last fader value
+                            if (faderValue == faderValues[channelNumber].Value)
+                            {
+                                SetFader(channelNumber, faderValue);
+                            }
+                        }).Start();
+                    }
+
+                }
+                else if (message[0] == 0xb0 && message[1] >= 0x10 && message[1] <= 0x17) //channel knobb turning
+                {
+                    byte channelNumber = (byte)(message[1] - 0x10);
+                    if (message[2] >= 0x01 && message[2] <= 0x03)
+                        OnKnobEvent(channelNumber, message[2]);
+                    if (message[2] >= 0x41 && message[2] <= 0x43)
+                        OnKnobEvent(channelNumber, -1 * (message[2] & 0x03));
+                }
+                else if (message[0] == 0xb0 && message[1] == 0x3c ) //jog wheel turning
+                {
+                    if (message[2] >= 0x01 && message[2] <= 0x03)
+                        OnWheelEvent(0, message[2]);
+                    if (message[2] >= 0x41 && message[2] <= 0x43)
+                        OnWheelEvent(0, -1 * (message[2] & 0x03));
+                }
             }
         }
 
