@@ -10,7 +10,7 @@ namespace UI24RController.UI24RChannels
         /// <summary>
         /// Between 0 and 1.0
         /// </summary>
-        /// 
+        ///
         public ChannelBase(int channelNumber)
         {
             ChannelFaderValue = 0;
@@ -59,7 +59,10 @@ namespace UI24RController.UI24RChannels
                 {
                     _name = GetDefaultName();
                 }
-                else _name = value;
+                else
+                {
+                    _name = value;
+                }
             }
         }
 
@@ -67,6 +70,18 @@ namespace UI24RController.UI24RChannels
         public bool IsSelected { get; set; }
         public int VCA { get; set; }
         protected bool _muteBtn;
+        public virtual string ShortName => GetDefaultName().Length > 4 ? GetDefaultName().Substring(0, 4) : GetDefaultName();
+        public string GetDisplayName(SelectedLayoutEnum layout)
+        {
+            if (layout == SelectedLayoutEnum.Channels)
+                return ShortName;
+            if (layout.IsAux())
+                return $"{ShortName}-A{layout.AuxToInt() + 1}";
+            if (layout.IsFx())
+                return $"{ShortName}-F{layout.FxToInt() + 1}";
+            return ShortName;
+        }
+
         public bool IsMute
         {
             get
@@ -157,7 +172,6 @@ namespace UI24RController.UI24RChannels
 
         public virtual string TurnOnRTAMessage()
         {
-            
             return $"3:::SETS^var.rta^{this.channelTypeID}.{this.ChannelNumber}";
         }
 

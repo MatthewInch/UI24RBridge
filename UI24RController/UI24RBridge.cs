@@ -41,7 +41,7 @@ namespace UI24RController
         /// Represent the UI24R mixer state
         /// TODO: need to move every global variable that store any mixer specific state to the Mixer class (viewGroups, selectedChannel etc.)
         /// </summary>
-        protected Mixer _mixer = new Mixer();
+        protected Mixer _mixer;
 
         //0-23: Input channels
         //24-25: Linie In L/R
@@ -66,6 +66,7 @@ namespace UI24RController
         {
             this._settings = settings;
             this._controllers = controllers;
+            _mixer = new Mixer(settings.EnableUserBank);
             SendMessage("Start initialization...", false);
             InitializeChannels();
             InitializeViewGroupsFromConfig();
@@ -457,14 +458,13 @@ namespace UI24RController
                             var currentGainChannel = _mixerChannels[ch] as IInputable;
                             if (currentGainChannel.SrcType == SrcTypeEnum.Hw)
                             {
-                                currentGainChannel.Gain = currentGainChannel.Gain + (1.0d / 100.0d) * e.KnobDirection;
-                                if (currentGainChannel.Gain > 1)
-                                    currentGainChannel.Gain = 1;
-                                if (currentGainChannel.Gain < 0)
-                                    currentGainChannel.Gain = 0;
+                                int currentDb = (int)Math.Round(currentGainChannel.Gain * 63 - 6);
+                                int newDb = Math.Clamp(currentDb + e.KnobDirection, -6, 57);
+                                currentGainChannel.Gain = (newDb + 6) / 63.0d;
 
                                 _client.Send(currentGainChannel.GainMessage());
                                 controller.SetKnobLed(e.ChannelNumber, currentGainChannel.Gain);
+                                controller.WriteTemporaryTextToChannelLCDFirstLine(e.ChannelNumber, FormatGain(currentGainChannel.Gain), 2);
                                 //if multiple channels are set to same HW input
                                 foreach (var singleChannel in _mixerChannels)
                                 {
@@ -486,14 +486,13 @@ namespace UI24RController
                         break;
                     case KnobsFunctionEnum.Pan:
                         var currentChannel = _mixerChannels[ch];
-                        currentChannel.Panorama = currentChannel.Panorama + (1.0d / 100.0d) * e.KnobDirection;
-                        if (currentChannel.Panorama > 1)
-                            currentChannel.Panorama = 1;
-                        if (currentChannel.Panorama < 0)
-                            currentChannel.Panorama = 0;
+                        int currentPan = (int)Math.Round((currentChannel.Panorama - 0.5) * 200);
+                        int newPan = Math.Clamp(currentPan + e.KnobDirection, -100, 100);
+                        currentChannel.Panorama = newPan / 200.0d + 0.5d;
 
                         _client.Send(currentChannel.PanoramaMessage());
                         controller.SetKnobLed(e.ChannelNumber, currentChannel.Panorama);
+                        controller.WriteTemporaryTextToChannelLCDFirstLine(e.ChannelNumber, FormatPan(currentChannel.Panorama), 2);
                         break;
                 }
             }
@@ -540,50 +539,55 @@ namespace UI24RController
             //}
         }
 
+        private void _syncStereoLinkedChannel(int ch, double faderValue)
+        {
+            if (!(_mixerChannels[ch] is IStereoLinkable stereoChannel) || stereoChannel.LinkedWith == -1)
+                return;
+
+            var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
+
+            if (_selectedLayout == SelectedLayoutEnum.Channels || _mixerChannels[ch] is MainChannel)
+            {
+                _mixerChannels[otherCh].ChannelFaderValue = faderValue;
+                _client.Send(_mixerChannels[otherCh].MixFaderMessage());
+            }
+            else
+            {
+                _mixerChannels[otherCh].AuxSendValues[_selectedLayout] = faderValue;
+                if (_selectedLayout.IsAux())
+                    _client.Send(_mixerChannels[otherCh].SetAuxValueMessage(_selectedLayout));
+                else if (_selectedLayout.IsFx())
+                    _client.Send(_mixerChannels[otherCh].SetFxValueMessage(_selectedLayout));
+            }
+
+            var otherChOnLayers = GetControllerChannel(otherCh);
+            otherChOnLayers.ForEach(otherChOnLayer =>
+            {
+                if (otherChOnLayer.isOnLayer)
+                    otherChOnLayer.controller.SetFader(otherChOnLayer.controllerChannelNumber, faderValue);
+            });
+        }
+
         private void _midiController_FaderEvent(IMIDIController controller, MIDIController.FaderEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber, controller.ChannelOffset);
             if (ch > -1)
             {
-                //if (_pressedFunctionButton == -1) or it is a master fader
-                if ((_selectedLayout == SelectedLayoutEnum.Channels) || (_mixerChannels[ch] is MainChannel))
+                if (_selectedLayout == SelectedLayoutEnum.Channels || _mixerChannels[ch] is MainChannel)
                 {
                     _mixerChannels[ch].ChannelFaderValue = e.FaderValue;
                     _client.Send(_mixerChannels[ch].MixFaderMessage());
-                    //if the channel is linked we have to set the other channel to the same value
-                    if (_mixerChannels[ch] is IStereoLinkable)
-                    {
-                        var stereoChannel = _mixerChannels[ch] as IStereoLinkable;
-                        if (stereoChannel.LinkedWith != -1)
-                        {
-                            var otherCh = stereoChannel.LinkedWith == 0 ? ch + 1 : ch - 1;
-                            _mixerChannels[otherCh].ChannelFaderValue = e.FaderValue;
-                            _client.Send(_mixerChannels[otherCh].MixFaderMessage());
-                            //If the other chanel is on the current layout we have to set too
-                            var otherChOnLayers = GetControllerChannel(otherCh);
-                            otherChOnLayers.ForEach(otherChOnLayer =>
-                            {
-                                if (otherChOnLayer.isOnLayer)
-                                {
-                                    otherChOnLayer.controller.SetFader(otherChOnLayer.controllerChannelNumber, e.FaderValue);
-                                }
-                            });
-                        }
-                    }
                 }
                 else
                 {
-                    //_mixerChannels[ch].AuxSendValues[_pressedFunctionButton] = e.FaderValue;
                     _mixerChannels[ch].AuxSendValues[_selectedLayout] = e.FaderValue;
                     if (_selectedLayout.IsAux())
-                    {
                         _client.Send(_mixerChannels[ch].SetAuxValueMessage(_selectedLayout));
-                    }
                     else if (_selectedLayout.IsFx())
-                    {
                         _client.Send(_mixerChannels[ch].SetFxValueMessage(_selectedLayout));
-                    }
                 }
+
+                _syncStereoLinkedChannel(ch, e.FaderValue);
             }
         }
 
@@ -593,11 +597,13 @@ namespace UI24RController
             {
                 if (e.IsPress)
                 {
+                    if (_selectedLayout.IsAux() || _selectedLayout.IsFx())
+                        controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = e.FunctionButton.ToAux();
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
                     controller.WriteTextToBarsDisplay("AX" + (_selectedLayout.AuxToInt() + 1).ToString());
                 }
-                else
+                else if (_selectedLayout == e.FunctionButton.ToAux())
                 {
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = SelectedLayoutEnum.Channels;
@@ -635,11 +641,13 @@ namespace UI24RController
             {
                 if (e.IsPress)
                 {
+                    if (_selectedLayout.IsAux() || _selectedLayout.IsFx())
+                        controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = e.FunctionButton.ToFx();
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
                     controller.WriteTextToBarsDisplay("FX" + (_selectedLayout.FxToInt() + 1).ToString());
                 }
-                else
+                else if (_selectedLayout == e.FunctionButton.ToFx())
                 {
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = SelectedLayoutEnum.Channels;
@@ -836,6 +844,7 @@ namespace UI24RController
 
         public void _midiController_UserLayerEdit(IMIDIController controller, FunctionEventArgs e)
         {
+            if (!_settings.EnableUserBank) return;
             _mixer.UserLayerEdit = e.IsPress;
             //if (_secondaryBridge != null) _secondaryBridge.UserLayerEdit = e.IsPress;
 
@@ -884,7 +893,7 @@ namespace UI24RController
             {
                 int controllerPos = Array.IndexOf(_mixer.getCurrentLayer(controller.ChannelOffset), SelectedChannel);
                 _mixer.setNewUserChannelInCurrentBank(controllerPos);
-                controller.WriteTextToChannelLCDSecondLine(controllerPos, "");
+                controller.WriteDefaultTextToChannelLCDSecondLine(controllerPos, "");
                 SetControllerChannelToCurrentLayerAndSend(controller, _mixer.UserLayerEditNewChannel, controllerPos);
 
             }
@@ -900,7 +909,7 @@ namespace UI24RController
                     //find next channel not used on this layer
                     int controllerPos = Array.IndexOf(_mixer.getCurrentLayer(otherController.ChannelOffset), SelectedChannel);
                     _mixer.findNextAvailableChannelForUserLayer(controllerPos, e.WheelDirection, otherController.ChannelOffset);
-                    controller.WriteTextToChannelLCDSecondLine(controllerPos, _mixerChannels[_mixer.UserLayerEditNewChannel].Name);
+                    controller.WriteDefaultTextToChannelLCDSecondLine(controllerPos, _mixerChannels[_mixer.UserLayerEditNewChannel].Name);
                 }
 
             }
@@ -908,6 +917,7 @@ namespace UI24RController
         }
         public void _midiController_SaveEvent(IMIDIController controller, EventArgs e)
         {
+            if (!_settings.EnableUserBank) return;
             string jsonString;
             jsonString = JsonSerializer.Serialize(_mixer.getUserLayerToArray(), MyClassTypeResolver<int[][]>.GetSerializerOptions());
             File.WriteAllText(CONFIGFILE_VIEW_GROUP, jsonString);
@@ -970,10 +980,37 @@ namespace UI24RController
             }
         }
 
+        private static string FormatGain(double gain)
+        {
+            int db = (int)Math.Round(gain * 63 - 6);
+            return db >= 0 ? $"+{db}dB" : $"{db}dB";
+        }
+
+        private static string FormatPan(double pan)
+        {
+            int value = (int)Math.Round((pan - 0.5) * 200);
+            if (value == 0) return "CENTER";
+            return value < 0 ? $"{-value}L" : $"{value}R";
+        }
+
+        private ChannelStripColour GetChannelStripColour(int channelNumber)
+        {
+            if (_selectedLayout.IsAux()) return ChannelStripColour.Yellow;
+            if (_selectedLayout.IsFx())  return ChannelStripColour.Cyan;
+            var ch = _mixerChannels[channelNumber];
+            if (ch is SubgroupChannel) return ChannelStripColour.Magenta;
+            if (ch is AuxChannel)      return ChannelStripColour.Yellow;
+            if (ch is FXChannel)       return ChannelStripColour.Cyan;
+            if (ch is VCAChannel)      return ChannelStripColour.Green;
+            return ChannelStripColour.White;
+        }
+
         private void SetControllerChannelToCurrentLayerAndSend(IMIDIController controller, int channelNumber, int controllerChannelNumber)
         {
             if (channelNumber > -1)
             {
+                controller.SetChannelStripColour(controllerChannelNumber, GetChannelStripColour(channelNumber));
+
                 if (_selectedLayout == SelectedLayoutEnum.Channels)
                 {
                     controller.SetFader(controllerChannelNumber, _mixerChannels[channelNumber].ChannelFaderValue);
@@ -994,7 +1031,10 @@ namespace UI24RController
 
                 SetControllerChannelKnobb(controller, channelNumber, controllerChannelNumber);
 
-                controller.WriteTextToChannelLCDFirstLine(controllerChannelNumber, _mixerChannels[channelNumber].Name);
+                controller.WriteDefaultTextToChannelLCDFirstLine(controllerChannelNumber, _mixerChannels[channelNumber].Name);
+                controller.WriteDefaultTextToChannelLCDSecondLine(controllerChannelNumber,
+                    _mixerChannels[channelNumber].GetDisplayName(_selectedLayout));
+
                 controller.SetMuteLed(controllerChannelNumber, _mixerChannels[channelNumber].IsMute);
                 controller.SetSoloLed(controllerChannelNumber, _mixerChannels[channelNumber].IsSolo);
 
@@ -1020,7 +1060,9 @@ namespace UI24RController
                 controller.SetSelectLed(controllerChannelNumber, false);
                 controller.SetKnobLed(controllerChannelNumber, 0);
 
-                controller.WriteTextToChannelLCDFirstLine(controllerChannelNumber, "");
+                controller.WriteDefaultTextToChannelLCDFirstLine(controllerChannelNumber, "");
+                controller.WriteDefaultTextToChannelLCDSecondLine(controllerChannelNumber, "");
+                controller.SetChannelStripColour(controllerChannelNumber, ChannelStripColour.Black);
                 controller.SetMuteLed(controllerChannelNumber, false);
                 controller.SetSoloLed(controllerChannelNumber, false);
                 controller.SetRecLed(controllerChannelNumber, false);
@@ -1154,7 +1196,7 @@ namespace UI24RController
 
                                 if (ui24Message.IsValid && chOnLayer.controllerChannelNumber < 8)
                                 {
-                                    chOnLayer.controller.WriteTextToChannelLCDFirstLine(chOnLayer.controllerChannelNumber, _mixerChannels[ui24Message.ChannelNumber].Name);
+                                    chOnLayer.controller.WriteDefaultTextToChannelLCDFirstLine(chOnLayer.controllerChannelNumber, _mixerChannels[ui24Message.ChannelNumber].Name);
                                 }
                             }
                             break;

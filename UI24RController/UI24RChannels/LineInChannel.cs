@@ -28,6 +28,8 @@ namespace UI24RController.UI24RChannels
             IsPhantom = false;
         }
 
+        public override string ShortName => ChannelNumber == 0 ? "LinL" : "LinR";
+
         protected override string GetDefaultName()
         {
             return this.ChannelNumber == 0 ? "L-IN L" : "L-IN R";

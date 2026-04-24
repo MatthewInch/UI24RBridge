@@ -15,6 +15,8 @@ namespace UI24RController.UI24RChannels
             Eq.ChannelType = channelTypeID;
         }
 
+        public override string ShortName => $"AUX{ChannelNumber + 1:D1}";
+
         protected override string GetDefaultName()
         {
             return $"AUX {(this.ChannelNumber + 1):D2}"; ;

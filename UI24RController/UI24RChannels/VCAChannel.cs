@@ -12,6 +12,8 @@ namespace UI24RController.UI24RChannels
             Eq.ChannelType = channelTypeID;
         }
         public override int ChannelNumberInMixer => this.ChannelNumber + 48;
+        public override string ShortName => $"VCA{(this.ChannelNumber + 1):D1}";
+
         protected override string GetDefaultName()
         {
             return $"VCA {(this.ChannelNumber + 1):D2}";

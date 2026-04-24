@@ -10,7 +10,9 @@ namespace UI24RController.UI24RChannels
         public override int ChannelNumberInMixer => this.ChannelNumber + 26;
 
         public int LinkedWith { get ; set ; }
-       
+
+        public override string ShortName => ChannelNumber == 0 ? "PlyL" : "PlyR";
+
         public PlayerChannel(int channelNumber): base(channelNumber)
         {
             LinkedWith = -1; //-1: not linked, 0 left, 1 right

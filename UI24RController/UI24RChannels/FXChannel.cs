@@ -14,6 +14,8 @@ namespace UI24RController.UI24RChannels
             _muteGroupMaskDefault = 1 << Mixer._muteAllBit | 1 << Mixer._muteAllFxBit;
         }
 
+        public override string ShortName => $"FX{(this.ChannelNumber + 1):D2}";
+
         protected override string GetDefaultName()
         {
             return $"FX {(this.ChannelNumber + 1):D2}";

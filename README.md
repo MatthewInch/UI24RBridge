@@ -41,6 +41,14 @@ The earlier protocol has not been removed but the new functions only implemented
  - The ***knobs*** set the gain on the input channels or Panorama (change the behavior with Pan/Surround button)
  - Channel ***Select***, ***Solo*** and ***Mute*** buttons work on every channel
  - Channel ***Rec*** button sets either Mtk rec or Phantom 48V (selected in appsettings.json)
+ - Channel strip LCD **second line** shows the channel identifier (e.g. CH01, FX03) and, when viewing AUX/FX sends, appends the send suffix (e.g. CH01-A2, CH05-F1)
+ - Channel strip **colours** indicate channel type:
+	- **White** — input, line-in, player and main channels
+	- **Yellow** — AUX channels, or any channel when viewing an AUX send layer
+	- **Cyan** — FX channels, or any channel when viewing an FX send layer
+	- **Magenta** — subgroup channels
+	- **Green** — VCA channels
+	- **Black** — empty/unassigned strip
  - Buttons ***F1-F8*** switch to AUX1-8 sends
  - Button ***Switch***, ***Option***, ***Control*** and ***Alt*** switch to FX1-4 sends
  - Control Media player with ***<<***, ***>>***, ***Stop***, ***Play*** buttons
@@ -77,6 +85,7 @@ In the settings file (**appsettings.json**):
 - **PrimaryButtons**: Config file name for buttons behaviour. You can redefine the buttons functionality.
 - **TalkBack**: with scrub button it is emulate the talkback function. The value is a channel number. If the button is pressed that channel is unmuted, if the button is released tha channel is muted. (if the property removed the function is turned off)
 - **RtaOnWhenSelect**: Set RTA on a channel when select that channel on the controller (value can be "true" of "false"
+- **EnableUserBank**: Set to "false" to disable the User bank (Bank U). The ***USER*** button and ***Global View*** button will do nothing. Useful when Bank U is not needed and accidental presses should be avoided. Default is "true"
 
 **Example of the settings file**
 

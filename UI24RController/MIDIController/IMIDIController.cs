@@ -104,10 +104,13 @@ public interface IMIDIController
     void SetSoloLed(int channelNumber, bool turnOn);
     void SetRecLed(int channelNumber, bool turnOn);
     void SetLed(ButtonsEnum buttonName, bool turnOn);
+    void SetChannelStripColour(int channelNumber, ChannelStripColour colour);
 
     public void WriteTextToChannelLCD(int channelNumber, string text, int line);
-    public void WriteTextToChannelLCDFirstLine(int channelNumber, string text);
-    public void WriteTextToChannelLCDSecondLine(int channelNumber, string text);
+    public void WriteDefaultTextToChannelLCDFirstLine(int channelNumber, string text);
+    public void WriteTemporaryTextToChannelLCDFirstLine(int channelNumber, string text, int seconds);
+    public void WriteDefaultTextToChannelLCDSecondLine(int channelNumber, string text);
+    public void WriteTemporaryTextToChannelLCDSecondLine(int channelNumber, string text, int seconds);
     public void WriteTextToLCDSecondLine(string text);
     public void WriteTextToLCDSecondLine(string text, int delay);
 
