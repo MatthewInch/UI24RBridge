@@ -67,10 +67,9 @@ namespace UI24RController.MIDIController
         public bool IsExtender { get; set; }
         public int ChannelOffset { get; set; }
 
-        protected string _buttonsValuesFileName;
-        public string ButtonsValuesFileName { get { return _buttonsValuesFileName; }
+
+        public string ButtonsFileName {
             set {
-                _buttonsValuesFileName = value;
                 var buttonSettingsFromFile = GetButtonsValues(value);
                 //update initial values if in the settings file it overwrited
                 foreach (KeyValuePair<ButtonsEnum, byte> button in buttonSettingsFromFile)
@@ -95,41 +94,20 @@ namespace UI24RController.MIDIController
 
         public event EventHandler<EventArgs> TrackEvent;
         public event EventHandler<EventArgs> PanEvent;
-        public event EventHandler<EventArgs> EqEvent;
-        public event EventHandler<EventArgs> SendEvent;
-        public event EventHandler<EventArgs> PlugInEvent;
-        public event EventHandler<EventArgs> InstrEvent;
 
-        public event EventHandler<EventArgs> DisplayBtnEvent;
         public event EventHandler<EventArgs> SmtpeBeatsBtnEvent;
-
         public event EventHandler<EventArgs> GlobalViewEvent;
 
-        public event EventHandler<EventArgs> MidiTracksEvent;
-        public event EventHandler<EventArgs> InputsEvent;
-        public event EventHandler<EventArgs> AudioTracksEvent;
-        public event EventHandler<EventArgs> AudioInstEvent;
-        public event EventHandler<EventArgs> AuxBtnEvent;
-        public event EventHandler<EventArgs> BusesBtnEvent;
-        public event EventHandler<EventArgs> OutputsEvent;
         public event EventHandler<FunctionEventArgs> UserBtnEvent;
 
-        public event EventHandler<FunctionEventArgs> AuxButtonEvent;       //F1-F8
-        public event EventHandler<FunctionEventArgs> FxButtonEvent;        //Modify buttons
-        public event EventHandler<FunctionEventArgs> MuteGroupButtonEvent; //Automation buttons
+        public event EventHandler<FunctionEventArgs> AuxButtonEvent;
+        public event EventHandler<FunctionEventArgs> FxButtonEvent;
+        public event EventHandler<FunctionEventArgs> MuteGroupButtonEvent;
 
         public event EventHandler<EventArgs> SaveEvent;
         public event EventHandler<EventArgs> UndoEvent;
         public event EventHandler<EventArgs> CancelEvent;
         public event EventHandler<EventArgs> EnterEvent;
-
-        public event EventHandler<EventArgs> MarkerEvent;
-        public event EventHandler<EventArgs> NudgeEvent;
-        public event EventHandler<EventArgs> CycleEvent;
-        public event EventHandler<EventArgs> DropEvent;
-        public event EventHandler<EventArgs> ReplaceEvent;
-        public event EventHandler<EventArgs> ClickEvent;
-        public event EventHandler<EventArgs> SoloEvent;
 
         public event EventHandler<EventArgs> PrevEvent;
         public event EventHandler<EventArgs> NextEvent;
@@ -141,12 +119,6 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> LayerDown;
         public event EventHandler<EventArgs> BankUp;
         public event EventHandler<EventArgs> BankDown;
-
-        public event EventHandler<EventArgs> UpEvent;
-        public event EventHandler<EventArgs> DownEvent;
-        public event EventHandler<EventArgs> LeftEvent;
-        public event EventHandler<EventArgs> RightEvent;
-        public event EventHandler<EventArgs> CenterEvent;
 
         public event EventHandler<ButtonEventArgs> ScrubEvent;
 
@@ -246,27 +218,6 @@ namespace UI24RController.MIDIController
         {
             PanEvent?.Invoke(this, new EventArgs());
         }
-        protected void OnEqEvent()
-        {
-            EqEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnSendEvent()
-        {
-            SendEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnPlugInEvent()
-        {
-            PlugInEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnInstrEvent()
-        {
-            InstrEvent?.Invoke(this, new EventArgs());
-        }
-
-        protected void OnDisplayBtnEvent()
-        {
-            DisplayBtnEvent?.Invoke(this, new EventArgs());
-        }
         protected void OnSmtpeBeatsBtnEvent()
         {
             SmtpeBeatsBtnEvent?.Invoke(this, new EventArgs());
@@ -278,34 +229,6 @@ namespace UI24RController.MIDIController
             GlobalViewEvent?.Invoke(this, new EventArgs());
         }
 
-        protected void OnMidiTracksEvent()
-        {
-            MidiTracksEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnInputsEvent()
-        {
-            InputsEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnAudioTracksEvent()
-        {
-            AudioTracksEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnAudioInstEvent()
-        {
-            AudioInstEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnAuxBtnEvent()
-        {
-            AuxBtnEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnBusesBtnEvent()
-        {
-            BusesBtnEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnOutputsEvent()
-        {
-            OutputsEvent?.Invoke(this, new EventArgs());
-        }
         protected void OnUserEvent(int functionNumber, bool isPress)
         {
             UserBtnEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
@@ -339,35 +262,6 @@ namespace UI24RController.MIDIController
         protected void OnEnterEvent()
         {
             EnterEvent?.Invoke(this, new EventArgs());
-        }
-
-        protected void OnMarkerEvent()
-        {
-            MarkerEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnNudgeEvent()
-        {
-            NudgeEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnCycleEvent()
-        {
-            CycleEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnDropEvent()
-        {
-            DropEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnReplaceEvent()
-        {
-            ReplaceEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnClickEvent()
-        {
-            ClickEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnSoloEvent()
-        {
-            SoloEvent?.Invoke(this, new EventArgs());
         }
 
         protected void OnNextEvent()
@@ -406,27 +300,6 @@ namespace UI24RController.MIDIController
         protected void OnBankDown()
         {
             BankDown?.Invoke(this, new EventArgs());
-        }
-
-        protected void OnUpEvent()
-        {
-            UpEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnDownEvent()
-        {
-            DownEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnLeftEvent()
-        {
-            LeftEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnRightEvent()
-        {
-            RightEvent?.Invoke(this, new EventArgs());
-        }
-        protected void OnCenterEvent()
-        {
-            CenterEvent?.Invoke(this, new EventArgs());
         }
 
         protected void OnWheelEvent(int channelNumber, int wheelDirection)
@@ -615,6 +488,8 @@ namespace UI24RController.MIDIController
             {
                 if (message[0] == 0x90) //button pressed, released, fader released
                 {
+                    OnMessageReceived($"MIDI Received: {string.Join(" ", message.Select(b => $"{b:x2}"))}");
+
                     if (message.MIDIEqual(0x90, 0x00, 0x00, 0xff, 0x00, 0xff) && (message[1] >= 0x68) && (message[1] <= 0x70)) //release fader (0x90 [0x68-0x70] 0x00)
                     {
                         byte channelNumber = (byte)(message[1] - 0x68);
@@ -665,70 +540,18 @@ namespace UI24RController.MIDIController
                     {
                         OnPanEvent();
                     }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Eq], 0x7f))
-                    {
-                        OnEqEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Send], 0x7f))
-                    {
-                        OnSendEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlugIn], 0x7f))
-                    {
-                        OnPlugInEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Instr], 0x7f))
-                    {
-                        OnInstrEvent();
-                    }
-
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Display], 0x7f))
-                    {
-                        OnDisplayBtnEvent();
-                    }
                     else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Smtpe], 0x7f))
                     {
                         OnSmtpeBeatsBtnEvent();
                     }
-
                     else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.GlobalView], 0x7f))
                     {
                         OnGlobalViewEvent();
-                    }
-
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.MidiTracks], 0x7f))
-                    {
-                        OnMidiTracksEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Inputs], 0x7f))
-                    {
-                        OnInputsEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.AudioTracks], 0x7f))
-                    {
-                        OnAudioTracksEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.AudioInst], 0x7f))
-                    {
-                        OnAudioInstEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.AuxBtn], 0x7f))
-                    {
-                        OnAuxBtnEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.BusesBtn], 0x7f))
-                    {
-                        OnBusesBtnEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Outputs], 0x7f))
-                    {
-                        OnOutputsEvent();
                     }
                     else if ((message[0] == 0x90) && message[1] == _buttonsID[ButtonsEnum.User])
                     {
                         OnUserEvent(0, message[2] == 0x7f);
                     }
-
                     else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Save], 0x7f))
                     {
                         OnSaveEvent();
@@ -745,36 +568,6 @@ namespace UI24RController.MIDIController
                     {
                         OnEnterEvent();
                     }
-
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Marker], 0x7f))
-                    {
-                        OnMarkerEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Nudge], 0x7f))
-                    {
-                        OnNudgeEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Cycle], 0x7f))
-                    {
-                        OnCycleEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Drop], 0x7f))
-                    {
-                        OnDropEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Replace], 0x7f))
-                    {
-                        OnReplaceEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Click], 0x7f))
-                    {
-                        OnClickEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Solo], 0x7f))
-                    {
-                        OnSoloEvent();
-                    }
-
                     else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.PlayPrev], 0x7f))
                     {
                         OnPrevEvent();
@@ -795,7 +588,6 @@ namespace UI24RController.MIDIController
                     {
                         OnRecEvent();
                     }
-
                     else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.FaderBankUp], 0x7f))
                     {
                         OnBankUp();
@@ -811,27 +603,6 @@ namespace UI24RController.MIDIController
                     else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.ChannelDown], 0x7f))
                     {
                         OnLayerDown();
-                    }
-
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Up], 0x7f))
-                    {
-                        OnUpEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Down], 0x7f))
-                    {
-                        OnDownEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Left], 0x7f))
-                    {
-                        OnLeftEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Right], 0x7f))
-                    {
-                        OnRightEvent();
-                    }
-                    else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Center], 0x7f))
-                    {
-                        OnCenterEvent();
                     }
                     else if (message.MIDIEqual(0x90, _buttonsID[ButtonsEnum.Scrub], 0x00))
                     {

@@ -43,7 +43,7 @@ namespace UI24RBridgeTest
             var recButtonBahavior = configuration["DefaultRecButton"];
             var channelRecButtonBahavior = configuration["DefaultChannelRecButton"];
             var auxButtonBehavior = configuration["AuxButtonBehavior"];
-            var buttonsValues = configuration["PrimaryButtons"];
+            var buttonsConfig = configuration["PrimaryButtonsConfig"];
             var startBank = configuration["StartBank"];
             var talkBack = configuration["TalkBack"];
             var rtaOnWhenSelect = configuration["RtaOnWhenSelect"] == "true";
@@ -85,26 +85,32 @@ namespace UI24RBridgeTest
                             }
                         };
 
+                        controller.IsExtender = primaryIsExtender;
+                        controller.ChannelOffset = primaryChannelStart == "0" ? 0 : 1;
+                        if (buttonsConfig != null) controller.ButtonsFileName = buttonsConfig;
                         Console.WriteLine("Connect input device...");
                         controller.ConnectInputDevice(midiInputDevice);
                         Console.WriteLine("Connect output device...");
                         controller.ConnectOutputDevice(midiOutputDevice);
-                        controller.IsExtender = primaryIsExtender;
-                        controller.ChannelOffset = primaryChannelStart == "0" ? 0 : 1;
-                        if  (buttonsValues != null) controller.ButtonsValuesFileName = buttonsValues.ToString();
                         controllers.Add(controller);
 
                         if (secondaryMidiInputDevice != null && secondaryMidiOutputDevice != null)
                         {
-
+                            controllerSecond.IsExtender = secondaryIsExtender;
+                            controllerSecond.ChannelOffset = secondaryChannelStart == "0" ? 0 : 1;
+                            if (buttonsConfig != null) controllerSecond.ButtonsFileName = buttonsConfig;
                             Console.WriteLine("Connect secondary input device...");
                             controllerSecond.ConnectInputDevice(secondaryMidiInputDevice);
                             Console.WriteLine("Connect secondary output device...");
                             controllerSecond.ConnectOutputDevice(secondaryMidiOutputDevice);
-                            controllerSecond.IsExtender = secondaryIsExtender;
-                            controllerSecond.ChannelOffset = secondaryChannelStart == "0" ? 0 : 1;
-                            if (buttonsValues != null) controller.ButtonsValuesFileName = buttonsValues;
                             controllers.Add(controllerSecond);
+                            controllerSecond.MessageReceived += (obj, e) =>
+                            {
+                                lock (balanceLock)
+                                {
+                                    Console.WriteLine(e.Message);
+                                }
+                            };
                         }
                     }
                     else
@@ -121,16 +127,14 @@ namespace UI24RBridgeTest
                                 }
                             };
 
+                            controller.IsExtender = controllerSetting.IsExtender;
+                            controller.ChannelOffset = controllerSetting.ChannelOffset;
+                            if (controllerSetting.PrimaryButtonsConfig != null)
+                                controller.ButtonsFileName = controllerSetting.PrimaryButtonsConfig;
                             Console.WriteLine("Connect input device...");
                             controller.ConnectInputDevice(controllerSetting.InputName);
                             Console.WriteLine("Connect output device...");
                             controller.ConnectOutputDevice(controllerSetting.OutputName);
-                            controller.IsExtender = controllerSetting.IsExtender;
-                            controller.ChannelOffset = controllerSetting.ChannelOffset;
-                            if (controllerSetting.PrimaryButtons != null)
-                            {
-                                controller.ButtonsValuesFileName = controllerSetting.PrimaryButtons;
-                            }
                         }
 
                     }
@@ -202,9 +206,9 @@ namespace UI24RBridgeTest
                             break;
                     }
                 }
-                if (buttonsValues != null)
+                if (buttonsConfig != null)
                 {
-                    controllers.ForEach(controller => controller.ButtonsValuesFileName = buttonsValues);
+                    controllers.ForEach(controller => controller.ButtonsFileName = buttonsConfig);
                 }
                 if (startBank != null)
                 {
@@ -358,7 +362,7 @@ namespace UI24RBridgeTest
             var recButtonBahavior = "2TrackAndMTK"; //configuration["DefaultRecButton"];
             var channelRecButtonBahavior = "rec"; //configuration["DefaultChannelRecButton"];
             var auxButtonBehavior = "Release";// configuration["AuxButtonBehavior"];
-            var buttonsValues = "ButtonsDefault.json"; // configuration["PrimaryButtons"];
+            var buttonsConfig = "ButtonsDefaultConfig.json"; // configuration["PrimaryButtonsConfig"];
             //var startBank = configuration["StartBank"];
             var talkBack = "20"; // configuration["TalkBack"];
             var rtaOnWhenSelect = "true"; // configuration["RtaOnWhenSelect"] == "true";
@@ -379,7 +383,7 @@ namespace UI24RBridgeTest
   ""DefaultChannelRecButton"": ""{channelRecButtonBahavior}"", //possible values: ""phantom"", ""rec""; default is ""rec
   ""DebugMessages"": ""false"",
   ""AuxButtonBehavior"": ""{auxButtonBehavior}"", //possible values: ""Release"", ""Lock""; Default is ""Release""
-  ""PrimaryButtons"": ""{buttonsValues}"",
+  ""PrimaryButtonsConfig"": ""{buttonsConfig}"",
   ""TalkBack"": ""{talkBack}"", //use scrub button. if it is uncommented it unmute the channel (number in value) if button is release the channel will mute
   ""RtaOnWhenSelect"" : ""{rtaOnWhenSelect}"" //set RTA on channel when select the channel on the controller
 }}

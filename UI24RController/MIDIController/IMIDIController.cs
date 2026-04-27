@@ -24,7 +24,7 @@ public interface IMIDIController
     event EventHandler<MessageEventArgs> MessageReceived;
     bool IsExtender { get; set; }
     int ChannelOffset { get; set; }
-    string ButtonsValuesFileName { get; set; }
+    string ButtonsFileName { set; }
 
     #region Button Events
     event EventHandler<FaderEventArgs> FaderEvent;
@@ -37,41 +37,20 @@ public interface IMIDIController
 
     event EventHandler<EventArgs> TrackEvent;
     event EventHandler<EventArgs> PanEvent;
-    event EventHandler<EventArgs> EqEvent;
-    event EventHandler<EventArgs> SendEvent;
-    event EventHandler<EventArgs> PlugInEvent;
-    event EventHandler<EventArgs> InstrEvent;
 
-    event EventHandler<EventArgs> DisplayBtnEvent;
     event EventHandler<EventArgs> SmtpeBeatsBtnEvent;
-
     event EventHandler<EventArgs> GlobalViewEvent;
 
-    event EventHandler<EventArgs> MidiTracksEvent;
-    event EventHandler<EventArgs> InputsEvent;
-    event EventHandler<EventArgs> AudioTracksEvent;
-    event EventHandler<EventArgs> AudioInstEvent;
-    event EventHandler<EventArgs> AuxBtnEvent;
-    event EventHandler<EventArgs> BusesBtnEvent;
-    event EventHandler<EventArgs> OutputsEvent;
     event EventHandler<FunctionEventArgs> UserBtnEvent;
 
-    event EventHandler<FunctionEventArgs> AuxButtonEvent;       //F1-F8
-    event EventHandler<FunctionEventArgs> FxButtonEvent;        //Modify buttons
-    event EventHandler<FunctionEventArgs> MuteGroupButtonEvent; //Automation buttons
+    event EventHandler<FunctionEventArgs> AuxButtonEvent;
+    event EventHandler<FunctionEventArgs> FxButtonEvent;
+    event EventHandler<FunctionEventArgs> MuteGroupButtonEvent;
 
     event EventHandler<EventArgs> SaveEvent;
     event EventHandler<EventArgs> UndoEvent;
     event EventHandler<EventArgs> CancelEvent;
     event EventHandler<EventArgs> EnterEvent;
-
-    event EventHandler<EventArgs> MarkerEvent;
-    event EventHandler<EventArgs> NudgeEvent;
-    event EventHandler<EventArgs> CycleEvent;
-    event EventHandler<EventArgs> DropEvent;
-    event EventHandler<EventArgs> ReplaceEvent;
-    event EventHandler<EventArgs> ClickEvent;
-    event EventHandler<EventArgs> SoloEvent;
 
     event EventHandler<EventArgs> PrevEvent;
     event EventHandler<EventArgs> NextEvent;
@@ -83,12 +62,6 @@ public interface IMIDIController
     event EventHandler<EventArgs> LayerDown;
     event EventHandler<EventArgs> BankUp;
     event EventHandler<EventArgs> BankDown;
-
-    event EventHandler<EventArgs> UpEvent;
-    event EventHandler<EventArgs> DownEvent;
-    event EventHandler<EventArgs> LeftEvent;
-    event EventHandler<EventArgs> RightEvent;
-    event EventHandler<EventArgs> CenterEvent;
 
     event EventHandler<ButtonEventArgs> ScrubEvent;
 

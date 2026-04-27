@@ -7,16 +7,13 @@ namespace UI24RController
 {
     public enum ButtonsEnum
     {
-        Track, Pan, Eq, Send, PlugIn, Instr, Display, Smtpe,
-        GlobalView, MidiTracks, Inputs, AudioTracks, AudioInst, AuxBtn, BusesBtn, Outputs, User,
+        Track, Pan, Smtpe, GlobalView, User,
         Aux1, Aux2, Aux3, Aux4, Aux5, Aux6, Aux7, Aux8,
         Fx1, Fx2, Fx3, Fx4,
         MuteGroup1, MuteGroup2, MuteGroup3, MuteGroup4, MuteGroup5, MuteGroup6,
         Save, Undo, Cancel, Enter,
-        Marker, Nudge, Cycle, Drop, Replace, Click, Solo,
         PlayPrev, PlayNext, Play, Rec, Stop,
         FaderBankUp, FaderBankDown, ChannelUp, ChannelDown,
-        Up, Down, Left, Right, Center,
         Scrub,
         //channel buttons
         Ch1Rec,Ch1Solo,Ch1Mute,Ch1Select,Ch1Knob
@@ -184,7 +181,7 @@ namespace UI24RController
                 case ButtonsEnum.Aux1:
                     return SelectedLayoutEnum.Aux1;
                 case ButtonsEnum.Aux2:
-                    return SelectedLayoutEnum.Aux3;
+                    return SelectedLayoutEnum.Aux2;
                 case ButtonsEnum.Aux3:
                     return SelectedLayoutEnum.Aux3;
                 case ButtonsEnum.Aux4:

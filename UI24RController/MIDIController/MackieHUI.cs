@@ -19,6 +19,7 @@ namespace UI24RController.MIDIController
         IMidiOutput _output = null;
 
         public Dictionary<string, byte> ButtonsID { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public string ButtonsFileName { set { } }
 
         public bool IsConnectionErrorOccured => throw new NotImplementedException();
 
@@ -32,11 +33,6 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> UndoEvent;
         public event EventHandler<EventArgs> CancelEvent;
         public event EventHandler<EventArgs> EnterEvent;
-        public event EventHandler<EventArgs> UpEvent;
-        public event EventHandler<EventArgs> DownEvent;
-        public event EventHandler<EventArgs> LeftEvent;
-        public event EventHandler<EventArgs> RightEvent;
-        public event EventHandler<EventArgs> CenterEvent;
         public event EventHandler<ChannelEventArgs> MuteChannelEvent;
         public event EventHandler<ChannelEventArgs> SoloChannelEvent;
         public event EventHandler<ChannelEventArgs> RecChannelEvent;
