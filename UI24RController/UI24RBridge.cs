@@ -102,6 +102,7 @@ namespace UI24RController
                 controller.WriteTextToLCDSecondLine("");
                 controller.ConnectionErrorEvent += (sender, args)=> _midiController_ConnectionErrorEvent(controller, args);
                 controller.AuxButtonEvent += (sender, args) => _midiController_AuxButtonEvent(controller, args);
+                controller.ViewGroupButtonEvent += (sender, args) => Controller_ViewGroupButtonEvent(controller, args);
                 controller.FxButtonEvent += (sender, args) => Controller_FXButtonEvent(controller, args);
                 controller.TalkbackEvent += (sender, args) => Controller_TalkbackEvent(controller, args);
                 controller.GainModeEvent += (sender, args) => Controller_GainModeEvent(controller, args); //HPF: functionality
@@ -525,6 +526,13 @@ namespace UI24RController
             //    _secondaryBridge._midiController_BankDown(sender, e);
             //}
         }
+        public void Controller_ViewGroupButtonEvent(object sender, FunctionEventArgs e)
+        {
+            if (!e.IsPress) return;
+            _mixer.SetViewGroup(e.FunctionButton);
+            SetControllerToCurrentLayerAndSend();
+        }
+
         public void _midiController_BankUp(object sender, EventArgs e)
         {
             _mixer.setBankUp();
@@ -1114,6 +1122,7 @@ namespace UI24RController
                 controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
 
             });
+            SetViewGroupLeds();
         }
         private void SetStateLedsOnController()
         {
@@ -1121,6 +1130,7 @@ namespace UI24RController
             {
                 controller.SetLed(ButtonsEnum.Rec, _mixer.IsMultitrackRecordingRun || _mixer.IsTwoTrackRecordingRun);
                 SetMuteGroupsLeds();
+                SetViewGroupLeds();
                 SetKnobsFunctionLedOnController();
                 if (_selectedLayout.IsAux())
                 {
@@ -1451,6 +1461,16 @@ namespace UI24RController
 
             }
         }
+        private void SetViewGroupLeds()
+        {
+            int activeViewGroup = _mixer.GetCurrentViewGroup();
+            _controllers.ForEach(controller =>
+            {
+                for (int i = 0; i < 6; ++i)
+                    controller.SetLed(ButtonsEnum.ViewGroup1 + i, i == activeViewGroup);
+            });
+        }
+
         private void SetMuteGroupsLeds()
         {
             UInt32 mask = _mixer.MuteMask;

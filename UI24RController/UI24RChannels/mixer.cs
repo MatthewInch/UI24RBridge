@@ -186,6 +186,20 @@ namespace UI24RController.UI24RChannels
             _selectedBank = _availableBanks[idx];
             _selectedLayer = 0;
         }
+        public void SetViewGroup(int viewGroupIndex)
+        {
+            _selectedBank = 2;
+            _selectedLayer = viewGroupIndex % _numLayersPerBank;
+        }
+
+        /// <summary>
+        /// Returns the active view group index (0–5) when on the V bank, otherwise -1.
+        /// </summary>
+        public int GetCurrentViewGroup()
+        {
+            return _selectedBank == 2 ? _selectedLayer : -1;
+        }
+
         public bool goToUserBank()
         {
             if (!_hasUserBank) return false;

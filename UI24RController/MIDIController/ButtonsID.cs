@@ -57,6 +57,20 @@ namespace UI24RController.MIDIController
         }
 
 
+        public (bool isViewGroup, int viewGroupNum) GetViewGroupButton(byte value)
+        {
+            var viewGroupKeys = new[] {
+                ButtonsEnum.ViewGroup1, ButtonsEnum.ViewGroup2, ButtonsEnum.ViewGroup3,
+                ButtonsEnum.ViewGroup4, ButtonsEnum.ViewGroup5, ButtonsEnum.ViewGroup6
+            };
+            for (int i = 0; i < viewGroupKeys.Length; i++)
+            {
+                if (ButtonsDictionary.TryGetValue(viewGroupKeys[i], out var b) && value == b)
+                    return (true, i);
+            }
+            return (false, 0);
+        }
+
         public (bool isMuteGroupButton, int muteGroupNum) GetMuteGroupsButton(byte value)
         {
             var muteKeys = new[] {

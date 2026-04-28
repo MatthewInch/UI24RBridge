@@ -103,6 +103,7 @@ namespace UI24RController.MIDIController
         public event EventHandler<FunctionEventArgs> AuxButtonEvent;
         public event EventHandler<FunctionEventArgs> FxButtonEvent;
         public event EventHandler<FunctionEventArgs> MuteGroupButtonEvent;
+        public event EventHandler<FunctionEventArgs> ViewGroupButtonEvent;
 
         public event EventHandler<EventArgs> MuteAllEvent;
         public event EventHandler<EventArgs> MuteFXEvent;
@@ -245,6 +246,10 @@ namespace UI24RController.MIDIController
         protected void OnMuteGroupButtonEvent(int functionNumber, bool isPress)
         {
             MuteGroupButtonEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
+        }
+        protected void OnViewGroupButtonEvent(int functionNumber, bool isPress)
+        {
+            ViewGroupButtonEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
         }
 
         protected void OnMuteAllEvent()
@@ -626,6 +631,11 @@ namespace UI24RController.MIDIController
                     {
                         var muteNum = _buttonsID.GetMuteGroupsButton(message[1]).muteGroupNum;
                         OnMuteGroupButtonEvent(muteNum, message[2] == 0x7f);
+                    }
+                    else if ((message[0] == 0x90) && _buttonsID.GetViewGroupButton(message[1]).isViewGroup)
+                    {
+                        var viewGroupNum = _buttonsID.GetViewGroupButton(message[1]).viewGroupNum;
+                        OnViewGroupButtonEvent(viewGroupNum, message[2] == 0x7f);
                     }
 
                 }

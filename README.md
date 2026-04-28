@@ -35,6 +35,7 @@ The earlier protocol has not been removed but the new functions only implemented
 		- Layer 5: VIEW 5 (if set)
 		- Layer 6: VIEW 6 (if set)
 		- The controller shows the first 8 channel (16 channel with secondary controller) of the selected global view.
+		- Press the ***View Group 1–6*** buttons to jump directly to the corresponding view layer (V1–V6) without cycling through banks. The LED of the active view group lights up; all view group LEDs go dark when leaving Bank V.
 	- Switch between Banks with ***Fader Bank <<*** and ***Fader Bank >>*** buttons or K (up) and J (down) key on the computer
 	- Switch between Layers in current bank with ***Channel Bank <<*** and ***Channel Bank >>*** buttons or M (up) and N (down) key on the computer
  - The ***faders*** work on every type of channels

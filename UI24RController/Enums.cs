@@ -8,6 +8,7 @@ namespace UI24RController
     public enum ButtonsEnum
     {
         Gain, Pan, TapTempo, SaveUserLayer, SetUserChannel,
+        ViewGroup1, ViewGroup2, ViewGroup3, ViewGroup4, ViewGroup5, ViewGroup6,
         Aux1, Aux2, Aux3, Aux4, Aux5, Aux6, Aux7, Aux8, Aux9, Aux10,
         Fx1, Fx2, Fx3, Fx4,
         MuteGroup1, MuteGroup2, MuteGroup3, MuteGroup4, MuteGroup5, MuteGroup6,

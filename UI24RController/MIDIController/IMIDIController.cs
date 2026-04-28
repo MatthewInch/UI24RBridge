@@ -46,6 +46,7 @@ public interface IMIDIController
     event EventHandler<FunctionEventArgs> AuxButtonEvent;
     event EventHandler<FunctionEventArgs> FxButtonEvent;
     event EventHandler<FunctionEventArgs> MuteGroupButtonEvent;
+    event EventHandler<FunctionEventArgs> ViewGroupButtonEvent;
 
     event EventHandler<EventArgs> MuteAllEvent;
     event EventHandler<EventArgs> MuteFXEvent;
