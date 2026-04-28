@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace UI24RController.MIDIController
 {
-    public class ButtonsID 
+    public class ButtonsID
     {
 
 
@@ -32,58 +32,26 @@ namespace UI24RController.MIDIController
 
         public (bool isFX, int fxNum) GetFxButton(byte value)
         {
-            if (value == ButtonsDictionary[ButtonsEnum.Fx1])
+            var fxKeys = new[] { ButtonsEnum.Fx1, ButtonsEnum.Fx2, ButtonsEnum.Fx3, ButtonsEnum.Fx4 };
+            for (int i = 0; i < fxKeys.Length; i++)
             {
-                return (true, 0);
-            }
-            else if (value == ButtonsDictionary[ButtonsEnum.Fx2])
-            {
-                return (true, 1);
-            }
-            else if (value == ButtonsDictionary[ButtonsEnum.Fx3])
-            {
-                return (true, 2);
-            }
-            else if (value == ButtonsDictionary[ButtonsEnum.Fx4])
-            {
-                return (true, 3);
+                if (ButtonsDictionary.TryGetValue(fxKeys[i], out var b) && value == b)
+                    return (true, i);
             }
             return (false, 0);
         }
 
         public (bool isAux, int auxNum) GetAuxButton(Byte value)
         {
-            if (value == ButtonsDictionary[ButtonsEnum.Aux1])
+            var auxKeys = new[] {
+                ButtonsEnum.Aux1, ButtonsEnum.Aux2, ButtonsEnum.Aux3, ButtonsEnum.Aux4,
+                ButtonsEnum.Aux5, ButtonsEnum.Aux6, ButtonsEnum.Aux7, ButtonsEnum.Aux8,
+                ButtonsEnum.Aux9, ButtonsEnum.Aux10
+            };
+            for (int i = 0; i < auxKeys.Length; i++)
             {
-                return (true, 0);
-            }
-            else if (value == ButtonsDictionary[ButtonsEnum.Aux2])
-            {
-                return (true, 1);
-            }
-            else if (value == ButtonsDictionary[ButtonsEnum.Aux3])
-            {
-                return (true, 2);
-            }
-            else if (value == ButtonsDictionary[ButtonsEnum.Aux4])
-            {
-                return (true, 3);
-            }
-            else if (value == ButtonsDictionary[ButtonsEnum.Aux5])
-            {
-                return (true, 4);
-            }
-            else if (value == ButtonsDictionary[ButtonsEnum.Aux6])
-            {
-                return (true, 5);
-            }
-            else if (value == ButtonsDictionary[ButtonsEnum.Aux7])
-            {
-                return (true, 6);
-            }
-            else if (value == ButtonsDictionary[ButtonsEnum.Aux8])
-            {
-                return (true, 7);
+                if (ButtonsDictionary.TryGetValue(auxKeys[i], out var b) && value == b)
+                    return (true, i);
             }
             return (false, 0);
         }
@@ -91,29 +59,14 @@ namespace UI24RController.MIDIController
 
         public (bool isMuteGroupButton, int muteGroupNum) GetMuteGroupsButton(byte value)
         {
-            if (value == ButtonsDictionary[ButtonsEnum.MuteGroup1])
+            var muteKeys = new[] {
+                ButtonsEnum.MuteGroup1, ButtonsEnum.MuteGroup2, ButtonsEnum.MuteGroup3,
+                ButtonsEnum.MuteGroup4, ButtonsEnum.MuteGroup5, ButtonsEnum.MuteGroup6
+            };
+            for (int i = 0; i < muteKeys.Length; i++)
             {
-                return (true, 0);
-            }
-            else if (value == ButtonsDictionary[ButtonsEnum.MuteGroup2])
-            {
-                return (true, 1);
-            }
-            else if (value == ButtonsDictionary[ButtonsEnum.MuteGroup3])
-            {
-                return (true, 2);
-            }
-            else if (value == ButtonsDictionary[ButtonsEnum.MuteGroup4])
-            {
-                return (true, 3);
-            }
-            else if (value == ButtonsDictionary[ButtonsEnum.MuteGroup5])
-            {
-                return (true, 4);
-            }
-            else if (value == ButtonsDictionary[ButtonsEnum.MuteGroup6])
-            {
-                return (true, 5);
+                if (ButtonsDictionary.TryGetValue(muteKeys[i], out var b) && value == b)
+                    return (true, i);
             }
             return (false, 0);
         }

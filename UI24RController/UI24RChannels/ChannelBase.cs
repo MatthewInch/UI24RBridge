@@ -33,6 +33,8 @@ namespace UI24RController.UI24RChannels
                 {SelectedLayoutEnum.Aux6, 0 },
                 {SelectedLayoutEnum.Aux7, 0 },
                 {SelectedLayoutEnum.Aux8, 0 },
+                {SelectedLayoutEnum.Aux9, 0 },
+                {SelectedLayoutEnum.Aux10, 0 },
                 {SelectedLayoutEnum.Fx1, 0 },
                 {SelectedLayoutEnum.Fx2, 0 },
                 {SelectedLayoutEnum.Fx3, 0 },

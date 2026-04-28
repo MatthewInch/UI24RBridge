@@ -8,7 +8,7 @@ namespace UI24RController
     public enum ButtonsEnum
     {
         Track, Pan, Smtpe, GlobalView, User,
-        Aux1, Aux2, Aux3, Aux4, Aux5, Aux6, Aux7, Aux8,
+        Aux1, Aux2, Aux3, Aux4, Aux5, Aux6, Aux7, Aux8, Aux9, Aux10,
         Fx1, Fx2, Fx3, Fx4,
         MuteGroup1, MuteGroup2, MuteGroup3, MuteGroup4, MuteGroup5, MuteGroup6,
         Save, Undo, Cancel, Enter,
@@ -27,7 +27,7 @@ namespace UI24RController
     public enum SelectedLayoutEnum
     {
         Channels,
-        Aux1, Aux2, Aux3, Aux4, Aux5, Aux6, Aux7, Aux8,
+        Aux1, Aux2, Aux3, Aux4, Aux5, Aux6, Aux7, Aux8, Aux9, Aux10,
         Fx1, Fx2, Fx3, Fx4
     }
 
@@ -62,8 +62,12 @@ namespace UI24RController
                 case SelectedLayoutEnum.Aux7:
                     return 6;
                 case SelectedLayoutEnum.Aux8:
-                default:
                     return 7;
+                case SelectedLayoutEnum.Aux9:
+                    return 8;
+                case SelectedLayoutEnum.Aux10:
+                default:
+                    return 9;
 
             }
         }
@@ -87,8 +91,12 @@ namespace UI24RController
                 case 6:
                     return SelectedLayoutEnum.Aux7;
                 case 7:
-                default:
                     return SelectedLayoutEnum.Aux8;
+                case 8:
+                    return SelectedLayoutEnum.Aux9;
+                case 9:
+                default:
+                    return SelectedLayoutEnum.Aux10;
             }
         }
 
@@ -101,7 +109,9 @@ namespace UI24RController
                  layout == SelectedLayoutEnum.Aux5 ||
                  layout == SelectedLayoutEnum.Aux6 ||
                  layout == SelectedLayoutEnum.Aux7 ||
-                 layout == SelectedLayoutEnum.Aux8;
+                 layout == SelectedLayoutEnum.Aux8 ||
+                 layout == SelectedLayoutEnum.Aux9 ||
+                 layout == SelectedLayoutEnum.Aux10;
         }
 
         public static int FxToInt(this SelectedLayoutEnum layout)
@@ -174,29 +184,6 @@ namespace UI24RController
             }
         }
 
-        public static SelectedLayoutEnum ToLayoutEnum(this ButtonsEnum button)
-        {
-            switch (button)
-            {
-                case ButtonsEnum.Aux1:
-                    return SelectedLayoutEnum.Aux1;
-                case ButtonsEnum.Aux2:
-                    return SelectedLayoutEnum.Aux2;
-                case ButtonsEnum.Aux3:
-                    return SelectedLayoutEnum.Aux3;
-                case ButtonsEnum.Aux4:
-                    return SelectedLayoutEnum.Aux4;
-                case ButtonsEnum.Aux5:
-                    return SelectedLayoutEnum.Aux5;
-                case ButtonsEnum.Aux6:
-                    return SelectedLayoutEnum.Aux6;
-                case ButtonsEnum.Aux7:
-                    return SelectedLayoutEnum.Aux7;
-                case ButtonsEnum.Aux8:
-                default:
-                    return SelectedLayoutEnum.Aux8;
-            }
-        }
         public static ButtonsEnum ToButtonsEnum(this SelectedLayoutEnum layout)
         {
             switch (layout)
@@ -217,6 +204,10 @@ namespace UI24RController
                     return ButtonsEnum.Aux7;
                 case SelectedLayoutEnum.Aux8:
                     return ButtonsEnum.Aux8;
+                case SelectedLayoutEnum.Aux9:
+                    return ButtonsEnum.Aux9;
+                case SelectedLayoutEnum.Aux10:
+                    return ButtonsEnum.Aux10;
                 case SelectedLayoutEnum.Fx1:
                     return ButtonsEnum.Fx1;
                 case SelectedLayoutEnum.Fx2:
