@@ -7,14 +7,14 @@ namespace UI24RController
 {
     public enum ButtonsEnum
     {
-        Track, Pan, Smtpe, GlobalView, User,
+        Gain, Pan, TapTempo, SaveUserLayer, SetUserChannel,
         Aux1, Aux2, Aux3, Aux4, Aux5, Aux6, Aux7, Aux8, Aux9, Aux10,
         Fx1, Fx2, Fx3, Fx4,
         MuteGroup1, MuteGroup2, MuteGroup3, MuteGroup4, MuteGroup5, MuteGroup6,
-        Save, Undo, Cancel, Enter,
+        MuteAll, MuteFX, ClearMute, ClearSolo,
         PlayPrev, PlayNext, Play, Rec, Stop,
         FaderBankUp, FaderBankDown, ChannelUp, ChannelDown,
-        Scrub,
+        Talkback,
         //channel buttons
         Ch1Rec,Ch1Solo,Ch1Mute,Ch1Select,Ch1Knob
     }

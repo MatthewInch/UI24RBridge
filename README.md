@@ -25,8 +25,8 @@ The earlier protocol has not been removed but the new functions only implemented
 		- Layer 4: User defined
 		- Layer 5: User defined
 		- Layer 6: User defined
-		- If you want to edit user bank, select channel in user group, hold ***USER*** button and select new channel with JOG wheel while still holding ***USER*** button.
-		- Changes must be saved with ***Global View*** button, otherwise changes will be discarted on app restart
+		- If you want to edit user bank, select channel in user group, hold ***Set User Channel*** button and select new channel with JOG wheel while still holding ***Set User Channel*** button.
+		- Changes must be saved with ***Save User Layer*** button, otherwise changes will be discarted on app restart
 	- Bank V (configurable with Global View Groups in mixer app)
 		- Layer 1: VIEW 1 (if set)
 		- Layer 2: VIEW 2 (if set)
@@ -38,7 +38,7 @@ The earlier protocol has not been removed but the new functions only implemented
 	- Switch between Banks with ***Fader Bank <<*** and ***Fader Bank >>*** buttons or K (up) and J (down) key on the computer
 	- Switch between Layers in current bank with ***Channel Bank <<*** and ***Channel Bank >>*** buttons or M (up) and N (down) key on the computer
  - The ***faders*** work on every type of channels
- - The ***knobs*** set the gain on the input channels or Panorama (change the behavior with Pan/Surround button)
+ - The ***knobs*** set the gain on the input channels or Panorama (change the behavior with ***Pan*** button; use ***Gain*** button to switch back)
  - Channel ***Select***, ***Solo*** and ***Mute*** buttons work on every channel
  - Channel ***Rec*** button sets either Mtk rec or Phantom 48V (selected in appsettings.json)
  - Channel strip LCD **second line** shows the channel identifier (e.g. CH01, FX03) and, when viewing AUX/FX sends, appends the send suffix (e.g. CH01-A2, CH05-F1)
@@ -53,14 +53,33 @@ The earlier protocol has not been removed but the new functions only implemented
  - Button ***Switch***, ***Option***, ***Control*** and ***Alt*** switch to FX1-4 sends
  - Control Media player with ***<<***, ***>>***, ***Stop***, ***Play*** buttons
  - Start Recording with ***Rec*** button
- - ***Global View*** button to save Layer Banks U
- - ***SMTPE/Beats*** Button to Tap Tempo
+ - ***Save User Layer*** button to save Layer Banks U
+ - ***Tap Tempo*** Button to Tap Tempo
  - Automation buttons (***Read/Off***, ***Write***, ***Trim***, ***Touch***, ***Latch***, ***Group***) to control Mute Groups
- - ***Save*** button to Mute All
- - ***Undo*** button to Mute FX
- - ***Cancel*** button to Clear Mute
- - ***Enter*** button to Clear Solo
- - ***Scrub*** button to mute/unmute the talkback channel (set it in config file)
+ - ***Mute All*** button to Mute All
+ - ***Mute FX*** button to Mute FX
+ - ***Clear Mute*** button to Clear Mute
+ - ***Clear Solo*** button to Clear Solo
+ - ***Talkback*** button to mute/unmute the talkback channel (set it in config file)
+
+### Controller Overlay
+
+A physical overlay for the X-Touch controller is provided in [Overlays/overlay.svg](Overlays/overlay.svg) for reference.
+
+The overlay labels the buttons with their UI24R functions as mapped by default. Print it and place it over the controller to identify button positions at a glance:
+
+| Button label on overlay | Function |
+|---|---|
+| **Gain** | Switch knobs to Gain mode |
+| **Pan** | Switch knobs to Pan mode |
+| **Tap Tempo** | Tap Tempo |
+| **Save User Layer** | Save Bank U layer assignments |
+| **Set User Channel** | Hold + JOG wheel to reassign a channel in Bank U |
+| **Mute All** | Toggle Mute All |
+| **Mute FX** | Toggle Mute FX |
+| **Clear Mute** | Clear all mutes |
+| **Clear Solo** | Clear all solos |
+| **Talkback** | Hold to unmute the configured talkback channel |
 
 ### Future functions
  - HPF
@@ -83,9 +102,9 @@ In the settings file (**appsettings.json**):
 - **DefaultChannelRecButton**: Sets what function has a rec button on controller. You can use **phantom** for controlling phantom voltage or **rec** to set multi-track recording for this channel; default is "rec
 - **AuxButtonBehavior**: If you want faders switched between main send, aux sends and fx send only during holding respective buttons (**Release**) or to be switched (**Lock**) to current aux/fx send until next press of aux/fx select button happened.
 - **PrimaryButtons**: Config file name for buttons behaviour. You can redefine the buttons functionality.
-- **TalkBack**: with scrub button it is emulate the talkback function. The value is a channel number. If the button is pressed that channel is unmuted, if the button is released tha channel is muted. (if the property removed the function is turned off)
+- **TalkBack**: with the ***Talkback*** button it emulates the talkback function. The value is a channel number. If the button is pressed that channel is unmuted, if the button is released that channel is muted. (if the property is removed the function is turned off)
 - **RtaOnWhenSelect**: Set RTA on a channel when select that channel on the controller (value can be "true" of "false"
-- **EnableUserBank**: Set to "false" to disable the User bank (Bank U). The ***USER*** button and ***Global View*** button will do nothing. Useful when Bank U is not needed and accidental presses should be avoided. Default is "true"
+- **EnableUserBank**: Set to "false" to disable the User bank (Bank U). The ***Set User Channel*** button and ***Save User Layer*** button will do nothing. Useful when Bank U is not needed and accidental presses should be avoided. Default is "true"
 
 **Example of the settings file**
 

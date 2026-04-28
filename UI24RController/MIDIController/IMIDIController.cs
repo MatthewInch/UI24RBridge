@@ -35,22 +35,22 @@ public interface IMIDIController
     event EventHandler<ChannelEventArgs> SoloChannelEvent;
     event EventHandler<ChannelEventArgs> RecChannelEvent;
 
-    event EventHandler<EventArgs> TrackEvent;
+    event EventHandler<EventArgs> GainModeEvent;
     event EventHandler<EventArgs> PanEvent;
 
-    event EventHandler<EventArgs> SmtpeBeatsBtnEvent;
-    event EventHandler<EventArgs> GlobalViewEvent;
+    event EventHandler<EventArgs> TapTempoEvent;
+    event EventHandler<EventArgs> SaveUserLayerEvent;
 
-    event EventHandler<FunctionEventArgs> UserBtnEvent;
+    event EventHandler<FunctionEventArgs> SetUserChannelEvent;
 
     event EventHandler<FunctionEventArgs> AuxButtonEvent;
     event EventHandler<FunctionEventArgs> FxButtonEvent;
     event EventHandler<FunctionEventArgs> MuteGroupButtonEvent;
 
-    event EventHandler<EventArgs> SaveEvent;
-    event EventHandler<EventArgs> UndoEvent;
-    event EventHandler<EventArgs> CancelEvent;
-    event EventHandler<EventArgs> EnterEvent;
+    event EventHandler<EventArgs> MuteAllEvent;
+    event EventHandler<EventArgs> MuteFXEvent;
+    event EventHandler<EventArgs> ClearMuteEvent;
+    event EventHandler<EventArgs> ClearSoloEvent;
 
     event EventHandler<EventArgs> PrevEvent;
     event EventHandler<EventArgs> NextEvent;
@@ -63,7 +63,7 @@ public interface IMIDIController
     event EventHandler<EventArgs> BankUp;
     event EventHandler<EventArgs> BankDown;
 
-    event EventHandler<ButtonEventArgs> ScrubEvent;
+    event EventHandler<ButtonEventArgs> TalkbackEvent;
 
     #endregion
 

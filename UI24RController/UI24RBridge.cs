@@ -86,25 +86,25 @@ namespace UI24RController
                 controller.SelectChannelEvent += (sender, args) => _midiController_SelectChannelEvent(controller, args);
                 controller.RecChannelEvent += (sender, args) => _midiController_RecChannelEvent(controller, args);
                 controller.MuteGroupButtonEvent += (sender, args) => Controller_MuteGroupButtonEvent(controller, args);
-                controller.SaveEvent += (sender, args) => _midiController_MuteAllEvent(controller, args);
-                controller.UndoEvent += (sender, args) => _midiController_MuteAllFxEvent(controller, args);
-                controller.CancelEvent += (sender, args) => _midiController_ClearMute(controller, args);
-                controller.EnterEvent += (sender, args) => _midiController_ClearSolo(controller, args);
+                controller.MuteAllEvent += (sender, args) => _midiController_MuteAllEvent(controller, args);
+                controller.MuteFXEvent += (sender, args) => _midiController_MuteAllFxEvent(controller, args);
+                controller.ClearMuteEvent += (sender, args) => _midiController_ClearMute(controller, args);
+                controller.ClearSoloEvent += (sender, args) => _midiController_ClearSolo(controller, args);
                 controller.RecEvent += (sender, args) => _midiController_RecEvent(controller, args);
                 controller.PlayEvent += (sender, args) => _midiController_PlayEvent(controller, args);
                 controller.StopEvent += (sender, args) => _midiController_StopEvent(controller, args);
                 controller.NextEvent += (sender, args) => _midiController_NextEvent(controller, args);
                 controller.PrevEvent += (sender, args) => _midiController_PrevEvent(controller, args);
-                controller.UserBtnEvent += (sender, args) => _midiController_UserLayerEdit(controller, args);
-                controller.GlobalViewEvent += (sender, args) => _midiController_SaveEvent(controller, args);
+                controller.SetUserChannelEvent += (sender, args) => _midiController_UserLayerEdit(controller, args);
+                controller.SaveUserLayerEvent += (sender, args) => _midiController_SaveUserLayerEvent(controller, args);
                 controller.WheelEvent += (sender, args) => _midiController_WheelEvent(controller, args);
-                controller.SmtpeBeatsBtnEvent += (sender, args) => _midiController_TapTempoEvent(controller, args);
+                controller.TapTempoEvent += (sender, args) => _midiController_TapTempoEvent(controller, args);
                 controller.WriteTextToLCDSecondLine("");
                 controller.ConnectionErrorEvent += (sender, args)=> _midiController_ConnectionErrorEvent(controller, args);
                 controller.AuxButtonEvent += (sender, args) => _midiController_AuxButtonEvent(controller, args);
                 controller.FxButtonEvent += (sender, args) => Controller_FXButtonEvent(controller, args);
-                controller.ScrubEvent += (sender, args) => Controller_ScrubEvent(controller, args);
-                controller.TrackEvent += (sender, args) => Controller_TrackEvent(controller, args); //HPF: functionality
+                controller.TalkbackEvent += (sender, args) => Controller_TalkbackEvent(controller, args);
+                controller.GainModeEvent += (sender, args) => Controller_GainModeEvent(controller, args); //HPF: functionality
                 controller.PanEvent += (sender, args) => Controller_PanEvent(controller, args);     //Pan: functionality
                 controller.InitializeController();
 
@@ -231,7 +231,7 @@ namespace UI24RController
 
         #region Midicontroller events
 
-        private void Controller_TrackEvent(IMIDIController controller, EventArgs e)
+        private void Controller_GainModeEvent(IMIDIController controller, EventArgs e)
         {
 
         }
@@ -264,7 +264,7 @@ namespace UI24RController
             //}
         }
 
-        private void Controller_ScrubEvent(IMIDIController controller, ButtonEventArgs e)
+        private void Controller_TalkbackEvent(IMIDIController controller, ButtonEventArgs e)
         {
             if (_settings.TalkBack > 0)
             {
@@ -848,7 +848,7 @@ namespace UI24RController
             _mixer.UserLayerEdit = e.IsPress;
             //if (_secondaryBridge != null) _secondaryBridge.UserLayerEdit = e.IsPress;
 
-            controller.SetLed(ButtonsEnum.User, e.IsPress);
+            controller.SetLed(ButtonsEnum.SetUserChannel, e.IsPress);
 
             if (e.IsPress)
             {
@@ -915,7 +915,7 @@ namespace UI24RController
             }
             //if (_secondaryBridge != null) _secondaryBridge._midiController_WheelEvent(sender, e);
         }
-        public void _midiController_SaveEvent(IMIDIController controller, EventArgs e)
+        public void _midiController_SaveUserLayerEvent(IMIDIController controller, EventArgs e)
         {
             if (!_settings.EnableUserBank) return;
             string jsonString;
@@ -1142,7 +1142,7 @@ namespace UI24RController
             _controllers.ForEach(controller =>
             {
                 controller.SetLed(ButtonsEnum.Pan, this.KnobsFunction == KnobsFunctionEnum.Pan);
-                controller.SetLed(ButtonsEnum.Track, this.KnobsFunction == KnobsFunctionEnum.Hpf);
+                controller.SetLed(ButtonsEnum.Gain, KnobsFunction == KnobsFunctionEnum.Hpf);
             });
         }
         protected List<(int controllerChannelNumber, IMIDIController controller, bool isOnLayer)> GetControllerChannel(int ch)
@@ -1459,8 +1459,8 @@ namespace UI24RController
                 {
                     controller.SetLed(ButtonsEnum.MuteGroup1 + i, ((mask >> i) & 1) == 1);
                 }
-                controller.SetLed(ButtonsEnum.Save, ((mask >> Mixer._muteAllBit) & 1) == 1);
-                controller.SetLed(ButtonsEnum.Undo, ((mask >> Mixer._muteAllFxBit) & 1) == 1);
+                controller.SetLed(ButtonsEnum.MuteAll, ((mask >> Mixer._muteAllBit) & 1) == 1);
+                controller.SetLed(ButtonsEnum.MuteFX, ((mask >> Mixer._muteAllFxBit) & 1) == 1);
             });
         }
         protected void SendMessage(string message, bool isDebug = true)

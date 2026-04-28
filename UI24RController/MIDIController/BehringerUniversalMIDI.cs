@@ -23,10 +23,10 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> PresetDown;
         public event EventHandler<GainEventArgs> GainEvent;
         public event EventHandler<ChannelEventArgs> SelectChannelEvent;
-        public event EventHandler<EventArgs> SaveEvent;
-        public event EventHandler<EventArgs> UndoEvent;
-        public event EventHandler<EventArgs> CancelEvent;
-        public event EventHandler<EventArgs> EnterEvent;
+        public event EventHandler<EventArgs> MuteAllEvent;
+        public event EventHandler<EventArgs> MuteFXEvent;
+        public event EventHandler<EventArgs> ClearMuteEvent;
+        public event EventHandler<EventArgs> ClearSoloEvent;
         public event EventHandler<ChannelEventArgs> MuteChannelEvent;
         public event EventHandler<ChannelEventArgs> SoloChannelEvent;
         public event EventHandler<ChannelEventArgs> RecChannelEvent;
