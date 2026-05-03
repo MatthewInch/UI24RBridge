@@ -1,6 +1,6 @@
 # UI24RBridge
-Bridge between the UI24R and a MIDI controllers. Current version can manage one or two controller. If you want to use more you can run more bridge instance.\
-This is a beta project. It tested only on Windows with Behringer X-Touch and X-Touch extender MIDI controllers.
+Bridge between the UI24R and MIDI controllers. Any number of controllers are supported as long as they are named differently.\
+This is a beta project. It was tested on Windows, Ubuntu and Raspbian with Behringer X-Touch and X-Touch extender MIDI controllers.
 
 You can download the [latest release here](https://github.com/MatthewInch/UI24RBridge/releases/latest). Note that the MacOS binary wasn't tested.
 
@@ -87,48 +87,28 @@ The overlay labels the buttons with their UI24R functions as mapped by default. 
 
 
 ### Configuration
-You can generate the config file at the first run. The program will ask a few question.
+You can generate the config file at the first run. The program will ask a few questions: the mixer address, then the primary controller, and keep asking if you want to add more controllers until you say no.
 
-<img src="https://raw.githubusercontent.com/MatthewInch/UI24RBridge/master/Images/setup.png">
+<img src="Images/setup.png">
+
+See [appsettings.example.json](UI24RBridgeTest/appsettings.example.json) for a full example configuration.
 
 In the settings file (**appsettings.json**):
 - **UI24R-Url**: the mixer url (simply copy the url from the browser and replace http to ws and remove the /mixer.html from the end)
-- **MIDI-Input-Name**,**MIDI-Output-Name**: The controller name. If you don't know it simple remove these to row from the config file and modify the mixer url to an invalid value. The UI24RBridge write all of the available MIDI device to the console.
-- **MIDI-Input-Name-Second**,**MIDI-Output-Name-Second**: The second controller name. It can be an extender or any other MC device. The AUX, FX, Bank Up/Down, Layer Up/Down automatic link from the first controller
-- **PrimaryIsExtender**,**SecondaryIsExtender**: Default is false. If the controller channel lcd not working you can try "true" value.
-- **PrimaryChannelStart**,**SecondaryChannelStart**: It can be 0 or 1. 0 means the controller start with first layer, 1 means the controller start with second layer (if you use two controller you can decide which is the "left" and which is the "right")
+- **MidiControllers**: array of controller objects. Each entry has:
+  - **InputName**: MIDI input device name
+  - **OutputName**: MIDI output device name
+  - **IsExtender**: `false` for a primary controller, `true` for an extender. If the controller channel LCD is not working try `true`.
+  - **ChannelOffset**: `0` means the controller starts at the first layer, `1` means the second layer (useful when using two controllers side by side)
+  - **PrimaryButtonsConfig**: config file name for button behaviour. You can redefine button functionality.
 - **Protocol**: MC or HUI, or empty (for now use **MC**)
-- **SyncID** if you want to use the select button you can set the syncID to the same value that you use in the mixer's default surface (you can set it on the Settings/Locals page)
+- **SyncID**: if you want to use the select button you can set the syncID to the same value that you use in the mixer's default surface (you can set it on the Settings/Locals page)
 - **DefaultRecButton**: If you press the rec button on the controller, the bridge start/stop the MTK and/or 2 track recording it depend the value of the "DefaultRecButton". Possible value is: **onlyMTK**, **only2Track**, **2TrackAndMTK**
-- **DefaultChannelRecButton**: Sets what function has a rec button on controller. You can use **phantom** for controlling phantom voltage or **rec** to set multi-track recording for this channel; default is "rec
+- **DefaultChannelRecButton**: Sets what function has a rec button on controller. You can use **phantom** for controlling phantom voltage or **rec** to set multi-track recording for this channel; default is "rec"
 - **AuxButtonBehavior**: If you want faders switched between main send, aux sends and fx send only during holding respective buttons (**Release**) or to be switched (**Lock**) to current aux/fx send until next press of aux/fx select button happened.
-- **PrimaryButtons**: Config file name for buttons behaviour. You can redefine the buttons functionality.
 - **TalkBack**: with the ***Talkback*** button it emulates the talkback function. The value is a channel number. If the button is pressed that channel is unmuted, if the button is released that channel is muted. (if the property is removed the function is turned off)
-- **RtaOnWhenSelect**: Set RTA on a channel when select that channel on the controller (value can be "true" of "false"
+- **RtaOnWhenSelect**: Set RTA on a channel when select that channel on the controller (value can be "true" or "false")
 - **EnableUserBank**: Set to "false" to disable the User bank (Bank U). The ***Set User Channel*** button and ***Save User Layer*** button will do nothing. Useful when Bank U is not needed and accidental presses should be avoided. Default is "true"
-
-**Example of the settings file**
-
-{\
-    "UI24R-Url": "ws://192.168.5.2",\
-    "MIDI-Input-Name": "X-Touch",\
-    "MIDI-Output-Name": "X-Touch",\
-	//"MIDI-Input-Name-Second": "X-Touch-ext", //Behringer BCF 2000: "BCF2000"\
-	//"MIDI-Output-Name-Second": "X-Touch-ext", //Behringer BCF 2000: "BCF2000"\
-	"PrimaryIsExtender": "false",\
-	"SecondaryIsExtender": "true",\
-	"PrimaryChannelStart": "0", //0: 1-8ch, 1: 9-16\
-	"SecondaryChannelStart": "1", //0: 1-8ch, 1: 9-16\
-    "Protocol": "MC",\
-    "SyncID": "Abaliget",\
-    "DefaultRecButton": "2TrackAndMTK",\
-    "DefaultChannelRecButton": "phantom",\
-    "AuxButtonBehavior": "Release",\
-    "PrimaryButtons": "ButtonsDefault.json",\
-    "StartBank": "0",\
-    "TalkBack": "20",\
-    "RtaOnWhenSelect" : "true"\
-}
 
 **Donate**
 

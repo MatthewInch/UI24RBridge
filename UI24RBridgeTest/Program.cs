@@ -11,7 +11,9 @@ namespace UI24RBridgeTest
 {
     class Program
     {
+        private const int CurrentConfigVersion = 2;
         private static readonly object balanceLock = new object();
+
         static void Main(string[] args)
         {
             if (!File.Exists("appsettings.json"))
@@ -19,6 +21,10 @@ namespace UI24RBridgeTest
                 CreateAppsettings("appsettings.json");
                 return;
             }
+
+            if (!CheckConfigVersion("appsettings.json"))
+                return;
+
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
@@ -27,98 +33,40 @@ namespace UI24RBridgeTest
             var controllersSetting = new List<UI24RController.ControllerSettings>();
             configuration.GetSection("MidiControllers").Bind(controllersSetting);
 
-
             var address = configuration["UI24R-Url"];
-            var midiInputDevice = configuration["MIDI-Input-Name"];
-            var midiOutputDevice = configuration["MIDI-Output-Name"];
-            var secondaryMidiInputDevice = configuration["MIDI-Input-Name-Second"];
-            var secondaryMidiOutputDevice = configuration["MIDI-Output-Name-Second"];
-            var primaryIsExtender = configuration["PrimaryIsExtender"] == "true";
-            var secondaryIsExtender = configuration["SecondaryIsExtender"] == "true";
-            var primaryChannelStart = configuration["PrimaryChannelStart"];
-            var secondaryChannelStart = configuration["SecondaryChannelStart"];
             var protocol = configuration["Protocol"];
             var syncID = configuration["SyncID"];
             var viewDebugMessage = configuration["DebugMessages"] == "true";
             var recButtonBahavior = configuration["DefaultRecButton"];
             var channelRecButtonBahavior = configuration["DefaultChannelRecButton"];
             var auxButtonBehavior = configuration["AuxButtonBehavior"];
-            var buttonsConfig = configuration["PrimaryButtonsConfig"];
             var startBank = configuration["StartBank"];
             var talkBack = configuration["TalkBack"];
             var rtaOnWhenSelect = configuration["RtaOnWhenSelect"] == "true";
             var enableUserBank = configuration["EnableUserBank"] != "false";
 
-
-            var controller = MIDIControllerFactory.GetMidiController(protocol);
             var controllers = new List<IMIDIController>();
-            IMIDIController controllerSecond = null;
-            if (!string.IsNullOrEmpty(secondaryMidiInputDevice))
-            {
-                controllerSecond = MIDIControllerFactory.GetMidiController(protocol);
-            }
 
             if (args.Length > 0)
-                WriteMIDIDeviceNames(controller);
+                WriteMIDIDeviceNames(MIDIControllerFactory.GetMidiController(protocol));
             else
             {
-                Console.WriteLine("Create Bridge Object");
-                if ((controllersSetting.Count == 0) && ( midiInputDevice == null || midiOutputDevice == null))
+                if (controllersSetting.Count == 0)
                 {
-                    if (midiInputDevice == null)
-                        Console.WriteLine("The input device name is mandantory in the config file. (MIDI-Input-Name)");
-                    if (midiOutputDevice == null)
-                        Console.WriteLine("The ouput device name is mandantory in the config file. (MIDI-Output-Name)");
-                    WriteMIDIDeviceNames(controller);
+                    Console.WriteLine("No controllers found in MidiControllers config section.");
+                    WriteMIDIDeviceNames(MIDIControllerFactory.GetMidiController(protocol));
                     return;
                 }
                 else
                 {
-                    if (controllers.Count == 0)
+                    for (int i = 0; i < controllersSetting.Count; i++)
                     {
-                        Console.WriteLine("Set controller message event....");
-                        controller.MessageReceived += (obj, e) =>
-                        {
-                            lock (balanceLock)
-                            {
-                                Console.WriteLine(e.Message);
-                            }
-                        };
+                        var controllerSetting = controllersSetting[i];
+                        Console.Write($"Connecting to controller {i + 1}/{controllersSetting.Count}...");
+                        var controller = MIDIControllerFactory.GetMidiController(protocol);
 
-                        controller.IsExtender = primaryIsExtender;
-                        controller.ChannelOffset = primaryChannelStart == "0" ? 0 : 1;
-                        if (buttonsConfig != null) controller.ButtonsFileName = buttonsConfig;
-                        Console.WriteLine("Connect input device...");
-                        controller.ConnectInputDevice(midiInputDevice);
-                        Console.WriteLine("Connect output device...");
-                        controller.ConnectOutputDevice(midiOutputDevice);
-                        controllers.Add(controller);
-
-                        if (secondaryMidiInputDevice != null && secondaryMidiOutputDevice != null)
+                        if (viewDebugMessage)
                         {
-                            controllerSecond.IsExtender = secondaryIsExtender;
-                            controllerSecond.ChannelOffset = secondaryChannelStart == "0" ? 0 : 1;
-                            if (buttonsConfig != null) controllerSecond.ButtonsFileName = buttonsConfig;
-                            Console.WriteLine("Connect secondary input device...");
-                            controllerSecond.ConnectInputDevice(secondaryMidiInputDevice);
-                            Console.WriteLine("Connect secondary output device...");
-                            controllerSecond.ConnectOutputDevice(secondaryMidiOutputDevice);
-                            controllers.Add(controllerSecond);
-                            controllerSecond.MessageReceived += (obj, e) =>
-                            {
-                                lock (balanceLock)
-                                {
-                                    Console.WriteLine(e.Message);
-                                }
-                            };
-                        }
-                    }
-                    else
-                    {
-                        foreach (var controllerSetting in controllersSetting)
-                        {
-                            Console.WriteLine("Set controller message event....");
-                            controller = MIDIControllerFactory.GetMidiController(protocol);
                             controller.MessageReceived += (obj, e) =>
                             {
                                 lock (balanceLock)
@@ -126,17 +74,26 @@ namespace UI24RBridgeTest
                                     Console.WriteLine(e.Message);
                                 }
                             };
-
-                            controller.IsExtender = controllerSetting.IsExtender;
-                            controller.ChannelOffset = controllerSetting.ChannelOffset;
-                            if (controllerSetting.PrimaryButtonsConfig != null)
-                                controller.ButtonsFileName = controllerSetting.PrimaryButtonsConfig;
-                            Console.WriteLine("Connect input device...");
-                            controller.ConnectInputDevice(controllerSetting.InputName);
-                            Console.WriteLine("Connect output device...");
-                            controller.ConnectOutputDevice(controllerSetting.OutputName);
                         }
 
+                        controller.IsExtender = controllerSetting.IsExtender;
+                        controller.ChannelOffset = controllerSetting.ChannelOffset;
+
+                        if (controllerSetting.PrimaryButtonsConfig != null)
+                            controller.ButtonsFileName = controllerSetting.PrimaryButtonsConfig;
+
+                        if (!controller.ConnectInputDevice(controllerSetting.InputName).GetAwaiter().GetResult())
+                        {
+                            Console.WriteLine($"\n  Error: Failed to connect input device '{controllerSetting.InputName}'.");
+                            return;
+                        }
+                        if (!controller.ConnectOutputDevice(controllerSetting.OutputName).GetAwaiter().GetResult())
+                        {
+                            Console.WriteLine($"\n  Error: Failed to connect output device '{controllerSetting.OutputName}'.");
+                            return;
+                        }
+                        Console.WriteLine(" Success");
+                        controllers.Add(controller);
                     }
                 }
 
@@ -206,10 +163,6 @@ namespace UI24RBridgeTest
                             break;
                     }
                 }
-                if (buttonsConfig != null)
-                {
-                    controllers.ForEach(controller => controller.ButtonsFileName = buttonsConfig);
-                }
                 if (startBank != null)
                 {
                     settings.StartBank = 0;
@@ -262,6 +215,33 @@ namespace UI24RBridgeTest
                 }
             }
         }
+        private static bool CheckConfigVersion(string fileName)
+        {
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile(fileName, optional: false, reloadOnChange: false);
+            var config = builder.Build();
+
+            if (!int.TryParse(config["ConfigVersion"], out int version) || version < CurrentConfigVersion)
+            {
+                AnsiConsole.MarkupLine($"[red]appsettings.json is outdated (version {(version == 0 ? "unknown" : version)}, current is {CurrentConfigVersion}).[/]");
+                bool recreate = AnsiConsole.Prompt(
+                    new TextPrompt<bool>("Do you want to delete it and create a new one?")
+                        .AddChoice(true)
+                        .AddChoice(false)
+                        .DefaultValue(false)
+                        .WithConverter(choice => choice ? "y" : "n"));
+
+                if (recreate)
+                {
+                    File.Delete(fileName);
+                    CreateAppsettings(fileName);
+                }
+                return false;
+            }
+            return true;
+        }
+
         private static string PromptDeviceChoice(string promptText, IEnumerable<string> deviceNames)
         {
             var nameList = deviceNames.ToList();
@@ -288,110 +268,69 @@ namespace UI24RBridgeTest
 
             AnsiConsole.WriteLine("appsettings.json is not found.");
             AnsiConsole.WriteLine("Creating of the configuration file is starting.");
-            var address = AnsiConsole.Ask<string>(@"Please write the mixer address (eg: ws:\\192.168.3.12): "); //"UI24R-Url"
-            var midiInputDevice = PromptDeviceChoice(
-                "Choose primary input device:", inputDevicenames); //configuration["MIDI-Input-Name"];
+            var address = AnsiConsole.Ask<string>(@"Please write the mixer address (eg: ws://192.168.3.12): ");
 
-            var midiOutputDevice = PromptDeviceChoice(
-                "Choose primary output device:", outputDevicenames); //configuration["MIDI-Output-Name"];
+            var controllerEntries = new List<string>();
+            bool isFirst = true;
+            bool addAnother = true;
 
-            //var primaryIsExtender = configuration["PrimaryIsExtender"] == "true";
-            string primaryIsExtender = "false";
-            if (AnsiConsole.Prompt(
-                new TextPrompt<bool>("Is primary device an extender?")
-                    .AddChoice(true)
-                    .AddChoice(false)
-                    .DefaultValue(false)
-                    .WithConverter(choice => choice ? "y" : "n")
-                ))
+            while (addAnother)
             {
-                primaryIsExtender = "true";
-            }
-            var primaryChannelStart =      // configuration["PrimaryChannelStart"];
-                AnsiConsole.Prompt(
-                new TextPrompt<string>("Primary controller offset (show 1-8ch: 0 9-16ch: 1")
-                .AddChoices(["0", "1"])
-                .DefaultValue("0"));
+                string label = isFirst ? "primary" : "additional";
+                var inputDevice = PromptDeviceChoice($"Choose {label} input device:", inputDevicenames);
+                var outputDevice = PromptDeviceChoice($"Choose {label} output device:", outputDevicenames);
 
-            var isAddSecondaryDevice = AnsiConsole.Prompt(
-                new TextPrompt<bool>("Do you want to add secondary device?")
-                    .AddChoice(true)
-                    .AddChoice(false)
-                    .DefaultValue(false)
-                    .WithConverter(choice => choice ? "y" : "n")
-                );
-
-            string secondaryMidiInputDevice = null;
-            string secondaryMidiOutputDevice = null;
-            string secondaryIsExtender = "false";
-            string secondaryChannelStart = "1";
-            //var secondaryMidiInputDevice = configuration["MIDI-Input-Name-Second"];
-            //var secondaryMidiOutputDevice = configuration["MIDI-Output-Name-Second"];
-            //var secondaryIsExtender = configuration["SecondaryIsExtender"] == "true";
-            if (isAddSecondaryDevice)
-            {
-                secondaryMidiInputDevice = PromptDeviceChoice(
-                    "Choose secondary input device:", inputDevicenames); //configuration["MIDI-Input-Name"];
-
-                secondaryMidiOutputDevice = PromptDeviceChoice(
-                    "Choose secondary output device:", outputDevicenames); //configuration["MIDI-Output-Name"];
-
-                if (AnsiConsole.Prompt(
-                    new TextPrompt<bool>("Is secondary device an extender?")
+                bool isExtender = AnsiConsole.Prompt(
+                    new TextPrompt<bool>($"Is {label} device an extender?")
                         .AddChoice(true)
                         .AddChoice(false)
                         .DefaultValue(false)
-                        .WithConverter(choice => choice ? "y" : "n")
-                    ))
-                {
-                    secondaryIsExtender = "true";
-                }
+                        .WithConverter(choice => choice ? "y" : "n"));
 
-                secondaryChannelStart =      // configuration["SecondaryChannelStart"];
-               AnsiConsole.Prompt(
-                   new TextPrompt<string>("Secondary controller offset (show 1-8ch: 0 9-16ch: 1")
-                   .AddChoices(["0", "1"])
-                   .DefaultValue("1"));
+                var channelOffset = AnsiConsole.Prompt(
+                    new TextPrompt<string>($"{char.ToUpper(label[0]) + label[1..]} controller offset (1-8ch: 0, 9-16ch: 1)")
+                        .AddChoices(["0", "1"])
+                        .DefaultValue(isFirst ? "0" : "1"));
+
+                controllerEntries.Add($@"    {{
+      ""InputName"": ""{inputDevice}"",
+      ""OutputName"": ""{outputDevice}"",
+      ""IsExtender"": {isExtender.ToString().ToLower()},
+      ""ChannelOffset"": {channelOffset},
+      ""PrimaryButtonsConfig"": ""ButtonsXTouch.json""
+    }}");
+
+                isFirst = false;
+                addAnother = AnsiConsole.Prompt(
+                    new TextPrompt<bool>("Do you want to add another controller?")
+                        .AddChoice(true)
+                        .AddChoice(false)
+                        .DefaultValue(false)
+                        .WithConverter(choice => choice ? "y" : "n"));
             }
 
-
-
-            var protocol = "MC"; // configuration["Protocol"];
-            var syncID = "SYNC_ID"; //configuration["SyncID"];
-            var viewDebugMessage = "false"; // configuration["DebugMessages"] == "true";
-            var recButtonBahavior = "2TrackAndMTK"; //configuration["DefaultRecButton"];
-            var channelRecButtonBahavior = "rec"; //configuration["DefaultChannelRecButton"];
-            var auxButtonBehavior = "Release";// configuration["AuxButtonBehavior"];
-            var buttonsConfig = "ButtonsDefaultConfig.json"; // configuration["PrimaryButtonsConfig"];
-            //var startBank = configuration["StartBank"];
-            var talkBack = "20"; // configuration["TalkBack"];
-            var rtaOnWhenSelect = "true"; // configuration["RtaOnWhenSelect"] == "true";
+            string controllersJson = string.Join(",\n", controllerEntries);
 
             string settingsContent = $@"{{
+  ""ConfigVersion"": {CurrentConfigVersion},
   ""UI24R-Url"": ""{address}"",
-  ""MIDI-Input-Name"": ""{midiInputDevice}"", //Behringer BCF 2000: ""BCF2000""
-  ""MIDI-Output-Name"": ""{midiOutputDevice}"", //Behringer BCF 2000: ""BCF2000""
-  ""MIDI-Input-Name-Second"": ""{secondaryMidiInputDevice}"", //Behringer BCF 2000: ""BCF2000""
-  ""MIDI-Output-Name-Second"": ""{secondaryMidiOutputDevice}"", //Behringer BCF 2000: ""BCF2000""
-  ""PrimaryIsExtender"": ""{primaryIsExtender}"",
-  ""SecondaryIsExtender"": ""{secondaryIsExtender}"",
-  ""PrimaryChannelStart"": ""{primaryChannelStart}"", //0: 1-8ch, 1: 9-16
-  ""SecondaryChannelStart"": ""{secondaryChannelStart}"", //0: 1-8ch, 1: 9-16
+  ""MidiControllers"": [
+{controllersJson}
+  ],
   ""Protocol"": ""MC"",
-  ""SyncID"": ""{syncID}"",
-  ""DefaultRecButton"": ""{recButtonBahavior}"", //possible values: ""onlyMTK"", ""only2Track"", ""2TrackAndMTK""; default is ""2TrackAndMTK
-  ""DefaultChannelRecButton"": ""{channelRecButtonBahavior}"", //possible values: ""phantom"", ""rec""; default is ""rec
+  ""SyncID"": ""SYNC_ID"",
+  ""DefaultRecButton"": ""2TrackAndMTK"", //possible values: ""onlyMTK"", ""only2Track"", ""2TrackAndMTK""; default is ""2TrackAndMTK""
+  ""DefaultChannelRecButton"": ""rec"", //possible values: ""phantom"", ""rec""; default is ""rec""
   ""DebugMessages"": ""false"",
-  ""AuxButtonBehavior"": ""{auxButtonBehavior}"", //possible values: ""Release"", ""Lock""; Default is ""Release""
-  ""PrimaryButtonsConfig"": ""{buttonsConfig}"",
-  ""TalkBack"": ""{talkBack}"", //use scrub button. if it is uncommented it unmute the channel (number in value) if button is release the channel will mute
-  ""RtaOnWhenSelect"" : ""{rtaOnWhenSelect}"" //set RTA on channel when select the channel on the controller
+  ""EnableUserBank"": ""false"",
+  ""AuxButtonBehavior"": ""Release"", //possible values: ""Release"", ""Lock""; default is ""Release""
+  ""StartBank"": ""0"",
+  ""TalkBack"": ""20"", // If it is uncommented it unmute the channel (number in value) if button is release the channel will mute
+  ""RtaOnWhenSelect"": ""true"" //set RTA on channel when select the channel on the controller
 }}
 ";
 
             File.WriteAllText(fileName, settingsContent);
-
-
         }
 
         /// <summary>

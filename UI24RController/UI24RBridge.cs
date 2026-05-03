@@ -67,12 +67,12 @@ namespace UI24RController
             this._settings = settings;
             this._controllers = controllers;
             _mixer = new Mixer(settings.EnableUserBank);
-            SendMessage("Start initialization...", false);
+            SendMessage("Start initialization...", true);
             InitializeChannels();
             InitializeViewGroupsFromConfig();
 
 
-            SendMessage("Create controller events....", false);
+            SendMessage("Create controller events....", true);
             foreach (var controller in controllers)
             {
                 controller.FaderEvent += (sender, args) => _midiController_FaderEvent(controller, args);
