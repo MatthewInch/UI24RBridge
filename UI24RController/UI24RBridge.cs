@@ -140,10 +140,7 @@ namespace UI24RController
             });
 
             controllers.ForEach(c=> c.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString()));
-            //if (settings.ControllerStartChannel != null && settings.ControllerStartChannel == "1")
-            //{
-            //    _mixer.IsChannelOffset = true;
-            //}
+
             SetStateLedsOnController();
         }
 
@@ -529,7 +526,10 @@ namespace UI24RController
         public void Controller_ViewGroupButtonEvent(object sender, FunctionEventArgs e)
         {
             if (!e.IsPress) return;
-            _mixer.SetViewGroup(e.FunctionButton);
+            if (_mixer.GetCurrentViewGroup() == e.FunctionButton)
+                _mixer.setBank((int)FaderBank.Initial);
+            else
+                _mixer.SetViewGroup(e.FunctionButton);
             SetControllerToCurrentLayerAndSend();
         }
 
@@ -890,7 +890,7 @@ namespace UI24RController
             }
         }
 
-        public void SetChannelOnUserLayer(int bank, int layer, int position, int channel)
+        public void SetChannelOnUserLayer(FaderBank bank, int layer, int position, int channel)
         {
             _mixer.setChannelInLayerAndPosition(bank, layer, position, channel);
         }

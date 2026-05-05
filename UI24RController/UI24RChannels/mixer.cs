@@ -3,37 +3,37 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
+using UI24RController;
 
 
 namespace UI24RController.UI24RChannels
 {
     public class Mixer
     {
-        //private List<int[]> _layers = new List<int[]>();
-        private Dictionary<int, List<int[]>> _banks = new Dictionary<int, List<int[]>>();
+        private Dictionary<FaderBank, List<int>> _banks = new Dictionary<FaderBank, List<int>>();
         private int _selectedLayer;
-        private int _selectedBank;
+        private FaderBank _selectedBank;
         private int _numLayersPerBank;
-        private int _numBanks;
         private int _numFaders;
-
-        /// <summary>
-        /// If it is true show the next layer (not the selected) or in case of viewgroup bank the second 8 channel from view
-        /// </summary>
-        public bool IsChannelOffset { get; set; }
-
         private bool _hasUserBank;
-        private int[] _availableBanks;
+        private FaderBank[] _availableBanks;
+
+        private static readonly FaderBank[] ViewGroupBanks = new[]
+        {
+            FaderBank.ViewGroup1, FaderBank.ViewGroup2, FaderBank.ViewGroup3,
+            FaderBank.ViewGroup4, FaderBank.ViewGroup5, FaderBank.ViewGroup6,
+        };
 
         public Mixer(bool hasUserBank = true)
         {
             _numLayersPerBank = 6;
-            _numBanks = 3;
             _selectedLayer = 0;
-            _selectedBank = 0;
-            _numFaders = 9;
+            _selectedBank = FaderBank.Initial;
+            _numFaders = 8;
             _hasUserBank = hasUserBank;
-            _availableBanks = hasUserBank ? new[] { 0, 1, 2 } : new[] { 0, 2 };
+            _availableBanks = hasUserBank
+                ? new[] { FaderBank.Initial, FaderBank.User }.Concat(ViewGroupBanks).ToArray()
+                : new[] { FaderBank.Initial }.Concat(ViewGroupBanks).ToArray();
 
             initLayers();
             initMuteGroups();
@@ -45,125 +45,117 @@ namespace UI24RController.UI24RChannels
         public bool UserLayerEdit { get; set; }
         public int UserLayerEditNewChannel { get; set; }
 
-        private void initLayers(int startBank = 0)
-        {
+        // Flat list layout per bank:
+        //   Each layer occupies _numFaders consecutive slots (8 channel indices, no main fader stored).
+        //   Index of slot j in layer i = i * _numFaders + j.
+        //   Main fader (54) is always appended at query time in getCurrentLayer.
+        private int LayerOffset(int layer) => layer * _numFaders;
 
+        private void initLayers()
+        {
             UserLayerEdit = false;
             UserLayerEditNewChannel = -1;
 
-            //Inititalize Initial Layers
-            _banks.Add(0, new List<int[]>());
+            // Initialize Initial bank
+            var initialBank = new List<int>(Enumerable.Repeat(0, _numLayersPerBank * _numFaders));
             for (int i = 0; i < _numLayersPerBank; ++i)
             {
-                int[] channelLayer = new int[9];
-                for (int j = 0; j < _numFaders - 1; ++j)
-                    channelLayer[j] = j + i * (_numFaders - 1);
-                channelLayer[_numFaders - 1] = 54;
-                _banks[0].Add(channelLayer);
+                int layerBase = LayerOffset(i);
+                for (int j = 0; j < _numFaders; ++j)
+                    initialBank[layerBase + j] = j + i * _numFaders;
             }
-            //some rearangements in default layers
-            for (int j = 0; j < 8; ++j)
-                _banks[0][4][j] = 38 + j;
-            _banks[0][5][0] = 46;
-            _banks[0][5][1] = 47;
+            // Rearrangements in default layers
+            int layer4 = LayerOffset(4);
+            for (int j = 0; j < _numFaders; ++j)
+                initialBank[layer4 + j] = 38 + j;
+            int layer5 = LayerOffset(5);
+            initialBank[layer5 + 0] = 46;
+            initialBank[layer5 + 1] = 47;
             for (int j = 0; j < 6; ++j)
-                _banks[0][5][j+2] = 48 + j;
+                initialBank[layer5 + j + 2] = 48 + j;
+            _banks.Add(FaderBank.Initial, initialBank);
 
-            //initialize User layers
+            // Initialize User bank
             if (_hasUserBank)
             {
-                _banks.Add(1, new List<int[]>());
+                var userBank = new List<int>(Enumerable.Repeat(0, _numLayersPerBank * _numFaders));
                 for (int i = 0; i < _numLayersPerBank; ++i)
                 {
-                    int[] channelLayer = new int[9];
-                    for (int j = 0; j < _numFaders - 1; ++j)
-                        channelLayer[j] = j + i * (_numFaders - 1);
-                    channelLayer[_numFaders - 1] = 54;
-                    _banks[1].Add(channelLayer);
+                    int layerBase = LayerOffset(i);
+                    for (int j = 0; j < _numFaders; ++j)
+                        userBank[layerBase + j] = j + i * _numFaders;
                 }
+                _banks.Add(FaderBank.User, userBank);
             }
 
-
-            //initialize View group layers
-            _banks.Add(2, new List<int[]>());
-            for (int i = 0; i < _numLayersPerBank; ++i)
-            {
-                _banks[2].Add(new int[] { -1, -1, -1, -1, -1, -1, -1, -1, 54 });
-            }
+            // Initialize ViewGroup banks (one bank per view group, full channel list stored, sliced at query time)
+            foreach (var vgBank in ViewGroupBanks)
+                _banks.Add(vgBank, new List<int>());
         }
-
 
         public void setBank(int bankNumber)
         {
-            _selectedBank = bankNumber % _numBanks;
+            _selectedBank = _availableBanks[bankNumber % _availableBanks.Length];
             _selectedLayer = 0;
         }
+
         public void setUserLayerFromArray(int[][] input)
         {
             if (!_hasUserBank) return;
             for (int i = 0; i < input.Length && i < _numLayersPerBank; ++i)
-                if (input[i].Length >= _numFaders - 1)
-                    for (int j = 0; j < _numFaders - 1; ++j)
-                        _banks[1][i][j] = input[i][j];
+            {
+                int layerBase = LayerOffset(i);
+                for (int j = 0; j < _numFaders && j < input[i].Length; ++j)
+                    _banks[FaderBank.User][layerBase + j] = input[i][j];
+            }
         }
+
         public int[][] getUserLayerToArray()
         {
             if (!_hasUserBank) return Array.Empty<int[]>();
             int[][] output = new int[_numLayersPerBank][];
             for (int i = 0; i < _numLayersPerBank; ++i)
             {
-                output[i] = new int[_numFaders - 1];
-                for (int j = 0; j < _numFaders - 1; ++j)
-                    output[i][j] = _banks[1][i][j];
+                int layerBase = LayerOffset(i);
+                output[i] = new int[_numFaders];
+                for (int j = 0; j < _numFaders; ++j)
+                    output[i][j] = _banks[FaderBank.User][layerBase + j];
             }
             return output;
         }
-        public (int bank, int layer, int position, int channel) setNewUserChannelInCurrentBank(int controllerPosition)
+
+        public (FaderBank bank, int layer, int position, int channel) setNewUserChannelInCurrentBank(int controllerPosition)
         {
-            var currentLayerNumber = this.IsChannelOffset ? (_selectedLayer + 1) % _numLayersPerBank : _selectedLayer;
-            if (controllerPosition >= 0 && controllerPosition < 8)
-                _banks[_selectedBank][currentLayerNumber][controllerPosition] = UserLayerEditNewChannel;
-            return (_selectedBank, currentLayerNumber, controllerPosition, UserLayerEditNewChannel);
+            if (controllerPosition >= 0 && controllerPosition < _numFaders)
+                _banks[_selectedBank][LayerOffset(_selectedLayer) + controllerPosition] = UserLayerEditNewChannel;
+            return (_selectedBank, _selectedLayer, controllerPosition, UserLayerEditNewChannel);
         }
+
         public void findNextAvailableChannelForUserLayer(int controllerPos, int dir, int channelOffset)
         {
             bool goOneMoreChannel = true;
-
-            while(goOneMoreChannel)
+            while (goOneMoreChannel)
             {
                 goOneMoreChannel = false;
                 UserLayerEditNewChannel = (UserLayerEditNewChannel + dir + 54) % 54;
-
-                for (int i = 0; i < 8; ++i)
+                for (int i = 0; i < _numFaders; ++i)
                 {
-                    if (i != controllerPos)
-                    {
-                        if (getCurrentLayer(channelOffset)[i] == UserLayerEditNewChannel)
-                            goOneMoreChannel = true;
-                    }
+                    if (i != controllerPos && getCurrentLayer(channelOffset)[i] == UserLayerEditNewChannel)
+                        goOneMoreChannel = true;
                 }
             }
-
         }
 
-
-
-        /// <summary>
-        /// Set channels in a global view in the mixer object
-        /// </summary>
-        /// <param name="channel"></param>
-        /// <param name="layer"></param>
-        /// <param name="position"></param>
         public void setChannelsToViewLayerAndPosition(int[] channels, int viewGroupNumber)
         {
-            _banks[2][viewGroupNumber] = channels;
+            var bank = ViewGroupBanks[viewGroupNumber];
+            _banks[bank] = new List<int>(channels);
         }
 
-        public void setChannelInLayerAndPosition(int bank, int layerNumber, int position, int channel)
+        public void setChannelInLayerAndPosition(FaderBank bank, int layerNumber, int position, int channel)
         {
-            _banks[bank][layerNumber][position] = channel;
+            _banks[bank][LayerOffset(layerNumber) + position] = channel;
         }
-
 
         public void setLayerUp()
         {
@@ -186,80 +178,62 @@ namespace UI24RController.UI24RChannels
             _selectedBank = _availableBanks[idx];
             _selectedLayer = 0;
         }
+
         public void SetViewGroup(int viewGroupIndex)
         {
-            _selectedBank = 2;
-            _selectedLayer = viewGroupIndex % _numLayersPerBank;
+            _selectedBank = ViewGroupBanks[viewGroupIndex % ViewGroupBanks.Length];
+            _selectedLayer = 0;
         }
 
-        /// <summary>
-        /// Returns the active view group index (0–5) when on the V bank, otherwise -1.
-        /// </summary>
         public int GetCurrentViewGroup()
         {
-            return _selectedBank == 2 ? _selectedLayer : -1;
+            int idx = Array.IndexOf(ViewGroupBanks, _selectedBank);
+            return idx >= 0 ? idx : -1;
         }
 
         public bool goToUserBank()
         {
             if (!_hasUserBank) return false;
-            bool updated = false;
-            if (_selectedBank != 1)
-            {
-                _selectedBank = 1;
-                updated = true;
-            }
-            return updated;
+            if (_selectedBank == FaderBank.User) return false;
+            _selectedBank = FaderBank.User;
+            return true;
         }
-        public char getBankChar(int bank)
+
+        public char getBankChar(FaderBank bank)
         {
             switch (bank)
             {
-                case 0:
-                    return 'I'; // Initial Layer
-                case 1:
-                    return 'U'; // User Layer
-                case 2:
-                default:
-                    return 'V'; // Global View Layer
+                case FaderBank.Initial: return 'I';
+                case FaderBank.User:    return 'U';
+                default:                return 'V';
             }
         }
+
         public string getCurrentLayerString()
         {
+            int viewGroup = GetCurrentViewGroup();
+            if (viewGroup >= 0)
+                return "V" + (viewGroup + 1).ToString();
             return getBankChar(_selectedBank).ToString() + ((_selectedLayer % _numLayersPerBank) + 1).ToString();
         }
 
-        /// <summary>
-        /// Return the 8 channel of the current layer plus the main fader
-        /// the banks 0 (general) and 1 (user bank) contains 8ch+main fader in every layer
-        /// the banks 2 (view groups) contains all view group channel per layer without main fader
-        /// in that case the getCurrentLayer return the first (or second) 8 value plus main fader
-        /// </summary>
-        /// <returns></returns>
         public int[] getCurrentLayer(int channelOffset)
         {
-            if (_selectedLayer < _banks[_selectedBank].Count)
-            {
-
-                if (_selectedBank<2)
-                {
-                    var selectedLayer = (_selectedLayer + channelOffset) % _numLayersPerBank;
-                    return _banks[_selectedBank][selectedLayer];
-                }
-                else //view groups
-                {
-                    var offset = channelOffset*8;
-                    var result = _banks[_selectedBank][_selectedLayer].Skip(offset).Take(8).ToFixedLength(8,-1).Append(54);
-                    return result.ToArray();
-
-                }
-            }
-            return new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 54 };
+            var bank = _banks[_selectedBank];
+            int offset = GetCurrentViewGroup() >= 0
+                ? channelOffset * _numFaders               // ViewGroup: single flat layer per bank
+                : LayerOffset(_selectedLayer) + channelOffset * _numFaders; // Initial/User: multi-layer
+            return bank
+                .Skip(offset)
+                .Take(_numFaders)
+                .ToFixedLength(_numFaders, -1)
+                .Append(54)
+                .ToArray();
         }
 
         public int getChannelNumberInCurrentLayer(int ch, int channelOffset)
         {
-            ch = ch % _numFaders;
+            ch = ch % (_numFaders + 1); // +1 for main fader slot
             if (ch < 0) ch = 0;
             return getCurrentLayer(channelOffset)[ch];
         }

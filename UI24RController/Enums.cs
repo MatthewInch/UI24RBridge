@@ -223,6 +223,18 @@ namespace UI24RController
         }
     }
 
+    public enum FaderBank
+    {
+        Initial = 0,
+        User = 1,
+        ViewGroup1 = 2,
+        ViewGroup2 = 3,
+        ViewGroup3 = 4,
+        ViewGroup4 = 5,
+        ViewGroup5 = 6,
+        ViewGroup6 = 7,
+    }
+
     public enum ChannelStripColour : byte
     {
         Black    = 0x00,
