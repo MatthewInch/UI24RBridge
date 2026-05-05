@@ -290,7 +290,7 @@ namespace UI24RController
         private void _midiController_RecChannelEvent(IMIDIController controller, MIDIController.ChannelEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber, controller.ChannelOffset);
-            if (ch > -1)
+            if (ch > -1 && !IsChannelHiddenInCurrentLayout(ch))
             {
                 if (_settings.ChannelRecButtonBehavior == BridgeSettings.ChannelRecButtonBehaviorEnum.Rec)
                 {
@@ -338,7 +338,7 @@ namespace UI24RController
         private void _midiController_SoloChannelEvent(IMIDIController controller, MIDIController.ChannelEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber, controller.ChannelOffset);
-            if (ch > -1)
+            if (ch > -1 && !IsChannelHiddenInCurrentLayout(ch))
             {
                 _mixerChannels[ch].IsSolo = !_mixerChannels[ch].IsSolo;
                 _client.Send(_mixerChannels[ch].SoloMessage());
@@ -369,7 +369,7 @@ namespace UI24RController
         private void _midiController_MuteChannelEvent(IMIDIController controller, MIDIController.ChannelEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber, controller.ChannelOffset);
-            if (ch > -1)
+            if (ch > -1 && !IsChannelHiddenInCurrentLayout(ch))
             {
                 if (_mixerChannels[ch].IsMuteByMuteGroup)
                 {
@@ -417,7 +417,7 @@ namespace UI24RController
         private void _midiController_SelectChannelEvent(IMIDIController controller, MIDIController.ChannelEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber, controller.ChannelOffset);
-            if (ch > -1)
+            if (ch > -1 && !IsChannelHiddenInCurrentLayout(ch))
             {
                 if (SelectedChannel != -1)
                 {
@@ -451,7 +451,7 @@ namespace UI24RController
         private void _midiController_KnobEvent(IMIDIController controller, MIDIController.KnobEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber, controller.ChannelOffset);
-            if (ch > -1)
+            if (ch > -1 && !IsChannelHiddenInCurrentLayout(ch))
             {
                 switch (this.KnobsFunction)
                 {
@@ -584,7 +584,7 @@ namespace UI24RController
         private void _midiController_FaderEvent(IMIDIController controller, MIDIController.FaderEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber, controller.ChannelOffset);
-            if (ch > -1)
+            if (ch > -1 && !IsChannelHiddenInCurrentLayout(ch))
             {
                 if (_selectedLayout == SelectedLayoutEnum.Channels || _mixerChannels[ch] is MainChannel)
                 {
