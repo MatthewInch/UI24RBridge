@@ -434,7 +434,12 @@ namespace UI24RController
                 }
                 _mixerChannels[ch].IsSelected = true;
                 SelectedChannel = ch;
-                controller.SetSelectLed(e.ChannelNumber, true);
+                _controllers.ForEach(c =>
+                {
+                    int pos = Array.IndexOf(_mixer.getCurrentLayer(c.ChannelOffset), ch);
+                    bool visible = pos >= 0 && !IsChannelHiddenInCurrentLayout(ch);
+                    c.SetSelectLed(pos >= 0 ? pos : 0, visible);
+                });
                 _client.Send(_mixerChannels[ch].SelectChannelMessage(_settings.SyncID));
                 //turnOn RTA
                 if (_settings.RtaOnWhenSelect)
@@ -1013,16 +1018,19 @@ namespace UI24RController
             return ChannelStripColour.White;
         }
 
+        // Replicates UI24R mixer app behaviour: certain channel types have no send in aux/fx views
+        private bool IsChannelHiddenInCurrentLayout(int channelNumber)
+        {
+            if (channelNumber < 0) return false;
+            var ch = _mixerChannels[channelNumber];
+            if (_selectedLayout.IsAux()) return ch is AuxChannel || ch is VCAChannel || ch is SubgroupChannel;
+            if (_selectedLayout.IsFx())  return ch is AuxChannel || ch is FXChannel  || ch is VCAChannel;
+            return false;
+        }
+
         private void SetControllerChannelToCurrentLayerAndSend(IMIDIController controller, int channelNumber, int controllerChannelNumber)
         {
-            // Replicates Ui24R mixer app behaviour: certain channel types have no send in aux/fx views
-            bool hiddenChannel = false;
-            if (channelNumber > -1)
-            {
-                var ch = _mixerChannels[channelNumber];
-                if (_selectedLayout.IsAux()) hiddenChannel = ch is AuxChannel || ch is VCAChannel || ch is SubgroupChannel;
-                else if (_selectedLayout.IsFx())  hiddenChannel = ch is AuxChannel || ch is FXChannel  || ch is VCAChannel;
-            }
+            bool hiddenChannel = IsChannelHiddenInCurrentLayout(channelNumber);
 
             if (channelNumber > -1 && !hiddenChannel)
             {
@@ -1441,14 +1449,9 @@ namespace UI24RController
                         }
                         _controllers.ForEach(controller =>
                         {
-                            var channelNumber = _mixer.getCurrentLayer(controller.ChannelOffset).Select((item, i) => new { Channel = item, controllerChannelNumber = i })
-                               .Where(c => c.Channel == _mixerChannels[SelectedChannel].ChannelNumberInMixer).FirstOrDefault();
-                            if (channelNumber != null)
-                            {
-                                controller.SetSelectLed(channelNumber.controllerChannelNumber, true);
-                            }
-                            else
-                                controller.SetSelectLed(0, false);
+                            int pos = Array.IndexOf(_mixer.getCurrentLayer(controller.ChannelOffset), SelectedChannel);
+                            bool visible = pos >= 0 && !IsChannelHiddenInCurrentLayout(SelectedChannel);
+                            controller.SetSelectLed(pos >= 0 ? pos : 0, visible);
                         });
                     }
                 }
