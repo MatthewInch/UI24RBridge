@@ -927,6 +927,19 @@ namespace UI24RController.MIDIController
             }
             WriteTextToMainDisplay("            ", 0, 12);
             WriteTextToLCDSecondLine("");
+            foreach (var btn in Enum.GetValues<ButtonsEnum>())
+                SetLed(btn, false);
+            for (int i = 0; i < 9; i++)
+            {
+                SetSelectLed(i, false);
+                SetMuteLed(i, false);
+                SetSoloLed(i, false);
+                SetRecLed(i, false);
+                WriteDefaultTextToChannelLCDFirstLine(i, "");
+                WriteDefaultTextToChannelLCDSecondLine(i, "");
+                SetChannelStripColour(i, ChannelStripColour.Black);
+            }
+
         }
 
         protected class DictionarySerializerClass
