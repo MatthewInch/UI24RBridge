@@ -1015,7 +1015,16 @@ namespace UI24RController
 
         private void SetControllerChannelToCurrentLayerAndSend(IMIDIController controller, int channelNumber, int controllerChannelNumber)
         {
+            // Replicates Ui24R mixer app behaviour: certain channel types have no send in aux/fx views
+            bool hiddenChannel = false;
             if (channelNumber > -1)
+            {
+                var ch = _mixerChannels[channelNumber];
+                if (_selectedLayout.IsAux()) hiddenChannel = ch is AuxChannel || ch is VCAChannel || ch is SubgroupChannel;
+                else if (_selectedLayout.IsFx())  hiddenChannel = ch is AuxChannel || ch is FXChannel  || ch is VCAChannel;
+            }
+
+            if (channelNumber > -1 && !hiddenChannel)
             {
                 controller.SetChannelStripColour(controllerChannelNumber, GetChannelStripColour(channelNumber));
 
