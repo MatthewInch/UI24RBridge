@@ -59,6 +59,15 @@ namespace UI24RBridgeTest
                 }
                 else
                 {
+                    var offsets = controllersSetting.Select(c => c.ChannelOffset).OrderBy(o => o).ToList();
+                    var expectedOffsets = Enumerable.Range(0, controllersSetting.Count).ToList();
+                    if (!offsets.SequenceEqual(expectedOffsets))
+                    {
+                        Console.WriteLine($"Error in appsettings.json: ChannelOffset values must be 0..{controllersSetting.Count - 1} with no duplicates or gaps.");
+                        Console.WriteLine($"  Found: [{string.Join(", ", offsets)}]");
+                        return;
+                    }
+
                     for (int i = 0; i < controllersSetting.Count; i++)
                     {
                         var controllerSetting = controllersSetting[i];
