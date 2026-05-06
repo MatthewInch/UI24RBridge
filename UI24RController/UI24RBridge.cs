@@ -66,7 +66,7 @@ namespace UI24RController
         {
             this._settings = settings;
             this._controllers = controllers;
-            _mixer = new Mixer(settings.EnableUserBank);
+            _mixer = new Mixer(controllers.Count, settings.EnableUserBank);
             SendMessage("Start initialization...", true);
             InitializeChannels();
             InitializeViewGroupsFromConfig();
@@ -138,8 +138,6 @@ namespace UI24RController
                     }
                 }
             });
-
-            controllers.ForEach(c=> c.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString()));
 
             SetStateLedsOnController();
         }
@@ -875,7 +873,6 @@ namespace UI24RController
                     if (_mixer.goToUserBank())
                     {
                         SetControllerToCurrentLayerAndSend();
-                        controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
                     }
                     //Set Select to First channel if necessary (selected channel is not in primary and secondary controller controller)
                     if (_controllers.Where(c => this.SelectedChannelIsOnCurrentLayer(c.ChannelOffset)).Count()==0)
@@ -1140,7 +1137,8 @@ namespace UI24RController
                 {
                     SetControllerChannelToCurrentLayerAndSend(controller, ch.Channel, ch.controllerChannelNumber);
                 }
-                controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
+                controller.WriteTextToAssignmentDisplay(_mixer.GetCurrentBankString());
+                controller.WriteTextToBarsDisplay(_mixer.GetCurrentLayerString());
 
             });
             SetViewGroupLeds();

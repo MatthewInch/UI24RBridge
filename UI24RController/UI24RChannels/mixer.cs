@@ -10,11 +10,13 @@ namespace UI24RController.UI24RChannels
 {
     public class Mixer
     {
+        private const int _numFadersPerController = 8; // Excluding "main" fader
         private Dictionary<FaderBank, List<int>> _banks = new Dictionary<FaderBank, List<int>>();
         private int _selectedLayer;
         private FaderBank _selectedBank;
+        private int _numControllers;
         private int _numLayersPerBank;
-        private int _numFaders;
+        private int _numFadersPerPage => _numControllers * _numFadersPerController;
         private bool _hasUserBank;
         private FaderBank[] _availableBanks;
 
@@ -24,12 +26,12 @@ namespace UI24RController.UI24RChannels
             FaderBank.ViewGroup4, FaderBank.ViewGroup5, FaderBank.ViewGroup6,
         };
 
-        public Mixer(bool hasUserBank = true)
+        public Mixer(int numControllers, bool hasUserBank = true)
         {
+            _numControllers = numControllers;
             _numLayersPerBank = 6;
             _selectedLayer = 0;
             _selectedBank = FaderBank.Initial;
-            _numFaders = 8;
             _hasUserBank = hasUserBank;
             _availableBanks = hasUserBank
                 ? new[] { FaderBank.Initial, FaderBank.User }.Concat(ViewGroupBanks).ToArray()
@@ -46,10 +48,22 @@ namespace UI24RController.UI24RChannels
         public int UserLayerEditNewChannel { get; set; }
 
         // Flat list layout per bank:
-        //   Each layer occupies _numFaders consecutive slots (8 channel indices, no main fader stored).
-        //   Index of slot j in layer i = i * _numFaders + j.
+        //   Each layer occupies _numFadersPerController consecutive slots
+        //   (8 channel indices, no main fader stored).
+        //   Index of slot j in layer i = i * _numFadersPerController + j.
         //   Main fader (54) is always appended at query time in getCurrentLayer.
-        private int LayerOffset(int layer) => layer * _numFaders;
+        private static int LayerOffset(int layer) => layer * _numFadersPerController;
+
+
+        private int NumPagesSelectedBank()
+        {
+            return (int)Math.Ceiling((double)_banks[_selectedBank].Count / _numFadersPerPage);
+        }
+
+        private int NumLayersSelectedBank()
+        {
+            return (int)Math.Ceiling((double)_banks[_selectedBank].Count / _numFadersPerController);
+        }
 
         private void initLayers()
         {
@@ -57,16 +71,16 @@ namespace UI24RController.UI24RChannels
             UserLayerEditNewChannel = -1;
 
             // Initialize Initial bank
-            var initialBank = new List<int>(Enumerable.Repeat(0, _numLayersPerBank * _numFaders));
+            var initialBank = new List<int>(Enumerable.Repeat(0, _numLayersPerBank * _numFadersPerController));
             for (int i = 0; i < _numLayersPerBank; ++i)
             {
                 int layerBase = LayerOffset(i);
-                for (int j = 0; j < _numFaders; ++j)
-                    initialBank[layerBase + j] = j + i * _numFaders;
+                for (int j = 0; j < _numFadersPerController; ++j)
+                    initialBank[layerBase + j] = j + i * _numFadersPerController;
             }
             // Rearrangements in default layers
             int layer4 = LayerOffset(4);
-            for (int j = 0; j < _numFaders; ++j)
+            for (int j = 0; j < _numFadersPerController; ++j)
                 initialBank[layer4 + j] = 38 + j;
             int layer5 = LayerOffset(5);
             initialBank[layer5 + 0] = 46;
@@ -78,12 +92,12 @@ namespace UI24RController.UI24RChannels
             // Initialize User bank
             if (_hasUserBank)
             {
-                var userBank = new List<int>(Enumerable.Repeat(0, _numLayersPerBank * _numFaders));
+                var userBank = new List<int>(Enumerable.Repeat(0, _numLayersPerBank * _numFadersPerController));
                 for (int i = 0; i < _numLayersPerBank; ++i)
                 {
                     int layerBase = LayerOffset(i);
-                    for (int j = 0; j < _numFaders; ++j)
-                        userBank[layerBase + j] = j + i * _numFaders;
+                    for (int j = 0; j < _numFadersPerController; ++j)
+                        userBank[layerBase + j] = j + i * _numFadersPerController;
                 }
                 _banks.Add(FaderBank.User, userBank);
             }
@@ -105,7 +119,7 @@ namespace UI24RController.UI24RChannels
             for (int i = 0; i < input.Length && i < _numLayersPerBank; ++i)
             {
                 int layerBase = LayerOffset(i);
-                for (int j = 0; j < _numFaders && j < input[i].Length; ++j)
+                for (int j = 0; j < _numFadersPerController && j < input[i].Length; ++j)
                     _banks[FaderBank.User][layerBase + j] = input[i][j];
             }
         }
@@ -117,8 +131,8 @@ namespace UI24RController.UI24RChannels
             for (int i = 0; i < _numLayersPerBank; ++i)
             {
                 int layerBase = LayerOffset(i);
-                output[i] = new int[_numFaders];
-                for (int j = 0; j < _numFaders; ++j)
+                output[i] = new int[_numFadersPerController];
+                for (int j = 0; j < _numFadersPerController; ++j)
                     output[i][j] = _banks[FaderBank.User][layerBase + j];
             }
             return output;
@@ -126,7 +140,7 @@ namespace UI24RController.UI24RChannels
 
         public (FaderBank bank, int layer, int position, int channel) setNewUserChannelInCurrentBank(int controllerPosition)
         {
-            if (controllerPosition >= 0 && controllerPosition < _numFaders)
+            if (controllerPosition >= 0 && controllerPosition < _numFadersPerController)
                 _banks[_selectedBank][LayerOffset(_selectedLayer) + controllerPosition] = UserLayerEditNewChannel;
             return (_selectedBank, _selectedLayer, controllerPosition, UserLayerEditNewChannel);
         }
@@ -138,7 +152,7 @@ namespace UI24RController.UI24RChannels
             {
                 goOneMoreChannel = false;
                 UserLayerEditNewChannel = (UserLayerEditNewChannel + dir + 54) % 54;
-                for (int i = 0; i < _numFaders; ++i)
+                for (int i = 0; i < _numFadersPerController; ++i)
                 {
                     if (i != controllerPos && getCurrentLayer(channelOffset)[i] == UserLayerEditNewChannel)
                         goOneMoreChannel = true;
@@ -159,11 +173,15 @@ namespace UI24RController.UI24RChannels
 
         public void setLayerUp()
         {
-            _selectedLayer = (_selectedLayer + 1) % _numLayersPerBank;
+            int numLayers = NumLayersSelectedBank();
+            if (numLayers == 0) return;
+            _selectedLayer = (_selectedLayer + _numControllers) % numLayers;
         }
         public void setLayerDown()
         {
-            _selectedLayer = (_selectedLayer + _numLayersPerBank - 1) % _numLayersPerBank;
+            int numLayers = NumLayersSelectedBank();
+            if (numLayers == 0) return;
+            _selectedLayer = (_selectedLayer + numLayers - _numControllers) % numLayers;
         }
 
         public void setBankUp()
@@ -199,41 +217,45 @@ namespace UI24RController.UI24RChannels
             return true;
         }
 
-        public char getBankChar(FaderBank bank)
-        {
-            switch (bank)
-            {
-                case FaderBank.Initial: return 'I';
-                case FaderBank.User:    return 'U';
-                default:                return 'V';
-            }
-        }
-
-        public string getCurrentLayerString()
+        public string GetCurrentBankString()
         {
             int viewGroup = GetCurrentViewGroup();
             if (viewGroup >= 0)
-                return "V" + (viewGroup + 1).ToString();
-            return getBankChar(_selectedBank).ToString() + ((_selectedLayer % _numLayersPerBank) + 1).ToString();
+                return " " + (viewGroup + 1).ToString();
+
+            switch (_selectedBank)
+            {
+                case FaderBank.Initial: return "In";
+                case FaderBank.User:    return " U";
+                default:                return "  ";
+            }
+        }
+
+        public string GetCurrentLayerString()
+        {
+            if(_banks[_selectedBank].Count == 0)
+                return "---";
+
+            string page = (_selectedLayer / _numControllers + 1).ToString();
+            string total = NumPagesSelectedBank().ToString();
+            return  $"{page}-{total}";
         }
 
         public int[] getCurrentLayer(int channelOffset)
         {
             var bank = _banks[_selectedBank];
-            int offset = GetCurrentViewGroup() >= 0
-                ? channelOffset * _numFaders               // ViewGroup: single flat layer per bank
-                : LayerOffset(_selectedLayer) + channelOffset * _numFaders; // Initial/User: multi-layer
+            int offset = LayerOffset(_selectedLayer) + channelOffset * _numFadersPerController;
             return bank
                 .Skip(offset)
-                .Take(_numFaders)
-                .ToFixedLength(_numFaders, -1)
+                .Take(_numFadersPerController)
+                .ToFixedLength(_numFadersPerController, -1)
                 .Append(54)
                 .ToArray();
         }
 
         public int getChannelNumberInCurrentLayer(int ch, int channelOffset)
         {
-            ch = ch % (_numFaders + 1); // +1 for main fader slot
+            ch = ch % (_numFadersPerController + 1); // +1 for main fader slot
             if (ch < 0) ch = 0;
             return getCurrentLayer(channelOffset)[ch];
         }
