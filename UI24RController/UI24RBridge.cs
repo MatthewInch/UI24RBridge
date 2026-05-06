@@ -604,6 +604,18 @@ namespace UI24RController
             }
         }
 
+        private static void ClearSendsDisplay(IMIDIController controller)
+        {
+            controller.WriteTextToBeatsDisplay("  ");
+            controller.WriteTextToSubDivisionDisplay("  ");
+        }
+
+        private static void WriteSendsDisplay(IMIDIController controller, string aux, int num)
+        {
+            controller.WriteTextToBeatsDisplay(aux);
+            controller.WriteTextToSubDivisionDisplay(num.ToString());
+        }
+
         public void _midiController_AuxButtonEvent(IMIDIController controller, MIDIController.FunctionEventArgs e)
         {
             if (_settings.AuxButtonBehavior == BridgeSettings.AuxButtonBehaviorEnum.Release)
@@ -614,13 +626,13 @@ namespace UI24RController
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = e.FunctionButton.ToAux();
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
-                    controller.WriteTextToBarsDisplay("AX" + (_selectedLayout.AuxToInt() + 1).ToString());
+                    WriteSendsDisplay(controller, " A", _selectedLayout.AuxToInt()+1);
                 }
                 else if (_selectedLayout == e.FunctionButton.ToAux())
                 {
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = SelectedLayoutEnum.Channels;
-                    controller.WriteTextToBarsDisplay("   ");
+                    ClearSendsDisplay(controller);
                 }
             }
             else
@@ -631,22 +643,18 @@ namespace UI24RController
                     {
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                         _selectedLayout = SelectedLayoutEnum.Channels;
-                        controller.WriteTextToBarsDisplay("   ");
+                        ClearSendsDisplay(controller);
                     }
                     else
                     {
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                         _selectedLayout = e.FunctionButton.ToAux();
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
-                        controller.WriteTextToBarsDisplay("AX" + (_selectedLayout.AuxToInt()+1).ToString());
+                        WriteSendsDisplay(controller, " A", _selectedLayout.AuxToInt()+1);
                     }
                 }
             }
             SetControllerToCurrentLayerAndSend();
-            //if (_secondaryBridge != null)
-            //{
-            //    _secondaryBridge._midiController_AuxButtonEvent(sender, e);
-            //}
         }
         public void Controller_FXButtonEvent(IMIDIController controller, FunctionEventArgs e)
         {
@@ -658,13 +666,13 @@ namespace UI24RController
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = e.FunctionButton.ToFx();
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
-                    controller.WriteTextToBarsDisplay("FX" + (_selectedLayout.FxToInt() + 1).ToString());
+                    WriteSendsDisplay(controller, " F", _selectedLayout.FxToInt()+1);
                 }
                 else if (_selectedLayout == e.FunctionButton.ToFx())
                 {
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = SelectedLayoutEnum.Channels;
-                    controller.WriteTextToBarsDisplay("   ");
+                    ClearSendsDisplay(controller);
                 }
             }
             else
@@ -675,22 +683,18 @@ namespace UI24RController
                     {
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                         _selectedLayout = SelectedLayoutEnum.Channels;
-                        controller.WriteTextToBarsDisplay("   ");
+                        ClearSendsDisplay(controller);
                     }
                     else
                     {
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                         _selectedLayout = e.FunctionButton.ToFx();
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
-                        controller.WriteTextToBarsDisplay("FX" + (_selectedLayout.FxToInt() + 1).ToString());
+                        WriteSendsDisplay(controller, " F", _selectedLayout.FxToInt()+1);
                     }
                 }
             }
             SetControllerToCurrentLayerAndSend();
-            //if (_secondaryBridge != null)
-            //{
-            //    _secondaryBridge.Controller_FXButtonEvent(sender, e);
-            //}
         }
         private void Controller_MuteGroupButtonEvent(IMIDIController controller, FunctionEventArgs e)
         {
