@@ -9,6 +9,7 @@ namespace UI24RController
     {
         Gain, Pan, TapTempo, SaveUserLayer, SetUserChannel,
         ViewGroup1, ViewGroup2, ViewGroup3, ViewGroup4, ViewGroup5, ViewGroup6,
+        Home, Channels1, Channels2, SubGroups, VCAMasters, AuxFxMasters,
         Aux1, Aux2, Aux3, Aux4, Aux5, Aux6, Aux7, Aux8, Aux9, Aux10,
         Fx1, Fx2, Fx3, Fx4,
         MuteGroup1, MuteGroup2, MuteGroup3, MuteGroup4, MuteGroup5, MuteGroup6,
@@ -225,7 +226,7 @@ namespace UI24RController
 
     public enum FaderBank
     {
-        Initial = 0,
+        Home = 0,
         User = 1,
         ViewGroup1 = 2,
         ViewGroup2 = 3,
@@ -233,6 +234,11 @@ namespace UI24RController
         ViewGroup4 = 5,
         ViewGroup5 = 6,
         ViewGroup6 = 7,
+        Channels1   = 8,
+        Channels2   = 9,
+        SubGroups   = 10,
+        VCAMasters  = 11,
+        AuxFxMasters = 12,
     }
 
     public enum ChannelStripColour : byte

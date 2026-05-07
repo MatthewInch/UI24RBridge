@@ -26,16 +26,32 @@ namespace UI24RController.UI24RChannels
             FaderBank.ViewGroup4, FaderBank.ViewGroup5, FaderBank.ViewGroup6,
         };
 
+        private static readonly FaderBank[] MastersBanks = new[]
+        {
+            FaderBank.Home, FaderBank.Channels1, FaderBank.Channels2,
+            FaderBank.SubGroups, FaderBank.VCAMasters, FaderBank.AuxFxMasters,
+        };
+
+        private static readonly Dictionary<FaderBank, int[]> MastersBankChannels = new()
+        {
+            { FaderBank.Home,        Enumerable.Range(0,  54).ToArray() },
+            { FaderBank.Channels1,   Enumerable.Range(0,  16).ToArray() },
+            { FaderBank.Channels2,   Enumerable.Range(16, 12).ToArray() },
+            { FaderBank.SubGroups,   Enumerable.Range(32,  6).ToArray() },
+            { FaderBank.VCAMasters,  Enumerable.Range(48,  6).ToArray() },
+            { FaderBank.AuxFxMasters, new[] { 38,39,40,41,42,43,44,45,46,47, 28,29,30,31 } },
+        };
+
         public Mixer(int numControllers, bool hasUserBank = true)
         {
             _numControllers = numControllers;
             _numLayersPerBank = 6;
             _selectedLayer = 0;
-            _selectedBank = FaderBank.Initial;
+            _selectedBank = FaderBank.Home;
             _hasUserBank = hasUserBank;
             _availableBanks = hasUserBank
-                ? new[] { FaderBank.Initial, FaderBank.User }.Concat(ViewGroupBanks).ToArray()
-                : new[] { FaderBank.Initial }.Concat(ViewGroupBanks).ToArray();
+                ? new[] { FaderBank.Home, FaderBank.User }.Concat(MastersBanks.Skip(1)).Concat(ViewGroupBanks).ToArray()
+                : new[] { FaderBank.Home }.Concat(MastersBanks.Skip(1)).Concat(ViewGroupBanks).ToArray();
 
             initLayers();
             initMuteGroups();
@@ -70,25 +86,6 @@ namespace UI24RController.UI24RChannels
             UserLayerEdit = false;
             UserLayerEditNewChannel = -1;
 
-            // Initialize Initial bank
-            var initialBank = new List<int>(Enumerable.Repeat(0, _numLayersPerBank * _numFadersPerController));
-            for (int i = 0; i < _numLayersPerBank; ++i)
-            {
-                int layerBase = LayerOffset(i);
-                for (int j = 0; j < _numFadersPerController; ++j)
-                    initialBank[layerBase + j] = j + i * _numFadersPerController;
-            }
-            // Rearrangements in default layers
-            int layer4 = LayerOffset(4);
-            for (int j = 0; j < _numFadersPerController; ++j)
-                initialBank[layer4 + j] = 38 + j;
-            int layer5 = LayerOffset(5);
-            initialBank[layer5 + 0] = 46;
-            initialBank[layer5 + 1] = 47;
-            for (int j = 0; j < 6; ++j)
-                initialBank[layer5 + j + 2] = 48 + j;
-            _banks.Add(FaderBank.Initial, initialBank);
-
             // Initialize User bank
             if (_hasUserBank)
             {
@@ -101,6 +98,10 @@ namespace UI24RController.UI24RChannels
                 }
                 _banks.Add(FaderBank.User, userBank);
             }
+
+            // Initialize Masters banks (hardcoded channel lists)
+            foreach (var bank in MastersBanks)
+                _banks.Add(bank, new List<int>(MastersBankChannels[bank]));
 
             // Initialize ViewGroup banks (one bank per view group, full channel list stored, sliced at query time)
             foreach (var vgBank in ViewGroupBanks)
@@ -209,6 +210,19 @@ namespace UI24RController.UI24RChannels
             return idx >= 0 ? idx : -1;
         }
 
+        public void SetMastersBank(int index)
+        {
+            _selectedBank = MastersBanks[index % MastersBanks.Length];
+            _selectedLayer = 0;
+        }
+
+        public int GetCurrentMastersBank()
+        {
+            return Array.IndexOf(MastersBanks, _selectedBank);
+        }
+
+        public static IReadOnlyList<FaderBank> GetMastersBankOrder() => MastersBanks;
+
         public bool goToUserBank()
         {
             if (!_hasUserBank) return false;
@@ -223,12 +237,17 @@ namespace UI24RController.UI24RChannels
             if (viewGroup >= 0)
                 return " " + (viewGroup + 1).ToString();
 
-            switch (_selectedBank)
+            return _selectedBank switch
             {
-                case FaderBank.Initial: return "In";
-                case FaderBank.User:    return " U";
-                default:                return "  ";
-            }
+                FaderBank.Home        => "--",
+                FaderBank.User        => " U",
+                FaderBank.Channels1   => "C1",
+                FaderBank.Channels2   => "C2",
+                FaderBank.AuxFxMasters => "AF",
+                FaderBank.SubGroups   => "SG",
+                FaderBank.VCAMasters  => "CA",
+                _                     => "  ",
+            };
         }
 
         public string GetCurrentLayerString()

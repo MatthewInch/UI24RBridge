@@ -10,39 +10,29 @@ Implemented the Mackie Control protocol (It can work with any DAW controller tha
 The earlier protocol has not been removed but the new functions only implemented in MC mode.
 
 ### The Bridge functionalities:
- - Use 3 groups with 6 layers of faders for each bank
-	- Bank I
-		- Layer 1: Input 1-8
-		- Layer 2: Input 9-16
-		- Layer 3: Input 17-24
-		- Layer 4: Line in, Player, FX 1-4
-		- Layer 5: AUX 1-8
-		- Layer 6: AUX 9-10; VCA 1-6
-	- Bank U (user defined layers, load from ViewGroups.json file, initially the same as Bank I)
-		- Layer 1: User defined
-		- Layer 2: User defined
-		- Layer 3: User defined
-		- Layer 4: User defined
-		- Layer 5: User defined
-		- Layer 6: User defined
-		- If you want to edit user bank, select channel in user group, hold ***Set User Channel*** button and select new channel with JOG wheel while still holding ***Set User Channel*** button.
-		- Changes must be saved with ***Save User Layer*** button, otherwise changes will be discarted on app restart
-	- Bank V (configurable with Global View Groups in mixer app)
-		- Layer 1: VIEW 1 (if set)
-		- Layer 2: VIEW 2 (if set)
-		- Layer 3: VIEW 3 (if set)
-		- Layer 4: VIEW 4 (if set)
-		- Layer 5: VIEW 5 (if set)
-		- Layer 6: VIEW 6 (if set)
-		- The controller shows the first 8 channel (16 channel with secondary controller) of the selected global view.
-		- Press the ***View Group 1–6*** buttons to jump directly to the corresponding view layer (V1–V6) without cycling through banks. The LED of the active view group lights up; all view group LEDs go dark when leaving Bank V.
-	- Switch between Banks with ***Fader Bank <<*** and ***Fader Bank >>*** buttons or K (up) and J (down) key on the computer
-	- Switch between Layers in current bank with ***Channel Bank <<*** and ***Channel Bank >>*** buttons or M (up) and N (down) key on the computer
+ - **Masters banks** — six fixed-channel banks selectable directly via dedicated buttons. The Assignment display shows a 2-character label and the Bars display shows the current page / total pages. Pressing a Masters bank button always clears any active View Group LED.
+	- **Home** (`--`) — all 54 channels (inputs, line-in, player, FX, subgroups, AUX, VCA)
+	- **Channels 1** (`C1`) — input channels 1–16
+	- **Channels 2** (`C2`) — input channels 17–24, line-in, player
+	- **SubGroups** (`SG`) — subgroup channels 1–6
+	- **VCA Masters** (`CA`) — VCA channels 1–6
+	- **AuxFx Masters** (`AF`) — AUX 1–10 followed by FX 1–4
+ - **User bank** (` u`) — user-defined layers loaded from `ViewGroups.json`, initially inputs, Line in, player, FX, subgroups, AUX (no VCA)
+	- Hold ***Set User Channel*** and turn the JOG wheel to reassign the selected channel strip
+	- Save changes with ***Save User Layer***, otherwise they are discarded on restart
+ - **View Groups** (` 1`–` 6`) — configurable with Global View Groups in the mixer app
+	- Press ***View Group 1–6*** to jump directly to the corresponding view. The active LED lights up; pressing the same button again returns to Home.
+	- All View Group LEDs go dark when any Masters bank or User bank is active.
+ - Switch between banks with ***Fader Bank <<*** and ***Fader Bank >>*** buttons
+ - Switch between pages within the current bank with ***Channel <<*** and ***Channel >>*** buttons. With multiple controllers, one press advances by the number of connected controllers.
  - The ***faders*** work on every type of channels
  - The ***knobs*** set the gain on the input channels or Panorama (change the behavior with ***Pan*** button; use ***Gain*** button to switch back)
  - Channel ***Select***, ***Solo*** and ***Mute*** buttons work on every channel
  - Channel ***Rec*** button sets either Mtk rec or Phantom 48V (selected in appsettings.json)
  - Channel strip LCD **second line** shows the channel identifier (e.g. CH01, FX03) and, when viewing AUX/FX sends, appends the send suffix (e.g. CH01-A2, CH05-F1)
+ - **Assignment display** shows the active bank label (e.g. `--` for Home, ` u` for User, ` 1`–` 6` for View Groups)
+ - **Bars (hours) display** shows the current page and total pages within the bank (e.g. `2-4` would be page 2 out of 4)
+ - **Beats (minutes) display** and **Subdivision (seconds) display** show the active AUX or FX send: the Beats display shows the prefix (`Au` for AUX, `F` for FX) and the Subdivision display shows the send number (e.g. `Au` + `3` for AUX 3, `F` + `2` for FX 2). Both displays clear when returning to the main channel view.
  - Channel strip **colours** indicate channel type:
 	- **White** — input, line-in, player and main channels
 	- **Yellow** — AUX channels, or any channel when viewing an AUX send layer
@@ -81,6 +71,13 @@ The overlay labels the buttons with their UI24R functions as mapped by default. 
 | **Clear Mute** | Clear all mutes |
 | **Clear Solo** | Clear all solos |
 | **Talkback** | Hold to unmute the configured talkback channel |
+| **Home** | Switch to Home bank (all channels, label `--`) |
+| **Channels 1** | Switch to Channels 1 bank (inputs 1–16, label `C1`) |
+| **Channels 2** | Switch to Channels 2 bank (inputs 17–24, line-in, player, label `C2`) |
+| **SubGroups** | Switch to SubGroups bank (subgroups 1–6, label `SG`) |
+| **VCA Masters** | Switch to VCA Masters bank (VCA 1–6, label `CA`) |
+| **AuxFx Masters** | Switch to AuxFx Masters bank (AUX 1–10 + FX 1–4, label `AF`) |
+| **View Group 1–6** | Jump to the corresponding View Group; press again to return to Home |
 
 ### Future functions
  - HPF

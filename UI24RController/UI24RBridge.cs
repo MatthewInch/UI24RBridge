@@ -103,6 +103,7 @@ namespace UI24RController
                 controller.ConnectionErrorEvent += (sender, args)=> _midiController_ConnectionErrorEvent(controller, args);
                 controller.AuxButtonEvent += (sender, args) => _midiController_AuxButtonEvent(controller, args);
                 controller.ViewGroupButtonEvent += (sender, args) => Controller_ViewGroupButtonEvent(controller, args);
+                controller.MastersBankButtonEvent += (sender, args) => Controller_MastersBankButtonEvent(controller, args);
                 controller.FxButtonEvent += (sender, args) => Controller_FXButtonEvent(controller, args);
                 controller.TalkbackEvent += (sender, args) => Controller_TalkbackEvent(controller, args);
                 controller.GainModeEvent += (sender, args) => Controller_GainModeEvent(controller, args); //HPF: functionality
@@ -530,9 +531,19 @@ namespace UI24RController
         {
             if (!e.IsPress) return;
             if (_mixer.GetCurrentViewGroup() == e.FunctionButton)
-                _mixer.setBank((int)FaderBank.Initial);
+                _mixer.setBank((int)FaderBank.Home);
             else
                 _mixer.SetViewGroup(e.FunctionButton);
+            SetControllerToCurrentLayerAndSend();
+        }
+
+        public void Controller_MastersBankButtonEvent(object sender, FunctionEventArgs e)
+        {
+            if (!e.IsPress) return;
+            if (_mixer.GetCurrentMastersBank() == e.FunctionButton)
+                _mixer.setBank((int)FaderBank.Home);
+            else
+                _mixer.SetMastersBank(e.FunctionButton);
             SetControllerToCurrentLayerAndSend();
         }
 
@@ -1142,6 +1153,7 @@ namespace UI24RController
 
             });
             SetViewGroupLeds();
+            SetMastersLeds();
         }
         private void SetStateLedsOnController()
         {
@@ -1150,6 +1162,7 @@ namespace UI24RController
                 controller.SetLed(ButtonsEnum.Rec, _mixer.IsMultitrackRecordingRun || _mixer.IsTwoTrackRecordingRun);
                 SetMuteGroupsLeds();
                 SetViewGroupLeds();
+                SetMastersLeds();
                 SetKnobsFunctionLedOnController();
                 if (_selectedLayout.IsAux())
                 {
@@ -1482,6 +1495,17 @@ namespace UI24RController
             {
                 for (int i = 0; i < 6; ++i)
                     controller.SetLed(ButtonsEnum.ViewGroup1 + i, i == activeViewGroup);
+            });
+        }
+
+        private void SetMastersLeds()
+        {
+            int active = _mixer.GetCurrentMastersBank();
+            var banks = Mixer.GetMastersBankOrder();
+            _controllers.ForEach(controller =>
+            {
+                for (int i = 0; i < banks.Count; i++)
+                    controller.SetLed(Enum.Parse<ButtonsEnum>(banks[i].ToString()), i == active);
             });
         }
 

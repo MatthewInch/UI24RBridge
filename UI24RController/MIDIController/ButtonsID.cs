@@ -71,6 +71,20 @@ namespace UI24RController.MIDIController
             return (false, 0);
         }
 
+        public (bool isMastersBank, int mastersBankIndex) GetMastersBankButton(byte value)
+        {
+            var keys = new[] {
+                ButtonsEnum.Home, ButtonsEnum.Channels1, ButtonsEnum.Channels2,
+                ButtonsEnum.SubGroups, ButtonsEnum.VCAMasters, ButtonsEnum.AuxFxMasters
+            };
+            for (int i = 0; i < keys.Length; i++)
+            {
+                if (ButtonsDictionary.TryGetValue(keys[i], out var b) && value == b)
+                    return (true, i);
+            }
+            return (false, 0);
+        }
+
         public (bool isMuteGroupButton, int muteGroupNum) GetMuteGroupsButton(byte value)
         {
             var muteKeys = new[] {

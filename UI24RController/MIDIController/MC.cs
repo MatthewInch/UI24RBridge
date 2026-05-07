@@ -104,6 +104,7 @@ namespace UI24RController.MIDIController
         public event EventHandler<FunctionEventArgs> FxButtonEvent;
         public event EventHandler<FunctionEventArgs> MuteGroupButtonEvent;
         public event EventHandler<FunctionEventArgs> ViewGroupButtonEvent;
+        public event EventHandler<FunctionEventArgs> MastersBankButtonEvent;
 
         public event EventHandler<EventArgs> MuteAllEvent;
         public event EventHandler<EventArgs> MuteFXEvent;
@@ -250,6 +251,10 @@ namespace UI24RController.MIDIController
         protected void OnViewGroupButtonEvent(int functionNumber, bool isPress)
         {
             ViewGroupButtonEvent?.Invoke(this, new FunctionEventArgs(functionNumber, isPress));
+        }
+        protected void OnMastersBankButtonEvent(int index, bool isPress)
+        {
+            MastersBankButtonEvent?.Invoke(this, new FunctionEventArgs(index, isPress));
         }
 
         protected void OnMuteAllEvent()
@@ -636,6 +641,11 @@ namespace UI24RController.MIDIController
                     {
                         var viewGroupNum = _buttonsID.GetViewGroupButton(message[1]).viewGroupNum;
                         OnViewGroupButtonEvent(viewGroupNum, message[2] == 0x7f);
+                    }
+                    else if ((message[0] == 0x90) && _buttonsID.GetMastersBankButton(message[1]).isMastersBank)
+                    {
+                        var idx = _buttonsID.GetMastersBankButton(message[1]).mastersBankIndex;
+                        OnMastersBankButtonEvent(idx, message[2] == 0x7f);
                     }
 
                 }

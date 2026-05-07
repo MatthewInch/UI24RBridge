@@ -1,5 +1,11 @@
 {
   "ButtonsDictionary": {
+    "Home": "0x54",
+    "Channels1": "0x56",
+    "Channels2": "0x57",
+    "SubGroups": "0x58",
+    "VCAMasters": "0x59",
+    "AuxFxMasters": "0x5a",
     "Gain": "0x28",
     "Pan": "0x2a",
     "TapTempo": "0x35",
