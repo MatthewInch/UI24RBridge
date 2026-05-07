@@ -85,3 +85,47 @@ cd UI24RBridge/UI24RBridgeTest/
 dotnet build -c Release
 
 ```
+
+## Run as a service
+Example service (`sudo nano /etc/systemd/system/ui24rbridge.service`) - adjust paths as needed:
+
+```ini
+[Unit]
+Description=UI24R Bridge
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/UI24RBridge/UI24RBridgeTest
+ExecStart=/home/pi/.dotnet/dotnet /home/pi/UI24RBridge/UI24RBridgeTest/bin/Release/net10.0/UI24RBridgeTest.dll
+Environment=DOTNET_ROOT=/home/pi/.dotnet
+Environment=HOME=/home/pi
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
+
+```
+
+Then enable the service at boot:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable ui24rbridge    # start on boot
+sudo systemctl start ui24rbridge     # start now
+sudo systemctl status ui24rbridge    # verify it's running
+```
+
+To watch live logs:
+```bash
+journalctl -u ui24rbridge -f
+```
+
+## Run chromium in kiosk mode with Soundcraft UI
+See https://www.raspberrypi.com/tutorials/how-to-use-a-raspberry-pi-in-kiosk-mode/
+
+Simples is to only add the below line to `.config/labwc/autostart` (change to your mixer's address)
+```bash
+chromium --start-maximized --kiosk --noerrdialogs --disable-infobars --no-first-run --password-store=basic --user-data-dir=/home/$USER/.config/chromium2 --enable-features=OverlayScrollbar,OverlayScrollbarFlashAfterAnyScrollUpdate,OverlayScrollbarFlashWhenMouseEnter http://192.168.0.69 &
+```
