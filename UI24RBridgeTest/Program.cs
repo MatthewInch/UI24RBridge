@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using UI24RController;
 using UI24RController.MIDIController;
 
@@ -191,36 +192,45 @@ namespace UI24RBridgeTest
                 settings.RtaOnWhenSelect = rtaOnWhenSelect;
                 settings.EnableUserBank = enableUserBank;
 
-                Console.WriteLine("Press 'ESC' to exit.");
                 bool isExit = false;
+                using var cancelSource = new CancellationTokenSource();
+                Console.CancelKeyPress += (s, e) => { e.Cancel = true; cancelSource.Cancel(); };
+
                 using (UI24RBridge bridge = new UI24RBridge(settings, controllers))
                 {
-                    while (!isExit)
+                    if (Console.IsInputRedirected)
                     {
-                        if (Console.KeyAvailable)
+                        cancelSource.Token.WaitHandle.WaitOne();
+                    }
+                    else
+                    {
+                        Console.WriteLine("Press 'ESC' to exit.");
+                        while (!isExit && !cancelSource.IsCancellationRequested)
                         {
-                            var pressedKey = Console.ReadKey();
-                            switch (pressedKey.Key)
+                            if (Console.KeyAvailable)
                             {
-                                case ConsoleKey.Escape:
-                                    isExit = true;
-                                    break;
-                                case ConsoleKey.M:
-                                    bridge._midiController_LayerUp(null, new EventArgs());
-                                    break;
-                                case ConsoleKey.N:
-                                    bridge._midiController_LayerDown(null, new EventArgs());
-                                    break;
-                                case ConsoleKey.K:
-                                    bridge._midiController_BankUp(null, new EventArgs());
-                                    break;
-                                case ConsoleKey.J:
-                                    bridge._midiController_BankDown(null, new EventArgs());
-                                    break;
+                                var pressedKey = Console.ReadKey();
+                                switch (pressedKey.Key)
+                                {
+                                    case ConsoleKey.Escape:
+                                        isExit = true;
+                                        break;
+                                    case ConsoleKey.M:
+                                        bridge._midiController_LayerUp(null, new EventArgs());
+                                        break;
+                                    case ConsoleKey.N:
+                                        bridge._midiController_LayerDown(null, new EventArgs());
+                                        break;
+                                    case ConsoleKey.K:
+                                        bridge._midiController_BankUp(null, new EventArgs());
+                                        break;
+                                    case ConsoleKey.J:
+                                        bridge._midiController_BankDown(null, new EventArgs());
+                                        break;
+                                }
                             }
                         }
                     }
-
                 }
             }
         }
