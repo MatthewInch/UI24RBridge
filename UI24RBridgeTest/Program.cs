@@ -49,194 +49,193 @@ namespace UI24RBridgeTest
             var controllers = new List<IMIDIController>();
 
             if (args.Length > 0)
+                Console.WriteLine("Warning: command-line arguments are not supported and will be ignored.");
+
+
+            if (controllersSetting.Count == 0)
+            {
+                Console.WriteLine("No controllers found in MidiControllers config section.");
                 WriteMIDIDeviceNames(MIDIControllerFactory.GetMidiController(protocol));
+                return;
+            }
             else
             {
-                if (controllersSetting.Count == 0)
+                var offsets = controllersSetting.Select(c => c.ChannelOffset).OrderBy(o => o).ToList();
+                var expectedOffsets = Enumerable.Range(0, controllersSetting.Count).ToList();
+                if (!offsets.SequenceEqual(expectedOffsets))
                 {
-                    Console.WriteLine("No controllers found in MidiControllers config section.");
-                    WriteMIDIDeviceNames(MIDIControllerFactory.GetMidiController(protocol));
+                    Console.WriteLine($"Error in appsettings.json: ChannelOffset values must be 0..{controllersSetting.Count - 1} with no duplicates or gaps.");
+                    Console.WriteLine($"  Found: [{string.Join(", ", offsets)}]");
                     return;
+                }
+
+                for (int i = 0; i < controllersSetting.Count; i++)
+                {
+                    var controllerSetting = controllersSetting[i];
+                    bool connected = false;
+                    bool printedWaiting = false;
+                    while (!connected)
+                    {
+                        var controller = MIDIControllerFactory.GetMidiController(protocol);
+
+                        if (viewDebugMessage)
+                        {
+                            controller.MessageReceived += (obj, e) =>
+                            {
+                                lock (balanceLock)
+                                {
+                                    Console.WriteLine(e.Message);
+                                }
+                            };
+                        }
+
+                        controller.IsExtender = controllerSetting.IsExtender;
+                        controller.ChannelOffset = controllerSetting.ChannelOffset;
+
+                        if (controllerSetting.PrimaryButtonsConfig != null)
+                            controller.ButtonsFileName = controllerSetting.PrimaryButtonsConfig;
+
+                        if (!controller.ConnectInputDevice(controllerSetting.InputName).GetAwaiter().GetResult() ||
+                            !controller.ConnectOutputDevice(controllerSetting.OutputName).GetAwaiter().GetResult())
+                        {
+                            controller.Dispose();
+                            if (!printedWaiting)
+                            {
+                                Console.WriteLine($"Waiting for controller {i + 1}/{controllersSetting.Count}... (press any key to cancel)");
+                                printedWaiting = true;
+                            }
+                            if (!Console.IsInputRedirected && Console.KeyAvailable)
+                                return;
+                            Thread.Sleep(500);
+                            continue;
+                        }
+                        Console.WriteLine($"  Controller {i + 1}/{controllersSetting.Count} connected.");
+                        controllers.Add(controller);
+                        connected = true;
+                    }
+                }
+            }
+
+            Action<string, bool> messageWriter = (string messages, bool isDebugMessage) =>
+                {
+                    if (!isDebugMessage || (isDebugMessage && viewDebugMessage))
+                    {
+                        var m = messages.Split('\n');
+                        foreach (var message in m)
+                        {
+                            if (!message.StartsWith("3:::RTA^") && !message.StartsWith("RTA^") &&
+                                !message.StartsWith("3:::VU2^") && !message.StartsWith("VU2^")
+                            )
+                            {
+                                lock (balanceLock)
+                                {
+                                    Console.WriteLine(message);
+                                }
+                            }
+                        }
+                    }
+                };
+            Console.WriteLine("Start bridge...");
+
+            BridgeSettings settings = new BridgeSettings(address, messageWriter);
+
+            if (syncID != null)
+            {
+                settings.SyncID = syncID;
+            }
+            if (recButtonBahavior != null)
+            {
+                switch (recButtonBahavior.ToLower())
+                {
+                    case "onlymtk":
+                        settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.OnlyMTK;
+                        break;
+                    case "only2track":
+                        settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.OnlyTwoTrack;
+                        break;
+                    default:
+                        settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.TwoTrackAndMTK;
+                        break;
+                }
+            }
+            if (channelRecButtonBahavior != null)
+            {
+                switch (channelRecButtonBahavior.ToLower())
+                {
+                    case "phantom":
+                        settings.ChannelRecButtonBehavior = BridgeSettings.ChannelRecButtonBehaviorEnum.Phantom;
+                        break;
+                    default:
+                        settings.ChannelRecButtonBehavior = BridgeSettings.ChannelRecButtonBehaviorEnum.Rec;
+                        break;
+                }
+            }
+            if (auxButtonBehavior != null)
+            {
+                switch(auxButtonBehavior.ToLower() )
+                {
+                    case "lock":
+                        settings.AuxButtonBehavior = BridgeSettings.AuxButtonBehaviorEnum.Lock;
+                        break;
+                    default:
+                        settings.AuxButtonBehavior = BridgeSettings.AuxButtonBehaviorEnum.Release;
+                        break;
+                }
+            }
+            if (startBank != null)
+            {
+                settings.StartBank = 0;
+                if (startBank == "1") settings.StartBank = 1;
+                if (startBank == "2") settings.StartBank = 2;
+            }
+            if (talkBack != null)
+            {
+                int talkBackChannel = 0;
+                if  (int.TryParse(talkBack, out talkBackChannel))
+                {
+                    settings.TalkBack = talkBackChannel;
+                }
+
+            }
+
+            settings.RtaOnWhenSelect = rtaOnWhenSelect;
+            settings.EnableUserBank = enableUserBank;
+
+            bool isExit = false;
+            using var cancelSource = new CancellationTokenSource();
+            Console.CancelKeyPress += (s, e) => { e.Cancel = true; cancelSource.Cancel(); };
+
+            using (UI24RBridge bridge = new UI24RBridge(settings, controllers))
+            {
+                if (Console.IsInputRedirected)
+                {
+                    cancelSource.Token.WaitHandle.WaitOne();
                 }
                 else
                 {
-                    var offsets = controllersSetting.Select(c => c.ChannelOffset).OrderBy(o => o).ToList();
-                    var expectedOffsets = Enumerable.Range(0, controllersSetting.Count).ToList();
-                    if (!offsets.SequenceEqual(expectedOffsets))
+                    Console.WriteLine("Press 'ESC' to exit.");
+                    while (!isExit && !cancelSource.IsCancellationRequested)
                     {
-                        Console.WriteLine($"Error in appsettings.json: ChannelOffset values must be 0..{controllersSetting.Count - 1} with no duplicates or gaps.");
-                        Console.WriteLine($"  Found: [{string.Join(", ", offsets)}]");
-                        return;
-                    }
-
-                    for (int i = 0; i < controllersSetting.Count; i++)
-                    {
-                        var controllerSetting = controllersSetting[i];
-                        bool connected = false;
-                        bool printedWaiting = false;
-                        while (!connected)
+                        if (Console.KeyAvailable)
                         {
-                            var controller = MIDIControllerFactory.GetMidiController(protocol);
-
-                            if (viewDebugMessage)
+                            var pressedKey = Console.ReadKey();
+                            switch (pressedKey.Key)
                             {
-                                controller.MessageReceived += (obj, e) =>
-                                {
-                                    lock (balanceLock)
-                                    {
-                                        Console.WriteLine(e.Message);
-                                    }
-                                };
-                            }
-
-                            controller.IsExtender = controllerSetting.IsExtender;
-                            controller.ChannelOffset = controllerSetting.ChannelOffset;
-
-                            if (controllerSetting.PrimaryButtonsConfig != null)
-                                controller.ButtonsFileName = controllerSetting.PrimaryButtonsConfig;
-
-                            if (!controller.ConnectInputDevice(controllerSetting.InputName).GetAwaiter().GetResult() ||
-                                !controller.ConnectOutputDevice(controllerSetting.OutputName).GetAwaiter().GetResult())
-                            {
-                                controller.Dispose();
-                                if (!printedWaiting)
-                                {
-                                    Console.WriteLine($"Waiting for controller {i + 1}/{controllersSetting.Count}... (press any key to cancel)");
-                                    printedWaiting = true;
-                                }
-                                if (!Console.IsInputRedirected && Console.KeyAvailable)
-                                    return;
-                                Thread.Sleep(500);
-                                continue;
-                            }
-                            Console.WriteLine($"  Controller {i + 1}/{controllersSetting.Count} connected.");
-                            controllers.Add(controller);
-                            connected = true;
-                        }
-                    }
-                }
-
-                Action<string, bool> messageWriter = (string messages, bool isDebugMessage) =>
-                 {
-                     if (!isDebugMessage || (isDebugMessage && viewDebugMessage))
-                     {
-                         var m = messages.Split('\n');
-                         foreach (var message in m)
-                         {
-                             if (!message.StartsWith("3:::RTA^") && !message.StartsWith("RTA^") &&
-                                 !message.StartsWith("3:::VU2^") && !message.StartsWith("VU2^")
-                             )
-                             {
-                                 lock (balanceLock)
-                                 {
-                                     Console.WriteLine(message);
-                                 }
-                             }
-                         }
-                     }
-                 };
-                Console.WriteLine("Start bridge...");
-
-                BridgeSettings settings = new BridgeSettings(address, messageWriter);
-
-                if (syncID != null)
-                {
-                    settings.SyncID = syncID;
-                }
-                if (recButtonBahavior != null)
-                {
-                    switch (recButtonBahavior.ToLower())
-                    {
-                        case "onlymtk":
-                            settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.OnlyMTK;
-                            break;
-                        case "only2track":
-                            settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.OnlyTwoTrack;
-                            break;
-                        default:
-                            settings.RecButtonBehavior = BridgeSettings.RecButtonBehaviorEnum.TwoTrackAndMTK;
-                            break;
-                    }
-                }
-                if (channelRecButtonBahavior != null)
-                {
-                    switch (channelRecButtonBahavior.ToLower())
-                    {
-                        case "phantom":
-                            settings.ChannelRecButtonBehavior = BridgeSettings.ChannelRecButtonBehaviorEnum.Phantom;
-                            break;
-                        default:
-                            settings.ChannelRecButtonBehavior = BridgeSettings.ChannelRecButtonBehaviorEnum.Rec;
-                            break;
-                    }
-                }
-                if (auxButtonBehavior != null)
-                {
-                    switch(auxButtonBehavior.ToLower() )
-                    {
-                        case "lock":
-                            settings.AuxButtonBehavior = BridgeSettings.AuxButtonBehaviorEnum.Lock;
-                            break;
-                        default:
-                            settings.AuxButtonBehavior = BridgeSettings.AuxButtonBehaviorEnum.Release;
-                            break;
-                    }
-                }
-                if (startBank != null)
-                {
-                    settings.StartBank = 0;
-                    if (startBank == "1") settings.StartBank = 1;
-                    if (startBank == "2") settings.StartBank = 2;
-                }
-                if (talkBack != null)
-                {
-                    int talkBackChannel = 0;
-                    if  (int.TryParse(talkBack, out talkBackChannel))
-                    {
-                        settings.TalkBack = talkBackChannel;
-                    }
-
-                }
-
-                settings.RtaOnWhenSelect = rtaOnWhenSelect;
-                settings.EnableUserBank = enableUserBank;
-
-                bool isExit = false;
-                using var cancelSource = new CancellationTokenSource();
-                Console.CancelKeyPress += (s, e) => { e.Cancel = true; cancelSource.Cancel(); };
-
-                using (UI24RBridge bridge = new UI24RBridge(settings, controllers))
-                {
-                    if (Console.IsInputRedirected)
-                    {
-                        cancelSource.Token.WaitHandle.WaitOne();
-                    }
-                    else
-                    {
-                        Console.WriteLine("Press 'ESC' to exit.");
-                        while (!isExit && !cancelSource.IsCancellationRequested)
-                        {
-                            if (Console.KeyAvailable)
-                            {
-                                var pressedKey = Console.ReadKey();
-                                switch (pressedKey.Key)
-                                {
-                                    case ConsoleKey.Escape:
-                                        isExit = true;
-                                        break;
-                                    case ConsoleKey.M:
-                                        bridge._midiController_LayerUp(null, new EventArgs());
-                                        break;
-                                    case ConsoleKey.N:
-                                        bridge._midiController_LayerDown(null, new EventArgs());
-                                        break;
-                                    case ConsoleKey.K:
-                                        bridge._midiController_BankUp(null, new EventArgs());
-                                        break;
-                                    case ConsoleKey.J:
-                                        bridge._midiController_BankDown(null, new EventArgs());
-                                        break;
-                                }
+                                case ConsoleKey.Escape:
+                                    isExit = true;
+                                    break;
+                                case ConsoleKey.M:
+                                    bridge._midiController_LayerUp(null, new EventArgs());
+                                    break;
+                                case ConsoleKey.N:
+                                    bridge._midiController_LayerDown(null, new EventArgs());
+                                    break;
+                                case ConsoleKey.K:
+                                    bridge._midiController_BankUp(null, new EventArgs());
+                                    break;
+                                case ConsoleKey.J:
+                                    bridge._midiController_BankDown(null, new EventArgs());
+                                    break;
                             }
                         }
                     }
