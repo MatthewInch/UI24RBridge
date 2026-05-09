@@ -118,7 +118,7 @@ namespace UI24RBridgeTest
                             Thread.Sleep(500);
                             continue;
                         }
-                        Console.WriteLine($"  Controller {i + 1}/{controllersSetting.Count} connected.");
+                        Console.WriteLine($"Controller {i + 1}/{controllersSetting.Count} connected.");
                         controllers.Add(controller);
                         connected = true;
                     }
