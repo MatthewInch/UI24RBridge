@@ -76,6 +76,15 @@ namespace UI24RBridgeTest
                     bool printedWaiting = false;
                     while (!connected)
                     {
+                        if (controllers.Any(c => !c.IsConnected))
+                        {
+                            Console.WriteLine("A controller disconnected during setup. Restarting...");
+                            controllers.ForEach(c => c.Dispose());
+                            controllers.Clear();
+                            i = -1; // for-loop will increment to 0
+                            break;
+                        }
+
                         var controller = MIDIControllerFactory.GetMidiController(protocol);
 
                         if (viewDebugMessage)
