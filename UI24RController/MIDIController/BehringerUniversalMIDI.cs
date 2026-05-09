@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace UI24RController.MIDIController
 {
-    public class BehringerUniversalMIDI : IMIDIController,IDisposable
+    public class BehringerUniversalMIDI : IMIDIController
     {
         IMidiInput _input = null;
         IMidiOutput _output = null;

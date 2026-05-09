@@ -14,7 +14,7 @@ using System.IO;
 
 namespace UI24RController.MIDIController
 {
-    public class MC : IMIDIController, IDisposable
+    public class MC : IMIDIController
     {
         protected class FaderState
         {

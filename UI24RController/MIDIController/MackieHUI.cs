@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace UI24RController.MIDIController
 {
-    public class MackieHUI : IMIDIController, IDisposable
+    public class MackieHUI : IMIDIController
     {
         protected Queue<byte[]> _messageQueue = new Queue<byte[]>();
         /// <summary>

@@ -4,7 +4,7 @@ using UI24RController;
 using UI24RController.MIDIController;
 using System.Threading.Tasks;
 
-public interface IMIDIController
+public interface IMIDIController : IDisposable
 {
     #region Connection
     string[] GetInputDeviceNames();
