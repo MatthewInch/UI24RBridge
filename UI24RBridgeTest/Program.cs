@@ -72,38 +72,47 @@ namespace UI24RBridgeTest
                     for (int i = 0; i < controllersSetting.Count; i++)
                     {
                         var controllerSetting = controllersSetting[i];
-                        Console.Write($"Connecting to controller {i + 1}/{controllersSetting.Count}...");
-                        var controller = MIDIControllerFactory.GetMidiController(protocol);
-
-                        if (viewDebugMessage)
+                        bool connected = false;
+                        bool printedWaiting = false;
+                        while (!connected)
                         {
-                            controller.MessageReceived += (obj, e) =>
+                            var controller = MIDIControllerFactory.GetMidiController(protocol);
+
+                            if (viewDebugMessage)
                             {
-                                lock (balanceLock)
+                                controller.MessageReceived += (obj, e) =>
                                 {
-                                    Console.WriteLine(e.Message);
+                                    lock (balanceLock)
+                                    {
+                                        Console.WriteLine(e.Message);
+                                    }
+                                };
+                            }
+
+                            controller.IsExtender = controllerSetting.IsExtender;
+                            controller.ChannelOffset = controllerSetting.ChannelOffset;
+
+                            if (controllerSetting.PrimaryButtonsConfig != null)
+                                controller.ButtonsFileName = controllerSetting.PrimaryButtonsConfig;
+
+                            if (!controller.ConnectInputDevice(controllerSetting.InputName).GetAwaiter().GetResult() ||
+                                !controller.ConnectOutputDevice(controllerSetting.OutputName).GetAwaiter().GetResult())
+                            {
+                                controller.Dispose();
+                                if (!printedWaiting)
+                                {
+                                    Console.WriteLine($"Waiting for controller {i + 1}/{controllersSetting.Count}... (press any key to cancel)");
+                                    printedWaiting = true;
                                 }
-                            };
+                                if (!Console.IsInputRedirected && Console.KeyAvailable)
+                                    return;
+                                Thread.Sleep(500);
+                                continue;
+                            }
+                            Console.WriteLine($"  Controller {i + 1}/{controllersSetting.Count} connected.");
+                            controllers.Add(controller);
+                            connected = true;
                         }
-
-                        controller.IsExtender = controllerSetting.IsExtender;
-                        controller.ChannelOffset = controllerSetting.ChannelOffset;
-
-                        if (controllerSetting.PrimaryButtonsConfig != null)
-                            controller.ButtonsFileName = controllerSetting.PrimaryButtonsConfig;
-
-                        if (!controller.ConnectInputDevice(controllerSetting.InputName).GetAwaiter().GetResult())
-                        {
-                            Console.WriteLine($"\n  Error: Failed to connect input device '{controllerSetting.InputName}'.");
-                            return;
-                        }
-                        if (!controller.ConnectOutputDevice(controllerSetting.OutputName).GetAwaiter().GetResult())
-                        {
-                            Console.WriteLine($"\n  Error: Failed to connect output device '{controllerSetting.OutputName}'.");
-                            return;
-                        }
-                        Console.WriteLine(" Success");
-                        controllers.Add(controller);
                     }
                 }
 
