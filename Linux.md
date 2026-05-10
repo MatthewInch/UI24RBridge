@@ -63,28 +63,21 @@ sudo systemctl disable --now NetworkManager-wait-online.service
 sudo systemctl mask NetworkManager-wait-online.service
 ```
 
-## Build Ui24RBridge
+## Install UI24RBridge
+Download the latest release for your architecture (use `linux-arm64` for Raspberry Pi):
+```bash
+wget https://github.com/MatthewInch/UI24RBridge/releases/latest/download/UI24RBridge-linux-arm64.zip
+mkdir -p UI24RBridge
+unzip UI24RBridge-linux-arm64.zip -d UI24RBridge
+chmod +x UI24RBridge/UI24RBridge
 ```
-# Install dependencies
-sudo apt install libasound2-dev
 
-# Install the .NET SDK
-wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
-chmod +x ./dotnet-install.sh
-./dotnet-install.sh
-rm ./dotnet-install.sh
-echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
-echo 'export PATH=$PATH:$HOME/.dotnet' >> ~/.bashrc
-source ~/.bashrc
-
-# Clone the repository
-git clone https://github.com/MatthewInch/UI24RBridge.git
-
-# Build
-cd UI24RBridge/UI24RBridgeTest/
-dotnet build -c Release
-
+Run the program once to generate and configure `appsettings.json` (it will prompt you for the mixer address and controllers):
+```bash
+cd UI24RBridge && ./UI24RBridge
 ```
+
+You can also edit `appsettings.json` manually afterwards. See the [configuration documentation](README.md#configuration) for all available options.
 
 ## Run as a service
 Example service (`sudo nano /etc/systemd/system/ui24rbridge.service`) - adjust paths as needed:
@@ -97,10 +90,8 @@ After=network.target
 [Service]
 Type=simple
 User=pi
-WorkingDirectory=/home/pi/UI24RBridge/UI24RBridgeTest
-ExecStart=/home/pi/.dotnet/dotnet /home/pi/UI24RBridge/UI24RBridgeTest/bin/Release/net10.0/UI24RBridgeTest.dll
-Environment=DOTNET_ROOT=/home/pi/.dotnet
-Environment=HOME=/home/pi
+WorkingDirectory=/home/pi/UI24RBridge
+ExecStart=/home/pi/UI24RBridge/UI24RBridge
 Restart=always
 RestartSec=1
 
@@ -128,4 +119,28 @@ See https://www.raspberrypi.com/tutorials/how-to-use-a-raspberry-pi-in-kiosk-mod
 Simples is to only add the below line to `.config/labwc/autostart` (change to your mixer's address)
 ```bash
 chromium --start-maximized --kiosk --noerrdialogs --disable-infobars --no-first-run --password-store=basic --user-data-dir=/home/$USER/.config/chromium2 --enable-features=OverlayScrollbar,OverlayScrollbarFlashAfterAnyScrollUpdate,OverlayScrollbarFlashWhenMouseEnter http://192.168.0.69 &
+```
+
+## Building from source
+If you prefer to build from source rather than using a pre-built release:
+
+```bash
+# Install dependencies
+sudo apt install libasound2-dev
+
+# Install the .NET SDK
+wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
+chmod +x ./dotnet-install.sh
+./dotnet-install.sh
+rm ./dotnet-install.sh
+echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
+echo 'export PATH=$PATH:$HOME/.dotnet' >> ~/.bashrc
+source ~/.bashrc
+
+# Clone the repository
+git clone https://github.com/MatthewInch/UI24RBridge.git
+
+# Build
+cd UI24RBridge/App/
+dotnet publish -c Release -r linux-arm64 --self-contained -o ~/UI24RBridge
 ```
