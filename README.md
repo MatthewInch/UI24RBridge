@@ -88,7 +88,7 @@ You can generate the config file at the first run. The program will ask a few qu
 
 <img src="Images/setup.png">
 
-See [appsettings.example.json](UI24RBridgeTest/appsettings.example.json) for a full example configuration.
+See [appsettings.example.json](App/appsettings.example.json) for a full example configuration.
 
 In the settings file (**appsettings.json**):
 - **UI24R-Url**: the mixer url (simply copy the url from the browser and replace http to ws and remove the /mixer.html from the end)
