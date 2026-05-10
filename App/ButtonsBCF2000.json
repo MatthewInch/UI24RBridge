@@ -1,0 +1,14 @@
+{
+  "ButtonsDictionary": {
+    "Aux1": "0x2c",
+    "Aux2": "0x2b",
+    "Aux3": "0x2a",
+    "Aux4": "0x2d",
+    "Aux5": "0x5b",
+    "Aux6": "0x5c",
+    "Aux7": "0x5d",
+    "Aux8": "0x5e",
+    "ChannelDown": "0x2e",
+    "ChannelUp": "0x2f"
+  }
+}

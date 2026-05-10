@@ -6,7 +6,6 @@
 *.exe
 *.zip
 *.rar
-UI24RBridgeTest
 
 # User-specific files
 *.rsuser
@@ -354,3 +353,6 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+
+# Ui24RBridge Settings
+appsettings.json

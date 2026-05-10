@@ -4,7 +4,7 @@ using UI24RController;
 using UI24RController.MIDIController;
 using System.Threading.Tasks;
 
-public interface IMIDIController
+public interface IMIDIController : IDisposable
 {
     #region Connection
     string[] GetInputDeviceNames();
@@ -24,7 +24,7 @@ public interface IMIDIController
     event EventHandler<MessageEventArgs> MessageReceived;
     bool IsExtender { get; set; }
     int ChannelOffset { get; set; }
-    string ButtonsValuesFileName { get; set; }
+    string ButtonsFileName { set; }
 
     #region Button Events
     event EventHandler<FaderEventArgs> FaderEvent;
@@ -35,43 +35,24 @@ public interface IMIDIController
     event EventHandler<ChannelEventArgs> SoloChannelEvent;
     event EventHandler<ChannelEventArgs> RecChannelEvent;
 
-    event EventHandler<EventArgs> TrackEvent;
+    event EventHandler<EventArgs> GainModeEvent;
     event EventHandler<EventArgs> PanEvent;
-    event EventHandler<EventArgs> EqEvent;
-    event EventHandler<EventArgs> SendEvent;
-    event EventHandler<EventArgs> PlugInEvent;
-    event EventHandler<EventArgs> InstrEvent;
 
-    event EventHandler<EventArgs> DisplayBtnEvent;
-    event EventHandler<EventArgs> SmtpeBeatsBtnEvent;
+    event EventHandler<EventArgs> TapTempoEvent;
+    event EventHandler<EventArgs> SaveUserLayerEvent;
 
-    event EventHandler<EventArgs> GlobalViewEvent;
+    event EventHandler<FunctionEventArgs> SetUserChannelEvent;
 
-    event EventHandler<EventArgs> MidiTracksEvent;
-    event EventHandler<EventArgs> InputsEvent;
-    event EventHandler<EventArgs> AudioTracksEvent;
-    event EventHandler<EventArgs> AudioInstEvent;
-    event EventHandler<EventArgs> AuxBtnEvent;
-    event EventHandler<EventArgs> BusesBtnEvent;
-    event EventHandler<EventArgs> OutputsEvent;
-    event EventHandler<FunctionEventArgs> UserBtnEvent;
+    event EventHandler<FunctionEventArgs> AuxButtonEvent;
+    event EventHandler<FunctionEventArgs> FxButtonEvent;
+    event EventHandler<FunctionEventArgs> MuteGroupButtonEvent;
+    event EventHandler<FunctionEventArgs> ViewGroupButtonEvent;
+    event EventHandler<FunctionEventArgs> MastersBankButtonEvent;
 
-    event EventHandler<FunctionEventArgs> AuxButtonEvent;       //F1-F8
-    event EventHandler<FunctionEventArgs> FxButtonEvent;        //Modify buttons
-    event EventHandler<FunctionEventArgs> MuteGroupButtonEvent; //Automation buttons
-
-    event EventHandler<EventArgs> SaveEvent;
-    event EventHandler<EventArgs> UndoEvent;
-    event EventHandler<EventArgs> CancelEvent;
-    event EventHandler<EventArgs> EnterEvent;
-
-    event EventHandler<EventArgs> MarkerEvent;
-    event EventHandler<EventArgs> NudgeEvent;
-    event EventHandler<EventArgs> CycleEvent;
-    event EventHandler<EventArgs> DropEvent;
-    event EventHandler<EventArgs> ReplaceEvent;
-    event EventHandler<EventArgs> ClickEvent;
-    event EventHandler<EventArgs> SoloEvent;
+    event EventHandler<EventArgs> MuteAllEvent;
+    event EventHandler<EventArgs> MuteFXEvent;
+    event EventHandler<EventArgs> ClearMuteEvent;
+    event EventHandler<EventArgs> ClearSoloEvent;
 
     event EventHandler<EventArgs> PrevEvent;
     event EventHandler<EventArgs> NextEvent;
@@ -84,13 +65,7 @@ public interface IMIDIController
     event EventHandler<EventArgs> BankUp;
     event EventHandler<EventArgs> BankDown;
 
-    event EventHandler<EventArgs> UpEvent;
-    event EventHandler<EventArgs> DownEvent;
-    event EventHandler<EventArgs> LeftEvent;
-    event EventHandler<EventArgs> RightEvent;
-    event EventHandler<EventArgs> CenterEvent;
-
-    event EventHandler<ButtonEventArgs> ScrubEvent;
+    event EventHandler<ButtonEventArgs> TalkbackEvent;
 
     #endregion
 

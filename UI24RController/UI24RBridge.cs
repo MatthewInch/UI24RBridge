@@ -66,13 +66,13 @@ namespace UI24RController
         {
             this._settings = settings;
             this._controllers = controllers;
-            _mixer = new Mixer(settings.EnableUserBank);
-            SendMessage("Start initialization...", false);
+            _mixer = new Mixer(controllers.Count, settings.EnableUserBank);
+            SendMessage("Start initialization...", true);
             InitializeChannels();
             InitializeViewGroupsFromConfig();
 
 
-            SendMessage("Create controller events....", false);
+            SendMessage("Create controller events....", true);
             foreach (var controller in controllers)
             {
                 controller.FaderEvent += (sender, args) => _midiController_FaderEvent(controller, args);
@@ -86,25 +86,27 @@ namespace UI24RController
                 controller.SelectChannelEvent += (sender, args) => _midiController_SelectChannelEvent(controller, args);
                 controller.RecChannelEvent += (sender, args) => _midiController_RecChannelEvent(controller, args);
                 controller.MuteGroupButtonEvent += (sender, args) => Controller_MuteGroupButtonEvent(controller, args);
-                controller.SaveEvent += (sender, args) => _midiController_MuteAllEvent(controller, args);
-                controller.UndoEvent += (sender, args) => _midiController_MuteAllFxEvent(controller, args);
-                controller.CancelEvent += (sender, args) => _midiController_ClearMute(controller, args);
-                controller.EnterEvent += (sender, args) => _midiController_ClearSolo(controller, args);
+                controller.MuteAllEvent += (sender, args) => _midiController_MuteAllEvent(controller, args);
+                controller.MuteFXEvent += (sender, args) => _midiController_MuteAllFxEvent(controller, args);
+                controller.ClearMuteEvent += (sender, args) => _midiController_ClearMute(controller, args);
+                controller.ClearSoloEvent += (sender, args) => _midiController_ClearSolo(controller, args);
                 controller.RecEvent += (sender, args) => _midiController_RecEvent(controller, args);
                 controller.PlayEvent += (sender, args) => _midiController_PlayEvent(controller, args);
                 controller.StopEvent += (sender, args) => _midiController_StopEvent(controller, args);
                 controller.NextEvent += (sender, args) => _midiController_NextEvent(controller, args);
                 controller.PrevEvent += (sender, args) => _midiController_PrevEvent(controller, args);
-                controller.UserBtnEvent += (sender, args) => _midiController_UserLayerEdit(controller, args);
-                controller.GlobalViewEvent += (sender, args) => _midiController_SaveEvent(controller, args);
+                controller.SetUserChannelEvent += (sender, args) => _midiController_UserLayerEdit(controller, args);
+                controller.SaveUserLayerEvent += (sender, args) => _midiController_SaveUserLayerEvent(controller, args);
                 controller.WheelEvent += (sender, args) => _midiController_WheelEvent(controller, args);
-                controller.SmtpeBeatsBtnEvent += (sender, args) => _midiController_TapTempoEvent(controller, args);
+                controller.TapTempoEvent += (sender, args) => _midiController_TapTempoEvent(controller, args);
                 controller.WriteTextToLCDSecondLine("");
                 controller.ConnectionErrorEvent += (sender, args)=> _midiController_ConnectionErrorEvent(controller, args);
                 controller.AuxButtonEvent += (sender, args) => _midiController_AuxButtonEvent(controller, args);
+                controller.ViewGroupButtonEvent += (sender, args) => Controller_ViewGroupButtonEvent(controller, args);
+                controller.MastersBankButtonEvent += (sender, args) => Controller_MastersBankButtonEvent(controller, args);
                 controller.FxButtonEvent += (sender, args) => Controller_FXButtonEvent(controller, args);
-                controller.ScrubEvent += (sender, args) => Controller_ScrubEvent(controller, args);
-                controller.TrackEvent += (sender, args) => Controller_TrackEvent(controller, args); //HPF: functionality
+                controller.TalkbackEvent += (sender, args) => Controller_TalkbackEvent(controller, args);
+                controller.GainModeEvent += (sender, args) => Controller_GainModeEvent(controller, args); //HPF: functionality
                 controller.PanEvent += (sender, args) => Controller_PanEvent(controller, args);     //Pan: functionality
                 controller.InitializeController();
 
@@ -138,11 +140,6 @@ namespace UI24RController
                 }
             });
 
-            controllers.ForEach(c=> c.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString()));
-            //if (settings.ControllerStartChannel != null && settings.ControllerStartChannel == "1")
-            //{
-            //    _mixer.IsChannelOffset = true;
-            //}
             SetStateLedsOnController();
         }
 
@@ -231,7 +228,7 @@ namespace UI24RController
 
         #region Midicontroller events
 
-        private void Controller_TrackEvent(IMIDIController controller, EventArgs e)
+        private void Controller_GainModeEvent(IMIDIController controller, EventArgs e)
         {
 
         }
@@ -264,7 +261,7 @@ namespace UI24RController
             //}
         }
 
-        private void Controller_ScrubEvent(IMIDIController controller, ButtonEventArgs e)
+        private void Controller_TalkbackEvent(IMIDIController controller, ButtonEventArgs e)
         {
             if (_settings.TalkBack > 0)
             {
@@ -292,7 +289,7 @@ namespace UI24RController
         private void _midiController_RecChannelEvent(IMIDIController controller, MIDIController.ChannelEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber, controller.ChannelOffset);
-            if (ch > -1)
+            if (ch > -1 && !IsChannelHiddenInCurrentLayout(ch))
             {
                 if (_settings.ChannelRecButtonBehavior == BridgeSettings.ChannelRecButtonBehaviorEnum.Rec)
                 {
@@ -340,7 +337,7 @@ namespace UI24RController
         private void _midiController_SoloChannelEvent(IMIDIController controller, MIDIController.ChannelEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber, controller.ChannelOffset);
-            if (ch > -1)
+            if (ch > -1 && !IsChannelHiddenInCurrentLayout(ch))
             {
                 _mixerChannels[ch].IsSolo = !_mixerChannels[ch].IsSolo;
                 _client.Send(_mixerChannels[ch].SoloMessage());
@@ -371,7 +368,7 @@ namespace UI24RController
         private void _midiController_MuteChannelEvent(IMIDIController controller, MIDIController.ChannelEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber, controller.ChannelOffset);
-            if (ch > -1)
+            if (ch > -1 && !IsChannelHiddenInCurrentLayout(ch))
             {
                 if (_mixerChannels[ch].IsMuteByMuteGroup)
                 {
@@ -419,7 +416,7 @@ namespace UI24RController
         private void _midiController_SelectChannelEvent(IMIDIController controller, MIDIController.ChannelEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber, controller.ChannelOffset);
-            if (ch > -1)
+            if (ch > -1 && !IsChannelHiddenInCurrentLayout(ch))
             {
                 if (SelectedChannel != -1)
                 {
@@ -436,7 +433,12 @@ namespace UI24RController
                 }
                 _mixerChannels[ch].IsSelected = true;
                 SelectedChannel = ch;
-                controller.SetSelectLed(e.ChannelNumber, true);
+                _controllers.ForEach(c =>
+                {
+                    int pos = Array.IndexOf(_mixer.getCurrentLayer(c.ChannelOffset), ch);
+                    bool visible = pos >= 0 && !IsChannelHiddenInCurrentLayout(ch);
+                    c.SetSelectLed(pos >= 0 ? pos : 0, visible);
+                });
                 _client.Send(_mixerChannels[ch].SelectChannelMessage(_settings.SyncID));
                 //turnOn RTA
                 if (_settings.RtaOnWhenSelect)
@@ -448,7 +450,7 @@ namespace UI24RController
         private void _midiController_KnobEvent(IMIDIController controller, MIDIController.KnobEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber, controller.ChannelOffset);
-            if (ch > -1)
+            if (ch > -1 && !IsChannelHiddenInCurrentLayout(ch))
             {
                 switch (this.KnobsFunction)
                 {
@@ -525,6 +527,26 @@ namespace UI24RController
             //    _secondaryBridge._midiController_BankDown(sender, e);
             //}
         }
+        public void Controller_ViewGroupButtonEvent(object sender, FunctionEventArgs e)
+        {
+            if (!e.IsPress) return;
+            if (_mixer.GetCurrentViewGroup() == e.FunctionButton)
+                _mixer.setBank((int)FaderBank.Home);
+            else
+                _mixer.SetViewGroup(e.FunctionButton);
+            SetControllerToCurrentLayerAndSend();
+        }
+
+        public void Controller_MastersBankButtonEvent(object sender, FunctionEventArgs e)
+        {
+            if (!e.IsPress) return;
+            if (_mixer.GetCurrentMastersBank() == e.FunctionButton)
+                _mixer.setBank((int)FaderBank.Home);
+            else
+                _mixer.SetMastersBank(e.FunctionButton);
+            SetControllerToCurrentLayerAndSend();
+        }
+
         public void _midiController_BankUp(object sender, EventArgs e)
         {
             _mixer.setBankUp();
@@ -571,7 +593,7 @@ namespace UI24RController
         private void _midiController_FaderEvent(IMIDIController controller, MIDIController.FaderEventArgs e)
         {
             var ch = _mixer.getChannelNumberInCurrentLayer(e.ChannelNumber, controller.ChannelOffset);
-            if (ch > -1)
+            if (ch > -1 && !IsChannelHiddenInCurrentLayout(ch))
             {
                 if (_selectedLayout == SelectedLayoutEnum.Channels || _mixerChannels[ch] is MainChannel)
                 {
@@ -591,6 +613,18 @@ namespace UI24RController
             }
         }
 
+        private static void ClearSendsDisplay(IMIDIController controller)
+        {
+            controller.WriteTextToBeatsDisplay("  ");
+            controller.WriteTextToSubDivisionDisplay("  ");
+        }
+
+        private static void WriteSendsDisplay(IMIDIController controller, string aux, int num)
+        {
+            controller.WriteTextToBeatsDisplay(aux);
+            controller.WriteTextToSubDivisionDisplay(num.ToString());
+        }
+
         public void _midiController_AuxButtonEvent(IMIDIController controller, MIDIController.FunctionEventArgs e)
         {
             if (_settings.AuxButtonBehavior == BridgeSettings.AuxButtonBehaviorEnum.Release)
@@ -601,13 +635,13 @@ namespace UI24RController
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = e.FunctionButton.ToAux();
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
-                    controller.WriteTextToBarsDisplay("AX" + (_selectedLayout.AuxToInt() + 1).ToString());
+                    WriteSendsDisplay(controller, " A", _selectedLayout.AuxToInt()+1);
                 }
                 else if (_selectedLayout == e.FunctionButton.ToAux())
                 {
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = SelectedLayoutEnum.Channels;
-                    controller.WriteTextToBarsDisplay("   ");
+                    ClearSendsDisplay(controller);
                 }
             }
             else
@@ -618,22 +652,18 @@ namespace UI24RController
                     {
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                         _selectedLayout = SelectedLayoutEnum.Channels;
-                        controller.WriteTextToBarsDisplay("   ");
+                        ClearSendsDisplay(controller);
                     }
                     else
                     {
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                         _selectedLayout = e.FunctionButton.ToAux();
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
-                        controller.WriteTextToBarsDisplay("AX" + (_selectedLayout.AuxToInt()+1).ToString());
+                        WriteSendsDisplay(controller, " A", _selectedLayout.AuxToInt()+1);
                     }
                 }
             }
             SetControllerToCurrentLayerAndSend();
-            //if (_secondaryBridge != null)
-            //{
-            //    _secondaryBridge._midiController_AuxButtonEvent(sender, e);
-            //}
         }
         public void Controller_FXButtonEvent(IMIDIController controller, FunctionEventArgs e)
         {
@@ -645,13 +675,13 @@ namespace UI24RController
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = e.FunctionButton.ToFx();
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
-                    controller.WriteTextToBarsDisplay("FX" + (_selectedLayout.FxToInt() + 1).ToString());
+                    WriteSendsDisplay(controller, " F", _selectedLayout.FxToInt()+1);
                 }
                 else if (_selectedLayout == e.FunctionButton.ToFx())
                 {
                     controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                     _selectedLayout = SelectedLayoutEnum.Channels;
-                    controller.WriteTextToBarsDisplay("   ");
+                    ClearSendsDisplay(controller);
                 }
             }
             else
@@ -662,22 +692,18 @@ namespace UI24RController
                     {
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                         _selectedLayout = SelectedLayoutEnum.Channels;
-                        controller.WriteTextToBarsDisplay("   ");
+                        ClearSendsDisplay(controller);
                     }
                     else
                     {
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), false);
                         _selectedLayout = e.FunctionButton.ToFx();
                         controller.SetLed(_selectedLayout.ToButtonsEnum(), true);
-                        controller.WriteTextToBarsDisplay("FX" + (_selectedLayout.FxToInt() + 1).ToString());
+                        WriteSendsDisplay(controller, " F", _selectedLayout.FxToInt()+1);
                     }
                 }
             }
             SetControllerToCurrentLayerAndSend();
-            //if (_secondaryBridge != null)
-            //{
-            //    _secondaryBridge.Controller_FXButtonEvent(sender, e);
-            //}
         }
         private void Controller_MuteGroupButtonEvent(IMIDIController controller, FunctionEventArgs e)
         {
@@ -848,7 +874,7 @@ namespace UI24RController
             _mixer.UserLayerEdit = e.IsPress;
             //if (_secondaryBridge != null) _secondaryBridge.UserLayerEdit = e.IsPress;
 
-            controller.SetLed(ButtonsEnum.User, e.IsPress);
+            controller.SetLed(ButtonsEnum.SetUserChannel, e.IsPress);
 
             if (e.IsPress)
             {
@@ -858,7 +884,6 @@ namespace UI24RController
                     if (_mixer.goToUserBank())
                     {
                         SetControllerToCurrentLayerAndSend();
-                        controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
                     }
                     //Set Select to First channel if necessary (selected channel is not in primary and secondary controller controller)
                     if (_controllers.Where(c => this.SelectedChannelIsOnCurrentLayer(c.ChannelOffset)).Count()==0)
@@ -882,7 +907,7 @@ namespace UI24RController
             }
         }
 
-        public void SetChannelOnUserLayer(int bank, int layer, int position, int channel)
+        public void SetChannelOnUserLayer(FaderBank bank, int layer, int position, int channel)
         {
             _mixer.setChannelInLayerAndPosition(bank, layer, position, channel);
         }
@@ -915,7 +940,7 @@ namespace UI24RController
             }
             //if (_secondaryBridge != null) _secondaryBridge._midiController_WheelEvent(sender, e);
         }
-        public void _midiController_SaveEvent(IMIDIController controller, EventArgs e)
+        public void _midiController_SaveUserLayerEvent(IMIDIController controller, EventArgs e)
         {
             if (!_settings.EnableUserBank) return;
             string jsonString;
@@ -1005,9 +1030,21 @@ namespace UI24RController
             return ChannelStripColour.White;
         }
 
+        // Replicates UI24R mixer app behaviour: certain channel types have no send in aux/fx views
+        private bool IsChannelHiddenInCurrentLayout(int channelNumber)
+        {
+            if (channelNumber < 0) return false;
+            var ch = _mixerChannels[channelNumber];
+            if (_selectedLayout.IsAux()) return ch is AuxChannel || ch is VCAChannel || ch is SubgroupChannel;
+            if (_selectedLayout.IsFx())  return ch is AuxChannel || ch is FXChannel  || ch is VCAChannel;
+            return false;
+        }
+
         private void SetControllerChannelToCurrentLayerAndSend(IMIDIController controller, int channelNumber, int controllerChannelNumber)
         {
-            if (channelNumber > -1)
+            bool hiddenChannel = IsChannelHiddenInCurrentLayout(channelNumber);
+
+            if (channelNumber > -1 && !hiddenChannel)
             {
                 controller.SetChannelStripColour(controllerChannelNumber, GetChannelStripColour(channelNumber));
 
@@ -1111,9 +1148,12 @@ namespace UI24RController
                 {
                     SetControllerChannelToCurrentLayerAndSend(controller, ch.Channel, ch.controllerChannelNumber);
                 }
-                controller.WriteTextToAssignmentDisplay(_mixer.getCurrentLayerString());
+                controller.WriteTextToAssignmentDisplay(_mixer.GetCurrentBankString());
+                controller.WriteTextToBarsDisplay(_mixer.GetCurrentLayerString());
 
             });
+            SetViewGroupLeds();
+            SetMastersLeds();
         }
         private void SetStateLedsOnController()
         {
@@ -1121,6 +1161,8 @@ namespace UI24RController
             {
                 controller.SetLed(ButtonsEnum.Rec, _mixer.IsMultitrackRecordingRun || _mixer.IsTwoTrackRecordingRun);
                 SetMuteGroupsLeds();
+                SetViewGroupLeds();
+                SetMastersLeds();
                 SetKnobsFunctionLedOnController();
                 if (_selectedLayout.IsAux())
                 {
@@ -1142,7 +1184,7 @@ namespace UI24RController
             _controllers.ForEach(controller =>
             {
                 controller.SetLed(ButtonsEnum.Pan, this.KnobsFunction == KnobsFunctionEnum.Pan);
-                controller.SetLed(ButtonsEnum.Track, this.KnobsFunction == KnobsFunctionEnum.Hpf);
+                controller.SetLed(ButtonsEnum.Gain, KnobsFunction == KnobsFunctionEnum.Hpf);
             });
         }
         protected List<(int controllerChannelNumber, IMIDIController controller, bool isOnLayer)> GetControllerChannel(int ch)
@@ -1422,14 +1464,9 @@ namespace UI24RController
                         }
                         _controllers.ForEach(controller =>
                         {
-                            var channelNumber = _mixer.getCurrentLayer(controller.ChannelOffset).Select((item, i) => new { Channel = item, controllerChannelNumber = i })
-                               .Where(c => c.Channel == _mixerChannels[SelectedChannel].ChannelNumberInMixer).FirstOrDefault();
-                            if (channelNumber != null)
-                            {
-                                controller.SetSelectLed(channelNumber.controllerChannelNumber, true);
-                            }
-                            else
-                                controller.SetSelectLed(0, false);
+                            int pos = Array.IndexOf(_mixer.getCurrentLayer(controller.ChannelOffset), SelectedChannel);
+                            bool visible = pos >= 0 && !IsChannelHiddenInCurrentLayout(SelectedChannel);
+                            controller.SetSelectLed(pos >= 0 ? pos : 0, visible);
                         });
                     }
                 }
@@ -1451,6 +1488,27 @@ namespace UI24RController
 
             }
         }
+        private void SetViewGroupLeds()
+        {
+            int activeViewGroup = _mixer.GetCurrentViewGroup();
+            _controllers.ForEach(controller =>
+            {
+                for (int i = 0; i < 6; ++i)
+                    controller.SetLed(ButtonsEnum.ViewGroup1 + i, i == activeViewGroup);
+            });
+        }
+
+        private void SetMastersLeds()
+        {
+            int active = _mixer.GetCurrentMastersBank();
+            var banks = Mixer.GetMastersBankOrder();
+            _controllers.ForEach(controller =>
+            {
+                for (int i = 0; i < banks.Count; i++)
+                    controller.SetLed(Enum.Parse<ButtonsEnum>(banks[i].ToString()), i == active);
+            });
+        }
+
         private void SetMuteGroupsLeds()
         {
             UInt32 mask = _mixer.MuteMask;
@@ -1459,8 +1517,8 @@ namespace UI24RController
                 {
                     controller.SetLed(ButtonsEnum.MuteGroup1 + i, ((mask >> i) & 1) == 1);
                 }
-                controller.SetLed(ButtonsEnum.Save, ((mask >> Mixer._muteAllBit) & 1) == 1);
-                controller.SetLed(ButtonsEnum.Undo, ((mask >> Mixer._muteAllFxBit) & 1) == 1);
+                controller.SetLed(ButtonsEnum.MuteAll, ((mask >> Mixer._muteAllBit) & 1) == 1);
+                controller.SetLed(ButtonsEnum.MuteFX, ((mask >> Mixer._muteAllFxBit) & 1) == 1);
             });
         }
         protected void SendMessage(string message, bool isDebug = true)

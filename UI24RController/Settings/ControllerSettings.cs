@@ -15,6 +15,6 @@ namespace UI24RController
         public string OutputName { get; set; }
         public bool IsExtender { get; set; }
         public int ChannelOffset {  get; set; }
-        public string PrimaryButtons { get; set; }
+        public string PrimaryButtonsConfig { get; set; }
     }
 }

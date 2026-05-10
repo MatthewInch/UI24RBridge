@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace UI24RController.MIDIController
 {
-    public class MackieHUI : IMIDIController, IDisposable
+    public class MackieHUI : IMIDIController
     {
         protected Queue<byte[]> _messageQueue = new Queue<byte[]>();
         /// <summary>
@@ -19,6 +19,7 @@ namespace UI24RController.MIDIController
         IMidiOutput _output = null;
 
         public Dictionary<string, byte> ButtonsID { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public string ButtonsFileName { set { } }
 
         public bool IsConnectionErrorOccured => throw new NotImplementedException();
 
@@ -28,15 +29,10 @@ namespace UI24RController.MIDIController
         public event EventHandler<EventArgs> PresetDown;
         public event EventHandler<GainEventArgs> GainEvent;
         public event EventHandler<ChannelEventArgs> SelectChannelEvent;
-        public event EventHandler<EventArgs> SaveEvent;
-        public event EventHandler<EventArgs> UndoEvent;
-        public event EventHandler<EventArgs> CancelEvent;
-        public event EventHandler<EventArgs> EnterEvent;
-        public event EventHandler<EventArgs> UpEvent;
-        public event EventHandler<EventArgs> DownEvent;
-        public event EventHandler<EventArgs> LeftEvent;
-        public event EventHandler<EventArgs> RightEvent;
-        public event EventHandler<EventArgs> CenterEvent;
+        public event EventHandler<EventArgs> MuteAllEvent;
+        public event EventHandler<EventArgs> MuteFXEvent;
+        public event EventHandler<EventArgs> ClearMuteEvent;
+        public event EventHandler<EventArgs> ClearSoloEvent;
         public event EventHandler<ChannelEventArgs> MuteChannelEvent;
         public event EventHandler<ChannelEventArgs> SoloChannelEvent;
         public event EventHandler<ChannelEventArgs> RecChannelEvent;
